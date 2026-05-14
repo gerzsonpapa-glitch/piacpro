@@ -7,7 +7,7 @@ import { formatPrice, formatRelativeTime, getOnlineStatus, getOnlineLabel } from
 import {
   Heart, MessageCircle, MapPin, Tag, Clock, ChevronLeft, ChevronRight,
   Share2, Shield, ArrowLeft, Phone, Mail, Pencil, Trash2,
-  ShoppingCart, Star, CheckCircle, XCircle, ShieldCheck, ZoomIn, X
+  Star, CheckCircle, XCircle, ShieldCheck, ZoomIn, X
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 
@@ -314,7 +314,7 @@ export default function ListingDetailPage() {
               {canBuy && (
                 <button onClick={() => navigate(`/checkout/${listing.id}`)}
                   className="flex items-center gap-2 px-5 py-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold rounded-xl transition-all hover:scale-[1.02]">
-                  <ShoppingCart className="w-4 h-4" />Megveszem
+                  <MessageCircle className="w-4 h-4" />Érdekel, felveszem a kapcsolatot
                 </button>
               )}
               {!isOwner && listing.status === 'active' && user && (
@@ -326,7 +326,7 @@ export default function ListingDetailPage() {
               {!isOwner && listing.status === 'active' && !user && (
                 <button onClick={() => navigate('/login')}
                   className="flex items-center gap-2 px-5 py-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold rounded-xl transition-all hover:scale-[1.02]">
-                  <ShoppingCart className="w-4 h-4" />Megveszem
+                  <MessageCircle className="w-4 h-4" />Érdekel, felveszem a kapcsolatot
                 </button>
               )}
               <button onClick={toggleFavorite} disabled={!user}
@@ -427,26 +427,51 @@ export default function ListingDetailPage() {
           {(listing.phone || listing.contact_email) && (
             <div className="glass rounded-3xl p-6">
               <h3 className="font-semibold text-zinc-200 mb-3">Elérhetőség</h3>
-              <div className="space-y-2">
-                {listing.phone && (
-                  <a href={`tel:${listing.phone}`}
-                    className="flex items-center gap-3 glass-pill p-3 rounded-xl text-zinc-300 hover:text-emerald-300 transition-colors">
-                    <div className="w-10 h-10 glass-bubble rounded-full flex items-center justify-center">
-                      <Phone className="w-4 h-4 text-emerald-400" />
+              {user ? (
+                <div className="space-y-2">
+                  {listing.phone && (
+                    <a href={`tel:${listing.phone}`}
+                      className="flex items-center gap-3 glass-pill p-3 rounded-xl text-zinc-300 hover:text-emerald-300 transition-colors">
+                      <div className="w-10 h-10 glass-bubble rounded-full flex items-center justify-center">
+                        <Phone className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <span className="text-sm">{listing.phone}</span>
+                    </a>
+                  )}
+                  {listing.contact_email && (
+                    <a href={`mailto:${listing.contact_email}`}
+                      className="flex items-center gap-3 glass-pill p-3 rounded-xl text-zinc-300 hover:text-emerald-300 transition-colors">
+                      <div className="w-10 h-10 glass-bubble rounded-full flex items-center justify-center">
+                        <Mail className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <span className="text-sm">{listing.contact_email}</span>
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {listing.phone && (
+                    <div className="flex items-center gap-3 glass-pill p-3 rounded-xl">
+                      <div className="w-10 h-10 glass-bubble rounded-full flex items-center justify-center">
+                        <Phone className="w-4 h-4 text-zinc-600" />
+                      </div>
+                      <span className="text-sm text-zinc-600 select-none blur-sm pointer-events-none">+36 30 000 0000</span>
                     </div>
-                    <span className="text-sm">{listing.phone}</span>
-                  </a>
-                )}
-                {listing.contact_email && (
-                  <a href={`mailto:${listing.contact_email}`}
-                    className="flex items-center gap-3 glass-pill p-3 rounded-xl text-zinc-300 hover:text-emerald-300 transition-colors">
-                    <div className="w-10 h-10 glass-bubble rounded-full flex items-center justify-center">
-                      <Mail className="w-4 h-4 text-emerald-400" />
+                  )}
+                  {listing.contact_email && (
+                    <div className="flex items-center gap-3 glass-pill p-3 rounded-xl">
+                      <div className="w-10 h-10 glass-bubble rounded-full flex items-center justify-center">
+                        <Mail className="w-4 h-4 text-zinc-600" />
+                      </div>
+                      <span className="text-sm text-zinc-600 select-none blur-sm pointer-events-none">pelda@email.hu</span>
                     </div>
-                    <span className="text-sm">{listing.contact_email}</span>
-                  </a>
-                )}
-              </div>
+                  )}
+                  <button onClick={() => navigate('/login')}
+                    className="w-full mt-1 py-2.5 text-sm text-emerald-400 hover:text-emerald-300 transition-colors text-center font-medium">
+                    Bejelentkezés az elérhetőség megtekintéséhez
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

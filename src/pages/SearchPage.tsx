@@ -98,28 +98,28 @@ export default function SearchPage() {
       .then(({ data }) => setCategories(data || []));
   }, []);
 
-  useEffect(() => { fetchListings(); }, [query, categorySlug, locationFilter, minPrice, maxPrice, sortBy, statusFilter]);
+  useEffect(() => { fetchListings(); }, [query, categorySlug, locationFilter, minPrice, maxPrice, sortBy, statusFilter, categories]);
 
   async function fetchListings() {
-    if (!query && !categorySlug && !locationFilter && !minPrice && !maxPrice) {
-      setListings([]);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     let dbQuery = supabase
       .from('listings')
       .select('*, seller:profiles(*), auction:auctions(*)')
+      .eq('listing_type', 'regular')
       .neq('status', 'deleted');
 
     if (statusFilter) dbQuery = dbQuery.eq('status', statusFilter);
     if (query) dbQuery = dbQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
 
     if (categorySlug) {
-      const cat = categories.find((c) => c.slug === categorySlug);
+      let cats = categories;
+      if (cats.length === 0) {
+        const { data } = await supabase.from('categories').select('*').order('sort_order');
+        cats = data || [];
+      }
+      const cat = cats.find((c) => c.slug === categorySlug);
       if (cat) {
-        const childIds = categories.filter((c) => c.parent_id === cat.id).map((c) => c.id);
+        const childIds = cats.filter((c) => c.parent_id === cat.id).map((c) => c.id);
         const ids = [cat.id, ...childIds];
         dbQuery = dbQuery.in('category_id', ids);
       }
@@ -260,17 +260,11 @@ export default function SearchPage() {
               <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
-        ) : query || categorySlug || locationFilter || minPrice || maxPrice ? (
+        ) : (
           <div className="text-center py-20 glass rounded-3xl">
             <Search className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
             <p className="text-zinc-500 text-lg">Nincs találat</p>
             <p className="text-zinc-600 text-sm mt-1">Próbálj más keresőszót vagy szűrőt</p>
-          </div>
-        ) : (
-          <div className="text-center py-20 glass rounded-3xl">
-            <Search className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-            <p className="text-zinc-500 text-lg">Keress valamire</p>
-            <p className="text-zinc-600 text-sm mt-1">Írj be egy keresőszót a találatok megjelenítéséhez</p>
           </div>
         )}
       </div>
