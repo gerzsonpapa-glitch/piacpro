@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import { useNotification } from '../contexts/NotificationContext';
+import { HUNGARIAN_COUNTIES } from '../lib/utils';
 import {
   Briefcase, Building2, MapPin, ArrowLeft, Send, Banknote, Phone, Mail, Wifi
 } from 'lucide-react';
@@ -29,7 +30,8 @@ export default function CreateJobPage() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('IT / Szoftver');
   const [type, setType] = useState('teljes');
-  const [location, setLocation] = useState('');
+  const [locationCounty, setLocationCounty] = useState('');
+  const [locationCity, setLocationCity] = useState('');
   const [remote, setRemote] = useState(false);
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
@@ -56,7 +58,7 @@ export default function CreateJobPage() {
       description: description.trim(),
       category,
       type,
-      location: location.trim(),
+      location: locationCity.trim() ? `${locationCity.trim()}, ${locationCounty}` : locationCounty,
       remote,
       salary_min: salaryMin ? parseInt(salaryMin) : null,
       salary_max: salaryMax ? parseInt(salaryMax) : null,
@@ -135,13 +137,19 @@ export default function CreateJobPage() {
         <div className="glass rounded-3xl p-6 space-y-4">
           <h2 className="font-semibold text-zinc-200 text-sm">Helyszín</h2>
 
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1.5">Város / helyszín</label>
+          <div className="space-y-2">
+            <label className="block text-xs text-zinc-500">Helyszín</label>
+            <select value={locationCounty} onChange={(e) => setLocationCounty(e.target.value)}
+              className="w-full px-3 py-3 glass-input rounded-xl text-zinc-100 focus:outline-none text-sm appearance-none cursor-pointer">
+              <option value="">Válassz megyét</option>
+              {HUNGARIAN_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
             <div className="relative">
               <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input type="text" value={location} onChange={(e) => setLocation(e.target.value)}
-                placeholder="pl. Budapest, XIII. kerület"
-                className="w-full pl-10 pr-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+              <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)}
+                placeholder="Város / falu / kerület (opcionális)"
+                className="w-full pl-10 pr-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm"
+                maxLength={80} />
             </div>
           </div>
 
@@ -191,7 +199,7 @@ export default function CreateJobPage() {
 
         {/* Contact */}
         <div className="glass rounded-3xl p-6 space-y-4">
-          <h2 className="font-semibold text-zinc-200 text-sm">Kapcsolat</h2>
+          <h2 className="font-semibold text-zinc-200 text-sm">Kapcsolat <span className="text-zinc-600 font-normal">(opcionális)</span></h2>
           <div>
             <label className="block text-xs text-zinc-500 mb-1.5">E-mail cím</label>
             <div className="relative">

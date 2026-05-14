@@ -29,7 +29,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       setTimeout(() => onRemove(toast.id), 300);
     }, toast.duration ?? 5000);
     return () => { clearTimeout(show); clearTimeout(hide); };
-  }, []);
+  }, [toast.id, toast.duration, onRemove]);
 
   const configs: Record<ToastType, { bg: string; border: string; icon: React.ElementType; iconCls: string }> = {
     success: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', icon: CheckCircle, iconCls: 'text-emerald-400' },

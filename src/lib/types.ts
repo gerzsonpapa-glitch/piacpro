@@ -45,6 +45,9 @@ export interface Listing {
   phone: string;
   contact_email: string;
   images: string[];
+  video_url: string | null;
+  negotiable: boolean;
+  bumped_at: string | null;
   is_featured: boolean;
   views: number;
   status: 'active' | 'sold' | 'ended' | 'deleted';

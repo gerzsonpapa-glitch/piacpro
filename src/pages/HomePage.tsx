@@ -163,6 +163,8 @@ function JobMiniCard({ job }: { job: Job }) {
   );
 }
 
+const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
+
 export default function HomePage() {
   const { navigate } = useRouter();
   const { user } = useAuth();
@@ -175,6 +177,7 @@ export default function HomePage() {
   const [allAuctions, setAllAuctions] = useState<Listing[]>([]);
   const [featuredJobs, setFeaturedJobs] = useState<Job[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<Listing[]>([]);
 
   const [listingCount, setListingCount] = useState(0);
   const [auctionCount, setAuctionCount] = useState(0);
@@ -182,7 +185,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchCategories()])
+    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchCategories(), fetchRecentlyViewed()])
       .finally(() => setLoading(false));
   }, []);
 
@@ -234,6 +237,24 @@ export default function HomePage() {
     setCategories((data || []).filter((c) => !c.parent_id));
   }
 
+  async function fetchRecentlyViewed() {
+    try {
+      const ids: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
+      if (ids.length === 0) return;
+      const { data } = await supabase
+        .from('listings')
+        .select('*, seller:profiles(*)')
+        .in('id', ids)
+        .neq('status', 'deleted');
+      if (data && data.length > 0) {
+        const ordered = ids.map((id) => data.find((l) => l.id === id)).filter(Boolean) as Listing[];
+        setRecentlyViewed(ordered.slice(0, 6));
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
@@ -265,7 +286,7 @@ export default function HomePage() {
             <span className="text-emerald-400 text-xs font-semibold tracking-wide">Magyarország legjobb piactere</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1]">
-            Vásárolj, adj el,<br />
+            Vásárolj, add el,<br />
             <span className="text-emerald-400">találj munkát.</span>
           </h1>
           <p className="text-zinc-400 mt-4 text-base md:text-lg max-w-xl leading-relaxed">
@@ -308,7 +329,7 @@ export default function HomePage() {
             </div>
             <h2 className="text-xl font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors mb-1">Piactér</h2>
             <p className="text-zinc-500 text-sm leading-relaxed mb-5">
-              Adj el felesleges dolgaidat vagy vegyél olcsón másoktól.
+              Add el felesleges dolgaidat vagy vegyél olcsón másoktól.
             </p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-zinc-600 font-medium">{listingCount.toLocaleString('hu-HU')} aktív hirdetés</span>
@@ -490,6 +511,20 @@ export default function HomePage() {
               {popularListings.map((l) => <ListingCard key={l.id} listing={l} />)}
             </div>
           )}
+        </section>
+      )}
+
+      {/* ── NEMRÉG NÉZETT ────────────────────────────────────────────────── */}
+      {recentlyViewed.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Clock className="w-5 h-5 text-zinc-400" />Nemrég nézett
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+            {recentlyViewed.map((l) => <ListingCard key={l.id} listing={l} />)}
+          </div>
         </section>
       )}
 

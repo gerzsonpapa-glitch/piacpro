@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import type { Category, Listing } from '../lib/types';
 import { HUNGARIAN_COUNTIES } from '../lib/utils';
-import { Upload, X, MapPin, DollarSign, Tag, FileText, Phone, Mail, Save, Truck, Package, Handshake } from 'lucide-react';
+import { Upload, X, MapPin, DollarSign, Tag, FileText, Phone, Mail, Save, Truck, Package, Handshake, Video, Play } from 'lucide-react';
 
 const DELIVERY_OPTIONS = [
   {
@@ -49,14 +49,18 @@ export default function EditListingPage() {
   const [price, setPrice] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [condition, setCondition] = useState('used');
-  const [location, setLocation] = useState('');
+  const [locationCounty, setLocationCounty] = useState('');
+  const [locationCity, setLocationCity] = useState('');
   const [phone, setPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [selectedDelivery, setSelectedDelivery] = useState<string[]>(['personal']);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [negotiable, setNegotiable] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -77,15 +81,48 @@ export default function EditListingPage() {
       setPrice(String(listingData.price));
       setCategoryId(listingData.category_id || '');
       setCondition(listingData.condition || 'used');
-      setLocation(listingData.location || '');
+      {
+        const raw = listingData.location || '';
+        const commaIdx = raw.lastIndexOf(', ');
+        if (commaIdx > -1) {
+          setLocationCity(raw.slice(0, commaIdx));
+          setLocationCounty(raw.slice(commaIdx + 2));
+        } else {
+          setLocationCounty(raw);
+          setLocationCity('');
+        }
+      }
       setPhone(listingData.phone || '');
       setContactEmail(listingData.contact_email || '');
       setImageUrls(listingData.images || []);
+      setVideoUrl(listingData.video_url || '');
+      setNegotiable(listingData.negotiable || false);
       setSelectedDelivery(listingData.delivery_options?.length ? listingData.delivery_options : ['personal']);
       setCategories(catData || []);
       setPageLoading(false);
     });
   }, [user, id]);
+
+  async function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingVideo(true);
+    const ext = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('listing-videos')
+      .upload(fileName, file);
+
+    if (!error) {
+      const { data: urlData } = supabase.storage
+        .from('listing-videos')
+        .getPublicUrl(fileName);
+      setVideoUrl(urlData.publicUrl);
+    }
+    setUploadingVideo(false);
+  }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -120,10 +157,12 @@ export default function EditListingPage() {
         price: parseFloat(price) || 0,
         category_id: categoryId || null,
         condition,
-        location,
+        location: locationCity.trim() ? `${locationCity.trim()}, ${locationCounty}` : locationCounty,
         phone,
         contact_email: contactEmail,
         images: imageUrls,
+        video_url: videoUrl || null,
+        negotiable,
         delivery_options: selectedDelivery,
         updated_at: new Date().toISOString(),
       })
@@ -178,6 +217,52 @@ export default function EditListingPage() {
           </div>
         </div>
 
+        {/* Video Upload */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-2">
+            <Video className="w-4 h-4 inline mr-1" />
+            Videó (opcionális, max 100 MB)
+          </label>
+          {videoUrl ? (
+            <div className="relative rounded-2xl overflow-hidden glass-bubble">
+              <video
+                src={videoUrl}
+                controls
+                className="w-full rounded-2xl max-h-52 object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => setVideoUrl('')}
+                className="absolute top-2 right-2 w-7 h-7 bg-red-500/80 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors"
+              >
+                <X className="w-3.5 h-3.5 text-white" />
+              </button>
+              <span className="absolute bottom-2 left-2 text-[10px] glass-pill-active text-emerald-300 px-1.5 py-0.5 rounded-lg font-medium flex items-center gap-1">
+                <Play className="w-2.5 h-2.5" />Videó feltöltve
+              </span>
+            </div>
+          ) : (
+            <label className={`flex flex-col items-center justify-center gap-2 py-8 rounded-2xl glass-subtle border-2 border-dashed border-white/10 hover:border-emerald-500/40 cursor-pointer transition-all ${uploadingVideo ? 'opacity-60 pointer-events-none' : ''}`}>
+              <div className="w-12 h-12 glass-bubble rounded-2xl flex items-center justify-center">
+                <Video className="w-6 h-6 text-zinc-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-zinc-300 font-medium">
+                  {uploadingVideo ? 'Feltöltés...' : 'Videó hozzáadása'}
+                </p>
+                <p className="text-xs text-zinc-600 mt-0.5">MP4, MOV, AVI, WebM — max 100 MB</p>
+              </div>
+              <input
+                type="file"
+                accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,video/ogg"
+                onChange={handleVideoUpload}
+                className="hidden"
+                disabled={uploadingVideo}
+              />
+            </label>
+          )}
+        </div>
+
         {/* Title */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -205,6 +290,32 @@ export default function EditListingPage() {
             className="w-full px-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all" />
         </div>
 
+        {/* Negotiable toggle */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setNegotiable((v) => !v)}
+            className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl border transition-all ${
+              negotiable
+                ? 'bg-emerald-500/10 border-emerald-500/30'
+                : 'glass-pill border-transparent hover:border-white/10'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${negotiable ? 'bg-emerald-500/20' : 'glass-bubble'}`}>
+              <DollarSign className={`w-5 h-5 ${negotiable ? 'text-emerald-400' : 'text-zinc-400'}`} />
+            </div>
+            <div className="flex-1 text-left">
+              <p className={`font-medium text-sm ${negotiable ? 'text-emerald-300' : 'text-zinc-200'}`}>Alkuképes ár</p>
+              <p className="text-xs text-zinc-500 mt-0.5">A vevők alkudozhatnak az áron</p>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+              negotiable ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600'
+            }`}>
+              {negotiable && <span className="w-2 h-2 rounded-full bg-white block" />}
+            </div>
+          </button>
+        </div>
+
         {/* Category */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1.5">Kategória</label>
@@ -230,15 +341,26 @@ export default function EditListingPage() {
         </div>
 
         {/* Location */}
-        <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-zinc-300">
             <MapPin className="w-4 h-4 inline mr-1" />Helyszín
           </label>
-          <select value={location} onChange={(e) => setLocation(e.target.value)}
+          <select value={locationCounty} onChange={(e) => setLocationCounty(e.target.value)}
             className="w-full px-4 py-3 glass-input rounded-xl text-zinc-100 focus:outline-none transition-all">
             <option value="">Válassz megyét</option>
             {HUNGARIAN_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+          <div className="relative">
+            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              value={locationCity}
+              onChange={(e) => setLocationCity(e.target.value)}
+              placeholder="Város / falu / kerület (opcionális)"
+              className="w-full pl-10 pr-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all text-sm"
+              maxLength={80}
+            />
+          </div>
         </div>
 
         {/* Delivery Options */}

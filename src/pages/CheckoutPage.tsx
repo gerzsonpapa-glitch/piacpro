@@ -6,8 +6,9 @@ import type { Listing } from '../lib/types';
 import { formatPrice } from '../lib/utils';
 import {
   Package, Truck, MapPin, CheckCircle, ArrowLeft,
-  MessageCircle, User, Phone, Mail, Handshake
+  MessageCircle, Phone, Mail, Handshake
 } from 'lucide-react';
+import { useNotification } from '../contexts/NotificationContext';
 import Avatar from '../components/Avatar';
 
 const DELIVERY_OPTIONS = [
@@ -40,6 +41,7 @@ const DELIVERY_OPTIONS = [
 export default function CheckoutPage() {
   const { user } = useAuth();
   const { params, navigate } = useRouter();
+  const { showToast } = useNotification();
   const id = params.id;
 
   const [listing, setListing] = useState<Listing | null>(null);
@@ -86,28 +88,36 @@ export default function CheckoutPage() {
       cid = newConv?.id;
     }
 
-    if (cid) {
-      // Send intro message with delivery preference
-      const deliveryInfo = selectedDelivery === 'personal'
-        ? 'Személyes átvételt szeretnék.'
-        : `Szállítást kérek: ${deliveryOption?.name}${deliveryAddress ? ` — Cím: ${deliveryAddress}` : ''}.`;
-
-      const fullMessage = `${message}\n\n${deliveryInfo}`;
-
-      await supabase.from('messages').insert({
-        conversation_id: cid,
-        sender_id: user.id,
-        content: fullMessage,
-        is_read: false,
-      });
-
-      await supabase.from('conversations').update({
-        last_message_at: new Date().toISOString(),
-      }).eq('id', cid);
-
-      setConvId(cid);
+    if (!cid) {
+      showToast('error', 'Hiba történt', 'A kapcsolatfelvétel sikertelen. Kérjük, próbáld újra.');
+      setLoading(false);
+      return;
     }
 
+    const deliveryInfo = selectedDelivery === 'personal'
+      ? 'Személyes átvételt szeretnék.'
+      : `Szállítást kérek: ${deliveryOption?.name}${deliveryAddress ? ` — Cím: ${deliveryAddress}` : ''}.`;
+
+    const fullMessage = `${message}\n\n${deliveryInfo}`;
+
+    const { error: msgError } = await supabase.from('messages').insert({
+      conversation_id: cid,
+      sender_id: user.id,
+      content: fullMessage,
+      is_read: false,
+    });
+
+    if (msgError) {
+      showToast('error', 'Hiba történt', 'Az üzenet küldése sikertelen. Kérjük, próbáld újra.');
+      setLoading(false);
+      return;
+    }
+
+    await supabase.from('conversations').update({
+      last_message_at: new Date().toISOString(),
+    }).eq('id', cid);
+
+    setConvId(cid);
     setLoading(false);
     setDone(true);
   }

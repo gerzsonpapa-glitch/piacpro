@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
+import { useNotification } from '../contexts/NotificationContext';
 import type { Category } from '../lib/types';
 import { HUNGARIAN_COUNTIES } from '../lib/utils';
 import { Upload, X, MapPin, Gavel, Tag, FileText, ImagePlus, Clock, TrendingUp } from 'lucide-react';
@@ -19,6 +20,7 @@ const BID_INCREMENTS = [100, 250, 500, 1000, 2500, 5000, 10000];
 export default function CreateAuctionPage() {
   const { user } = useAuth();
   const { navigate } = useRouter();
+  const { showToast } = useNotification();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startingPrice, setStartingPrice] = useState('');
@@ -83,7 +85,7 @@ export default function CreateAuctionPage() {
       .single();
 
     if (listingError || !listing) {
-      console.error(listingError);
+      showToast('error', 'Hiba történt', 'Az aukció létrehozása sikertelen. Kérjük, próbáld újra.');
       setLoading(false);
       return;
     }
@@ -103,7 +105,9 @@ export default function CreateAuctionPage() {
       });
 
     if (auctionError) {
-      console.error(auctionError);
+      // Clean up orphan listing if auction creation failed
+      await supabase.from('listings').update({ status: 'deleted' }).eq('id', listing.id);
+      showToast('error', 'Hiba történt', 'Az aukció adatainak mentése sikertelen. Kérjük, próbáld újra.');
     } else {
       navigate(`/auction/${listing.id}`);
     }

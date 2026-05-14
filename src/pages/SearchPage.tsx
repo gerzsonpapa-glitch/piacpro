@@ -98,7 +98,7 @@ export default function SearchPage() {
       .then(({ data }) => setCategories(data || []));
   }, []);
 
-  useEffect(() => { fetchListings(); }, [query, categorySlug, locationFilter, minPrice, maxPrice, sortBy, statusFilter, categories]);
+  useEffect(() => { fetchListings(); }, [query, categorySlug, locationFilter, minPrice, maxPrice, sortBy, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchListings() {
     setLoading(true);

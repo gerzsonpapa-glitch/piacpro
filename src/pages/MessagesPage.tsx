@@ -90,9 +90,9 @@ export default function MessagesPage() {
   useEffect(() => {
     if (chatId && conversations.length > 0) {
       const conv = conversations.find((c) => c.id === chatId);
-      if (conv && activeConversation?.id !== conv.id) openConversation(conv);
+      if (conv && activeConvRef.current?.id !== conv.id) openConversation(conv);
     }
-  }, [chatId, conversations.length]);
+  }, [chatId, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Realtime: subscribe to new messages in active conversation
   useEffect(() => {

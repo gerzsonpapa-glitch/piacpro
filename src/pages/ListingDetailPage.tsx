@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
@@ -7,9 +7,100 @@ import { formatPrice, formatRelativeTime, getOnlineStatus, getOnlineLabel } from
 import {
   Heart, MessageCircle, MapPin, Tag, Clock, ChevronLeft, ChevronRight,
   Share2, Shield, ArrowLeft, Phone, Mail, Pencil, Trash2,
-  Star, CheckCircle, XCircle, ShieldCheck, ZoomIn, X
+  Star, CheckCircle, XCircle, ShieldCheck, ZoomIn, X, Play,
+  Handshake, RefreshCw, Facebook, Copy, Check
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
+
+const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
+const MAX_RECENTLY_VIEWED = 10;
+
+function addToRecentlyViewed(id: string) {
+  try {
+    const existing: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
+    const filtered = existing.filter((x) => x !== id);
+    const updated = [id, ...filtered].slice(0, MAX_RECENTLY_VIEWED);
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function RatingModal({ listingId, sellerId, sellerName, onClose, onSubmitted }: {
+  listingId: string; sellerId: string; sellerName: string; onClose: () => void; onSubmitted: () => void;
+}) {
+  const { user } = useAuth();
+  const [score, setScore] = useState(5);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  async function submit() {
+    if (!user) return;
+    setSubmitting(true);
+    await supabase.from('listing_ratings').insert({
+      listing_id: listingId,
+      rater_id: user.id,
+      rated_id: sellerId,
+      score,
+      comment: comment.trim(),
+    });
+    setDone(true);
+    setSubmitting(false);
+    setTimeout(() => { onSubmitted(); onClose(); }, 1500);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="glass rounded-3xl p-6 w-full max-w-sm space-y-5" onClick={(e) => e.stopPropagation()}>
+        {done ? (
+          <div className="text-center py-4">
+            <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+            <p className="font-semibold text-zinc-100">Értékelés elküldve!</p>
+            <p className="text-zinc-500 text-sm mt-1">Köszönjük visszajelzésedet.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-zinc-100">Értékeld az eladót</h3>
+              <button onClick={onClose} className="p-1.5 glass-pill rounded-xl text-zinc-500 hover:text-zinc-200 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-zinc-400 text-sm">
+              <span className="font-medium text-zinc-200">{sellerName}</span> — milyen volt az élmény?
+            </p>
+            <div className="flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <button key={i} onClick={() => setScore(i)}
+                  className="transition-transform hover:scale-110">
+                  <Star className={`w-8 h-8 transition-colors ${i <= score ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'}`} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              maxLength={300}
+              placeholder="Opcionális megjegyzés..."
+              className="w-full px-3 py-2.5 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none text-sm"
+            />
+            <div className="flex gap-2">
+              <button onClick={submit} disabled={submitting}
+                className="flex-1 py-3 glass-pill-active text-emerald-300 font-semibold rounded-xl transition-all hover:scale-[1.01] disabled:opacity-60 text-sm">
+                {submitting ? 'Küldés...' : 'Értékelés küldése'}
+              </button>
+              <button onClick={onClose} className="px-4 py-3 glass-pill text-zinc-400 rounded-xl text-sm hover:text-zinc-200 transition-colors">
+                Mégse
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const conditionLabels: Record<string, string> = {
   new: 'Új', 'like-new': 'Újszerű', used: 'Használt', fair: 'Közepes', poor: 'Rossz',
@@ -52,11 +143,32 @@ export default function ListingDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [bumping, setBumping] = useState(false);
+  const [bumpMessage, setBumpMessage] = useState('');
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [alreadyRated, setAlreadyRated] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
 
   const id = params.id;
 
   useEffect(() => {
-    if (id) fetchListing();
+    if (!showShareMenu) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+        setShowShareMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showShareMenu]);
+
+  useEffect(() => {
+    if (id) {
+      fetchListing();
+      addToRecentlyViewed(id);
+    }
   }, [id]);
 
   async function fetchListing() {
@@ -79,13 +191,44 @@ export default function ListingDetailPage() {
       setSellerBadge(badge);
 
       if (user) {
-        const { data: fav } = await supabase
-          .from('favorites').select('id')
-          .eq('user_id', user.id).eq('listing_id', id).maybeSingle();
-        setIsFavorited(!!fav);
+        const [favRes, ratingRes] = await Promise.all([
+          supabase.from('favorites').select('id').eq('user_id', user.id).eq('listing_id', id).maybeSingle(),
+          supabase.from('listing_ratings').select('id').eq('listing_id', id).eq('rater_id', user.id).maybeSingle(),
+        ]);
+        setIsFavorited(!!favRes.data);
+        setAlreadyRated(!!ratingRes.data);
       }
     }
     setLoading(false);
+  }
+
+  async function bumpListing() {
+    if (!listing || !user) return;
+    const lastBump = listing.bumped_at ? new Date(listing.bumped_at) : null;
+    const now = new Date();
+    if (lastBump) {
+      const hoursSince = (now.getTime() - lastBump.getTime()) / 3600000;
+      if (hoursSince < 24) {
+        const hoursLeft = Math.ceil(24 - hoursSince);
+        setBumpMessage(`Következő frissítés ${hoursLeft} óra múlva lehetséges`);
+        setTimeout(() => setBumpMessage(''), 3000);
+        return;
+      }
+    }
+    setBumping(true);
+    const { data: updated } = await supabase
+      .from('listings')
+      .update({ bumped_at: now.toISOString(), created_at: now.toISOString() })
+      .eq('id', listing.id)
+      .eq('seller_id', user.id)
+      .select()
+      .maybeSingle();
+    if (updated) {
+      setListing((prev) => prev ? { ...prev, bumped_at: now.toISOString(), created_at: now.toISOString() } : prev);
+      setBumpMessage('Hirdetés frissítve! Most az élre kerül.');
+    }
+    setBumping(false);
+    setTimeout(() => setBumpMessage(''), 3000);
   }
 
   async function toggleFavorite() {
@@ -158,8 +301,21 @@ export default function ListingDetailPage() {
     setLightboxOpen(true);
   }
 
+  const sellerName = listing.seller?.full_name || listing.seller?.username || 'Eladó';
+
+
   return (
     <div className="max-w-5xl mx-auto">
+      {showRatingModal && listing.seller && (
+        <RatingModal
+          listingId={listing.id}
+          sellerId={listing.seller_id}
+          sellerName={sellerName}
+          onClose={() => setShowRatingModal(false)}
+          onSubmitted={() => setAlreadyRated(true)}
+        />
+      )}
+
       {/* Lightbox */}
       {lightboxOpen && images.length > 0 && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
@@ -277,6 +433,24 @@ export default function ListingDetailPage() {
               </button>
             </div>
           )}
+
+          {/* Video Player */}
+          {listing.video_url && (
+            <div className="mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Play className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-medium text-zinc-300">Videó</span>
+              </div>
+              <div className="relative rounded-2xl overflow-hidden glass-bubble">
+                <video
+                  src={listing.video_url}
+                  controls
+                  className="w-full rounded-2xl max-h-72 object-contain bg-black"
+                  preload="metadata"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Details */}
@@ -288,7 +462,14 @@ export default function ListingDetailPage() {
                 <StatusIcon className="w-3 h-3" />{status.label}
               </span>
             </div>
-            <p className="text-3xl font-bold text-emerald-400 mt-2">{formatPrice(listing.price)}</p>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              <p className="text-3xl font-bold text-emerald-400">{formatPrice(listing.price)}</p>
+              {listing.negotiable && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold">
+                  <Handshake className="w-3.5 h-3.5" />Alkuképes
+                </span>
+              )}
+            </div>
 
             <div className="flex flex-wrap gap-2 mt-4 text-sm">
               {listing.condition && (
@@ -333,43 +514,120 @@ export default function ListingDetailPage() {
                 className={`flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all ${isFavorited ? 'bg-red-500/15 text-red-400 border border-red-500/30' : 'glass-pill text-zinc-300'}`}>
                 <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-400' : ''}`} />
               </button>
-              <button onClick={() => navigator.clipboard.writeText(window.location.href)}
-                className="flex items-center justify-center px-4 py-3 glass-pill rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors">
-                <Share2 className="w-4 h-4" />
-              </button>
+              <div className="relative" ref={shareRef}>
+                <button onClick={() => setShowShareMenu((v) => !v)}
+                  className="flex items-center justify-center px-4 py-3 glass-pill rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors">
+                  <Share2 className="w-4 h-4" />
+                </button>
+                {showShareMenu && (
+                  <div className="absolute right-0 bottom-full mb-2 w-52 rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50" style={{background: 'rgba(18,18,24,0.97)', backdropFilter: 'blur(16px)'}}>
+                    <div className="px-3 py-2 border-b border-white/5">
+                      <p className="text-xs text-zinc-500 font-medium">Megosztás</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank', 'width=600,height=400');
+                        setShowShareMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-zinc-300 hover:text-zinc-100">
+                      <div className="w-7 h-7 rounded-lg bg-blue-600/20 flex items-center justify-center flex-shrink-0">
+                        <Facebook className="w-4 h-4 text-blue-400" />
+                      </div>
+                      Facebook
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = window.location.href;
+                        const subject = encodeURIComponent(`Nézd meg ezt a hirdetést: ${listing?.title ?? ''}`);
+                        const body = encodeURIComponent(`Talaltam ezt a hirdetést a PiacPro-n:\n\n${listing?.title ?? ''}\n${url}`);
+                        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                        setShowShareMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-zinc-300 hover:text-zinc-100">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
+                        <Mail className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      E-mail
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        setCopied(true);
+                        setTimeout(() => { setCopied(false); setShowShareMenu(false); }, 1500);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-zinc-300 hover:text-zinc-100">
+                      <div className="w-7 h-7 rounded-lg bg-zinc-600/40 flex items-center justify-center flex-shrink-0">
+                        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-zinc-400" />}
+                      </div>
+                      {copied ? 'Másolva!' : 'Link másolása'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Owner controls */}
             {isOwner && (
-              <div className="mt-4 pt-4 border-t border-white/5 flex gap-2">
-                <button onClick={() => navigate(`/edit-listing/${listing.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 glass-pill text-zinc-300 rounded-xl hover:bg-white/10 transition-colors text-sm font-medium">
-                  <Pencil className="w-4 h-4" />Szerkesztés
-                </button>
-                {!deleteConfirm ? (
-                  <button onClick={() => setDeleteConfirm(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors text-sm font-medium">
-                    <Trash2 className="w-4 h-4" />Törlés
+              <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                <div className="flex gap-2">
+                  <button onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 glass-pill text-zinc-300 rounded-xl hover:bg-white/10 transition-colors text-sm font-medium">
+                    <Pencil className="w-4 h-4" />Szerkesztés
                   </button>
-                ) : (
-                  <div className="flex gap-1.5">
-                    <button onClick={deleteListing} disabled={deleting}
-                      className="px-3 py-2.5 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-xs font-medium hover:bg-red-500/30 transition-colors">
-                      {deleting ? '...' : 'Biztosan?'}
+                  {!deleteConfirm ? (
+                    <button onClick={() => setDeleteConfirm(true)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors text-sm font-medium">
+                      <Trash2 className="w-4 h-4" />Törlés
                     </button>
-                    <button onClick={() => setDeleteConfirm(false)}
-                      className="px-3 py-2.5 glass-pill text-zinc-400 rounded-xl text-xs hover:text-zinc-200 transition-colors">
-                      Mégse
+                  ) : (
+                    <div className="flex gap-1.5">
+                      <button onClick={deleteListing} disabled={deleting}
+                        className="px-3 py-2.5 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-xs font-medium hover:bg-red-500/30 transition-colors">
+                        {deleting ? '...' : 'Biztosan?'}
+                      </button>
+                      <button onClick={() => setDeleteConfirm(false)}
+                        className="px-3 py-2.5 glass-pill text-zinc-400 rounded-xl text-xs hover:text-zinc-200 transition-colors">
+                        Mégse
+                      </button>
+                    </div>
+                  )}
+                  {listing.status === 'active' && (
+                    <button onClick={async () => {
+                      await supabase.from('listings').update({ status: 'sold', sold_at: new Date().toISOString() }).eq('id', listing.id);
+                      setListing((p) => p ? { ...p, status: 'sold' } : p);
+                    }}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-500/20 transition-colors">
+                      <Star className="w-4 h-4" />Elkelt
                     </button>
+                  )}
+                </div>
+                {listing.status === 'active' && (
+                  <div>
+                    <button onClick={bumpListing} disabled={bumping}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/20 transition-colors text-sm font-medium disabled:opacity-60">
+                      <RefreshCw className={`w-4 h-4 ${bumping ? 'animate-spin' : ''}`} />
+                      {bumping ? 'Frissítés...' : 'Hirdetés frissítése (1x/nap)'}
+                    </button>
+                    {bumpMessage && (
+                      <p className="text-xs text-center mt-1.5 text-amber-400/80">{bumpMessage}</p>
+                    )}
                   </div>
                 )}
-                {listing.status === 'active' && (
-                  <button onClick={async () => {
-                    await supabase.from('listings').update({ status: 'sold', sold_at: new Date().toISOString() }).eq('id', listing.id);
-                    setListing((p) => p ? { ...p, status: 'sold' } : p);
-                  }}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-500/20 transition-colors">
-                    <Star className="w-4 h-4" />Elkelt
+              </div>
+            )}
+
+            {/* Rating button for buyer on sold listing */}
+            {!isOwner && listing.status === 'sold' && user && listing.seller && (
+              <div className="mt-4 pt-4 border-t border-white/5">
+                {alreadyRated ? (
+                  <div className="flex items-center gap-2 text-sm text-zinc-500 justify-center py-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    Már értékelted ezt az eladót
+                  </div>
+                ) : (
+                  <button onClick={() => setShowRatingModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/20 transition-colors text-sm font-medium">
+                    <Star className="w-4 h-4" />Értékelem az eladót
                   </button>
                 )}
               </div>

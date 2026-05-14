@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import type { Job, JobSeekerAd } from '../lib/types';
-import { formatRelativeTime } from '../lib/utils';
+import { formatRelativeTime, HUNGARIAN_COUNTIES } from '../lib/utils';
 import {
   Briefcase, MapPin, Search, PlusCircle, Building2, Clock,
   Wifi, ChevronRight, SlidersHorizontal, X, Banknote, Pencil,
@@ -212,6 +212,16 @@ interface JobFormState {
   salaryMax: string; contactEmail: string; contactPhone: string; logoPreview: string | null;
 }
 
+function parseLocationParts(raw: string): [string, string] {
+  const idx = raw.lastIndexOf(', ');
+  if (idx > -1) return [raw.slice(0, idx), raw.slice(idx + 2)];
+  return ['', raw];
+}
+
+function buildLocation(city: string, county: string): string {
+  return city.trim() ? `${city.trim()}, ${county}` : county;
+}
+
 function JobOfferForm({ initial, onSave, onCancel }: {
   initial: JobFormState;
   onSave: (data: JobFormState, logoFile: File | null) => Promise<void>;
@@ -221,6 +231,8 @@ function JobOfferForm({ initial, onSave, onCancel }: {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
+  const [locCounty, setLocCounty] = useState(() => parseLocationParts(initial.location)[1]);
+  const [locCity, setLocCity] = useState(() => parseLocationParts(initial.location)[0]);
   const canSave = d.title.trim().length >= 3 && d.company.trim().length >= 2 && d.description.trim().length >= 20;
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -234,7 +246,7 @@ function JobOfferForm({ initial, onSave, onCancel }: {
     e.preventDefault();
     if (!canSave || saving) return;
     setSaving(true);
-    await onSave(d, logoFile);
+    await onSave({ ...d, location: buildLocation(locCity, locCounty) }, logoFile);
     setSaving(false);
   }
 
@@ -289,10 +301,15 @@ function JobOfferForm({ initial, onSave, onCancel }: {
       </div>
       <div className="glass rounded-3xl p-6 space-y-4">
         <h2 className="font-semibold text-zinc-200 text-sm">Helyszín</h2>
+        <select value={locCounty} onChange={(e) => setLocCounty(e.target.value)}
+          className="w-full px-3 py-3 glass-input rounded-xl text-zinc-100 focus:outline-none text-sm appearance-none cursor-pointer">
+          <option value="">Válassz megyét</option>
+          {HUNGARIAN_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
         <div className="relative">
           <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <input type="text" value={d.location} onChange={(e) => setD({ ...d, location: e.target.value })}
-            placeholder="pl. Budapest, XIII. kerület"
+          <input type="text" value={locCity} onChange={(e) => setLocCity(e.target.value)}
+            placeholder="Város / falu / kerület (opcionális)" maxLength={80}
             className="w-full pl-10 pr-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
         </div>
         <label className="flex items-center gap-3 cursor-pointer">
@@ -332,7 +349,7 @@ function JobOfferForm({ initial, onSave, onCancel }: {
         </div>
       </div>
       <div className="glass rounded-3xl p-6 space-y-4">
-        <h2 className="font-semibold text-zinc-200 text-sm">Kapcsolat</h2>
+        <h2 className="font-semibold text-zinc-200 text-sm">Kapcsolat <span className="text-zinc-600 font-normal">(opcionális)</span></h2>
         <div className="relative">
           <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <input type="email" value={d.contactEmail} onChange={(e) => setD({ ...d, contactEmail: e.target.value })}
@@ -375,13 +392,15 @@ function JobSeekerForm({ initial, onSave, onCancel }: {
 }) {
   const [d, setD] = useState<SeekerFormState>(initial);
   const [saving, setSaving] = useState(false);
+  const [locCounty, setLocCounty] = useState(() => parseLocationParts(initial.location)[1]);
+  const [locCity, setLocCity] = useState(() => parseLocationParts(initial.location)[0]);
   const canSave = d.title.trim().length >= 3 && d.description.trim().length >= 20;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSave || saving) return;
     setSaving(true);
-    await onSave(d);
+    await onSave({ ...d, location: buildLocation(locCity, locCounty) });
     setSaving(false);
   }
 
@@ -421,10 +440,15 @@ function JobSeekerForm({ initial, onSave, onCancel }: {
       </div>
       <div className="glass rounded-3xl p-6 space-y-4">
         <h2 className="font-semibold text-zinc-200 text-sm">Helyszín preferencia</h2>
+        <select value={locCounty} onChange={(e) => setLocCounty(e.target.value)}
+          className="w-full px-3 py-3 glass-input rounded-xl text-zinc-100 focus:outline-none text-sm appearance-none cursor-pointer">
+          <option value="">Válassz megyét (opcionális)</option>
+          {HUNGARIAN_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
         <div className="relative">
           <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <input type="text" value={d.location} onChange={(e) => setD({ ...d, location: e.target.value })}
-            placeholder="pl. Budapest, vagy bárhol"
+          <input type="text" value={locCity} onChange={(e) => setLocCity(e.target.value)}
+            placeholder="Város / falu / kerület (opcionális)" maxLength={80}
             className="w-full pl-10 pr-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
         </div>
         <label className="flex items-center gap-3 cursor-pointer">
@@ -464,7 +488,7 @@ function JobSeekerForm({ initial, onSave, onCancel }: {
         </div>
       </div>
       <div className="glass rounded-3xl p-6 space-y-4">
-        <h2 className="font-semibold text-zinc-200 text-sm">Elérhetőség</h2>
+        <h2 className="font-semibold text-zinc-200 text-sm">Elérhetőség <span className="text-zinc-600 font-normal">(opcionális)</span></h2>
         <div className="relative">
           <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <input type="email" value={d.contactEmail} onChange={(e) => setD({ ...d, contactEmail: e.target.value })}
@@ -988,7 +1012,7 @@ export default function JobsPage() {
   // ── Main list view ─────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Modals */}
       {deletingJobId && (
         <DeleteModal
@@ -1008,53 +1032,88 @@ export default function JobsPage() {
         <ContactSeekerModal seekerAd={contactSeekerAd} onClose={() => setContactSeekerAd(null)} />
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2.5">
-            <Briefcase className="w-6 h-6 text-emerald-400" />Állás
+      {/* ── HERO ── */}
+      <section className="relative overflow-hidden rounded-3xl glass p-8 md:p-10">
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/[0.06] rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-sky-500/[0.05] rounded-full blur-[80px] pointer-events-none" />
+        <div className="relative">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight mb-2">
+            Állásbörzé<span className="text-emerald-400">nk</span>
           </h1>
-          <p className="text-zinc-500 text-sm mt-1">
-            {mainTab === 'offers'
-              ? `${filteredJobs.length} aktív állás ajánlat`
-              : `${filteredSeekers.length} álláskeresési hirdetés`}
+          <p className="text-zinc-400 text-base mb-8 max-w-xl leading-relaxed">
+            Munkáltatók és álláskeresők egy helyen. Adj fel hirdetést, vagy találd meg álmaid állását percek alatt.
           </p>
-        </div>
-        {user && (
-          <button
-            onClick={() => setView(mainTab === 'offers' ? 'create' : 'seeker-create')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm hover:scale-[1.02] transition-all ${
-              mainTab === 'offers'
-                ? 'glass-pill-active text-emerald-300'
-                : 'bg-sky-500/15 border border-sky-500/30 text-sky-300 hover:bg-sky-500/25'
-            }`}>
-            <PlusCircle className="w-4 h-4" />
-            {mainTab === 'offers' ? 'Hirdetés feladása' : 'Állást keresek'}
-          </button>
-        )}
-      </div>
 
-      {/* Main tabs */}
+          {/* Two big CTA cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Munkát hirdetek */}
+            <div
+              onClick={() => { setMainTab('offers'); user ? setView('create') : window.location.assign('/login'); }}
+              className="group cursor-pointer glass-bubble rounded-2xl p-5 border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all hover:scale-[1.02]"
+            >
+              <div className="w-12 h-12 bg-emerald-500/15 border border-emerald-500/25 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-500/25 transition-colors">
+                <Briefcase className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h2 className="text-lg font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors mb-1">Munkát hirdetek</h2>
+              <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+                Állásajánlatot adok fel, hogy a legjobb jelöltek megtaláljanak.
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-600">{jobs.length} aktív hirdetés</span>
+                <span className="flex items-center gap-1 text-emerald-400 text-xs font-semibold group-hover:gap-2 transition-all">
+                  Hirdetés feladása <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+            </div>
+
+            {/* Munkát keresek */}
+            <div
+              onClick={() => { setMainTab('seekers'); user ? setView('seeker-create') : window.location.assign('/login'); }}
+              className="group cursor-pointer glass-bubble rounded-2xl p-5 border border-sky-500/20 hover:border-sky-500/40 hover:bg-sky-500/5 transition-all hover:scale-[1.02]"
+            >
+              <div className="w-12 h-12 bg-sky-500/15 border border-sky-500/25 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-sky-500/25 transition-colors">
+                <UserSearch className="w-6 h-6 text-sky-400" />
+              </div>
+              <h2 className="text-lg font-bold text-zinc-100 group-hover:text-sky-300 transition-colors mb-1">Munkát keresek</h2>
+              <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+                Bemutatkozom, és várom, hogy a megfelelő munkáltató megtaláljon.
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-600">{seekerAds.length} álláskeresési hirdetés</span>
+                <span className="flex items-center gap-1 text-sky-400 text-xs font-semibold group-hover:gap-2 transition-all">
+                  Hirdetés feladása <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── MAIN TABS ── */}
       <div className="glass rounded-2xl p-1.5 flex gap-1">
         <button
           onClick={() => setMainTab('offers')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-            mainTab === 'offers' ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-300' : 'text-zinc-400 hover:text-zinc-200'
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+            mainTab === 'offers'
+              ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-300'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}>
           <Briefcase className="w-4 h-4" />
-          <span>Állás ajánlatok</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${mainTab === 'offers' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-500'}`}>
+          Munkát hirdetek
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${mainTab === 'offers' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700/60 text-zinc-500'}`}>
             {jobs.length}
           </span>
         </button>
         <button
           onClick={() => setMainTab('seekers')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-            mainTab === 'seekers' ? 'bg-sky-500/15 border border-sky-500/25 text-sky-300' : 'text-zinc-400 hover:text-zinc-200'
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+            mainTab === 'seekers'
+              ? 'bg-sky-500/15 border border-sky-500/25 text-sky-300'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}>
           <UserSearch className="w-4 h-4" />
-          <span>Állást keresek</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${mainTab === 'seekers' ? 'bg-sky-500/20 text-sky-400' : 'bg-zinc-700 text-zinc-500'}`}>
+          Munkát keresek
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${mainTab === 'seekers' ? 'bg-sky-500/20 text-sky-400' : 'bg-zinc-700/60 text-zinc-500'}`}>
             {seekerAds.length}
           </span>
         </button>
@@ -1063,60 +1122,69 @@ export default function JobsPage() {
       {/* ── JOB OFFERS TAB ── */}
       {mainTab === 'offers' && (
         <>
-          {/* My offers section */}
+          {/* My own listings strip */}
           {user && jobs.some((j) => j.poster_id === user.id) && (
-            <div className="glass rounded-2xl p-4 space-y-2">
-              <p className="text-xs font-medium text-zinc-500 flex items-center gap-1.5 mb-3">
+            <div className="glass rounded-2xl p-4 border border-emerald-500/10">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />Saját álláshirdetéseim
               </p>
-              {jobs.filter((j) => j.poster_id === user.id).map((job) => (
-                <div key={job.id} className="flex items-center gap-3 glass-pill px-3 py-2.5 rounded-xl">
-                  <CompanyLogo src={job.logo_url} name={job.company} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <button onClick={() => { setSelectedJob(job); setView('detail'); }}
-                      className="text-sm font-medium text-zinc-200 hover:text-emerald-300 transition-colors truncate block text-left">
-                      {job.title}
-                    </button>
-                    <p className="text-xs text-zinc-600">{job.company}</p>
+              <div className="space-y-2">
+                {jobs.filter((j) => j.poster_id === user.id).map((job) => (
+                  <div key={job.id} className="flex items-center gap-3 glass-pill px-3 py-2.5 rounded-xl">
+                    <CompanyLogo src={job.logo_url} name={job.company} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <button onClick={() => { setSelectedJob(job); setView('detail'); }}
+                        className="text-sm font-medium text-zinc-200 hover:text-emerald-300 transition-colors truncate block text-left">
+                        {job.title}
+                      </button>
+                      <p className="text-xs text-zinc-600">{job.company}</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button onClick={() => { setEditingJob(job); setView('edit'); }} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-emerald-300 transition-colors">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setDeletingJobId(job.id)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-red-400 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => { setEditingJob(job); setView('edit'); }} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-emerald-300 transition-colors">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => setDeletingJobId(job.id)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-red-400 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Search + Filters */}
+          {/* Search bar + action */}
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Keresés pozíció, cég alapján..."
+                placeholder="Keresés: pozíció, cég..."
                 className="w-full pl-10 pr-4 py-3 glass-input rounded-2xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
             </div>
             <button onClick={() => setShowFilters(!showFilters)}
-              className={`relative flex items-center gap-2 px-4 py-3 rounded-2xl font-medium text-sm transition-all ${showFilters ? 'glass-pill-active text-emerald-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'}`}>
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl font-medium text-sm transition-all ${showFilters ? 'glass-pill-active text-emerald-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'}`}>
               <SlidersHorizontal className="w-4 h-4" /><span className="hidden sm:inline">Szűrők</span>
             </button>
+            {user && (
+              <button onClick={() => setView('create')}
+                className="flex items-center gap-2 px-4 py-3 glass-pill-active text-emerald-300 rounded-2xl font-medium text-sm hover:scale-[1.02] transition-all whitespace-nowrap">
+                <PlusCircle className="w-4 h-4" /><span className="hidden sm:inline">Feladás</span>
+              </button>
+            )}
           </div>
 
-          {showFilters ? (
+          {/* Filters panel */}
+          {showFilters && (
             <div className="glass rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-zinc-300">Szűrők</p>
+                <p className="text-sm font-semibold text-zinc-200">Szűrők</p>
                 <button onClick={() => { setCategory('Összes'); setTypeFilter(''); setRemoteOnly(false); }}
                   className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors">
                   <X className="w-3 h-3" />Törlés
                 </button>
               </div>
               <div>
-                <p className="text-xs text-zinc-500 mb-2">Kategória</p>
+                <p className="text-xs text-zinc-500 mb-2 font-medium">Kategória</p>
                 <div className="flex flex-wrap gap-1.5">
                   {JOB_CATEGORIES.map((cat) => (
                     <button key={cat} onClick={() => setCategory(cat)}
@@ -1127,11 +1195,11 @@ export default function JobsPage() {
                 </div>
               </div>
               <div>
-                <p className="text-xs text-zinc-500 mb-2">Foglalkoztatás típusa</p>
+                <p className="text-xs text-zinc-500 mb-2 font-medium">Foglalkoztatás típusa</p>
                 <div className="flex flex-wrap gap-1.5">
                   <button onClick={() => setTypeFilter('')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${!typeFilter ? 'glass-pill-active text-emerald-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'}`}>
-                    Összes
+                    Mind
                   </button>
                   {JOB_TYPE_LIST.map((t) => (
                     <button key={t.value} onClick={() => setTypeFilter(t.value)}
@@ -1141,16 +1209,19 @@ export default function JobsPage() {
                   ))}
                 </div>
               </div>
-              <label className="flex items-center gap-2.5 cursor-pointer">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <div onClick={() => setRemoteOnly(!remoteOnly)}
-                  className={`w-9 h-5 rounded-full transition-all relative ${remoteOnly ? 'bg-emerald-500' : 'bg-zinc-700'}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${remoteOnly ? 'left-4' : 'left-0.5'}`} />
+                  className={`w-10 h-5 rounded-full transition-all relative flex-shrink-0 ${remoteOnly ? 'bg-emerald-500' : 'bg-zinc-700'}`}>
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${remoteOnly ? 'left-5' : 'left-0.5'}`} />
                 </div>
                 <span className="text-sm text-zinc-300 flex items-center gap-1.5"><Wifi className="w-3.5 h-3.5 text-sky-400" />Csak remote állások</span>
               </label>
             </div>
-          ) : (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+          )}
+
+          {/* Category quick chips */}
+          {!showFilters && (
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {JOB_CATEGORIES.map((cat) => (
                 <button key={cat} onClick={() => setCategory(cat)}
                   className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${category === cat ? 'glass-pill-active text-emerald-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'}`}>
@@ -1160,18 +1231,34 @@ export default function JobsPage() {
             </div>
           )}
 
+          {/* Results header */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-zinc-500">
+              <span className="text-zinc-200 font-semibold">{filteredJobs.length}</span> állás ajánlat
+            </p>
+            {(category !== 'Összes' || typeFilter || remoteOnly || search) && (
+              <button onClick={() => { setCategory('Összes'); setTypeFilter(''); setRemoteOnly(false); setSearch(''); }}
+                className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors">
+                <X className="w-3 h-3" />Szűrők törlése
+              </button>
+            )}
+          </div>
+
           {/* Job list */}
           {jobsLoading ? (
-            <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-28 animate-pulse" />)}</div>
+            <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-28 animate-pulse" />)}</div>
           ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-20 space-y-3">
+            <div className="text-center py-20 glass rounded-3xl space-y-4">
               <div className="w-16 h-16 glass-bubble rounded-2xl flex items-center justify-center mx-auto">
                 <Briefcase className="w-7 h-7 text-zinc-600" />
               </div>
-              <p className="text-zinc-500">Nem található állás.</p>
+              <div>
+                <p className="text-zinc-400 font-medium">Nem található állás</p>
+                <p className="text-zinc-600 text-sm mt-1">Próbálj más szűrőkkel keresni</p>
+              </div>
               {user && (
                 <button onClick={() => setView('create')} className="glass-pill-active text-emerald-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all">
-                  Legyen az első hirdetés
+                  + Hirdetés feladása
                 </button>
               )}
             </div>
@@ -1182,41 +1269,53 @@ export default function JobsPage() {
                 const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
                 const isOwn = user?.id === job.poster_id;
                 return (
-                  <div key={job.id} className="glass rounded-2xl p-5 flex flex-col gap-3 group hover:bg-white/[0.03] transition-all">
-                    <div className="flex items-start gap-3">
+                  <button
+                    key={job.id}
+                    onClick={() => { setSelectedJob(job); setView('detail'); }}
+                    className="w-full text-left glass rounded-2xl p-5 group hover:bg-white/[0.03] hover:border-emerald-500/15 border border-transparent transition-all"
+                  >
+                    <div className="flex items-start gap-4">
                       <CompanyLogo src={job.logo_url} name={job.company} size="md" />
                       <div className="flex-1 min-w-0">
-                        <button onClick={() => { setSelectedJob(job); setView('detail'); }} className="text-left w-full">
-                          <p className="font-semibold text-zinc-100 text-sm leading-snug group-hover:text-emerald-300 transition-colors line-clamp-2">{job.title}</p>
-                          <p className="text-zinc-400 text-xs mt-0.5 truncate">{job.company}</p>
-                        </button>
-                      </div>
-                      {isOwn && (
-                        <div className="flex gap-1 flex-shrink-0">
-                          <button onClick={() => { setEditingJob(job); setView('edit'); }} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-emerald-300 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setDeletingJobId(job.id)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-zinc-100 leading-snug group-hover:text-emerald-300 transition-colors">{job.title}</p>
+                            <p className="text-zinc-400 text-sm mt-0.5">{job.company}</p>
+                          </div>
+                          {isOwn && (
+                            <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <button onClick={() => { setEditingJob(job); setView('edit'); }} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-emerald-300 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setDeletingJobId(job.id)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-medium ${typeInfo.color}`}>{typeInfo.label}</span>
-                      {job.remote && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-medium text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Remote</span>
-                      )}
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-medium text-zinc-500 glass-pill border-transparent">{job.category}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-zinc-500">
-                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.location || 'Nem megadott'}</span>
-                      <div className="flex items-center gap-3">
-                        {salary && <span className="flex items-center gap-1 text-emerald-400 font-medium"><Banknote className="w-3 h-3" />{salary}</span>}
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelativeTime(job.created_at)}</span>
+                        <div className="flex flex-wrap items-center gap-2 mt-3">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold ${typeInfo.color}`}>{typeInfo.label}</span>
+                          {job.remote && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Remote</span>
+                          )}
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium text-zinc-500 glass-pill">{job.category}</span>
+                          {job.location && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
+                              <MapPin className="w-3 h-3 text-zinc-600" />{job.location}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          {salary ? (
+                            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold text-sm">
+                              <Banknote className="w-3.5 h-3.5" />{salary}<span className="text-zinc-600 font-normal text-xs">/hó</span>
+                            </span>
+                          ) : (
+                            <span className="text-xs text-zinc-600">Fizetés: megegyezés szerint</span>
+                          )}
+                          <span className="text-xs text-zinc-600 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />{formatRelativeTime(job.created_at)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <button onClick={() => { setSelectedJob(job); setView('detail'); }}
-                      className="w-full text-xs text-zinc-500 hover:text-emerald-300 flex items-center justify-center gap-1 py-1 glass-pill rounded-xl transition-colors">
-                      Részletek <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -1227,65 +1326,73 @@ export default function JobsPage() {
       {/* ── JOB SEEKERS TAB ── */}
       {mainTab === 'seekers' && (
         <>
-          {/* My seeker ads */}
+          {/* My own seeker ads strip */}
           {user && seekerAds.some((s) => s.user_id === user.id) && (
-            <div className="glass rounded-2xl p-4 space-y-2">
-              <p className="text-xs font-medium text-zinc-500 flex items-center gap-1.5 mb-3">
-                <CheckCircle className="w-3.5 h-3.5 text-sky-400" />Saját álláskeresési hirdetéseim
+            <div className="glass rounded-2xl p-4 border border-sky-500/10">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-sky-400" />Saját hirdetéseim
               </p>
-              {seekerAds.filter((s) => s.user_id === user.id).map((ad) => (
-                <div key={ad.id} className="flex items-center gap-3 glass-pill px-3 py-2.5 rounded-xl">
-                  <div className="w-9 h-9 glass-bubble rounded-xl flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-sky-400" />
+              <div className="space-y-2">
+                {seekerAds.filter((s) => s.user_id === user.id).map((ad) => (
+                  <div key={ad.id} className="flex items-center gap-3 glass-pill px-3 py-2.5 rounded-xl">
+                    <div className="w-9 h-9 glass-bubble rounded-xl flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-sky-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <button onClick={() => { setSelectedSeekerAd(ad); setView('seeker-detail'); }}
+                        className="text-sm font-medium text-zinc-200 hover:text-sky-300 transition-colors truncate block text-left">
+                        {ad.title}
+                      </button>
+                      <p className="text-xs text-zinc-600">{ad.category}</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button onClick={() => { setEditingSeekerAd(ad); setView('seeker-edit'); }} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-sky-300 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeletingSeekerAdId(ad.id)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <button onClick={() => { setSelectedSeekerAd(ad); setView('seeker-detail'); }}
-                      className="text-sm font-medium text-zinc-200 hover:text-sky-300 transition-colors truncate block text-left">
-                      {ad.title}
-                    </button>
-                    <p className="text-xs text-zinc-600">{ad.category}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => { setEditingSeekerAd(ad); setView('seeker-edit'); }} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-sky-300 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setDeletingSeekerAdId(ad.id)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Employer CTA */}
-          <div className="glass rounded-2xl p-4 border border-sky-500/15 flex items-start gap-3">
-            <div className="w-10 h-10 bg-sky-500/15 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+          {/* Employer info banner */}
+          <div className="glass rounded-2xl p-4 border border-sky-500/15 flex items-center gap-4">
+            <div className="w-10 h-10 bg-sky-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-sky-400" />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-zinc-200">Munkaadó vagy?</p>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Böngészd az álláskeresők profilját, és ha találsz megfelelő jelöltet, küldj nekik üzenetet közvetlenül a platformon.
+                Böngészd az álláskeresők profilját, és küldj nekik közvetlen üzenetet a platformon.
               </p>
             </div>
           </div>
 
-          {/* Search */}
+          {/* Search + action */}
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input type="text" value={seekerSearch} onChange={(e) => setSeekerSearch(e.target.value)}
-                placeholder="Keresés pozíció, leírás alapján..."
+                placeholder="Keresés: pozíció, leírás..."
                 className="w-full pl-10 pr-4 py-3 glass-input rounded-2xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
             </div>
-            <label className="flex items-center gap-2 px-4 glass-pill rounded-2xl cursor-pointer">
+            <label className="flex items-center gap-2 px-4 glass-pill rounded-2xl cursor-pointer select-none">
               <div onClick={() => setSeekerRemoteOnly(!seekerRemoteOnly)}
-                className={`w-8 h-4 rounded-full transition-all relative flex-shrink-0 ${seekerRemoteOnly ? 'bg-sky-500' : 'bg-zinc-700'}`}>
-                <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all ${seekerRemoteOnly ? 'left-4' : 'left-0.5'}`} />
+                className={`w-9 h-5 rounded-full transition-all relative flex-shrink-0 ${seekerRemoteOnly ? 'bg-sky-500' : 'bg-zinc-700'}`}>
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${seekerRemoteOnly ? 'left-4' : 'left-0.5'}`} />
               </div>
-              <span className="text-xs text-zinc-400 whitespace-nowrap">Remote</span>
+              <span className="text-xs text-zinc-400 whitespace-nowrap hidden sm:block">Remote</span>
             </label>
+            {user && (
+              <button onClick={() => setView('seeker-create')}
+                className="flex items-center gap-2 px-4 py-3 bg-sky-500/15 border border-sky-500/25 text-sky-300 rounded-2xl font-medium text-sm hover:scale-[1.02] transition-all whitespace-nowrap">
+                <PlusCircle className="w-4 h-4" /><span className="hidden sm:inline">Hirdetés</span>
+              </button>
+            )}
           </div>
 
-          {/* Category filter */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          {/* Category chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {JOB_CATEGORIES.map((cat) => (
               <button key={cat} onClick={() => setSeekerCategory(cat)}
                 className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${seekerCategory === cat ? 'bg-sky-500/15 border border-sky-500/25 text-sky-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'}`}>
@@ -1294,41 +1401,50 @@ export default function JobsPage() {
             ))}
           </div>
 
-          {/* Seeker ads list */}
+          {/* Results header */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-zinc-500">
+              <span className="text-zinc-200 font-semibold">{filteredSeekers.length}</span> álláskeresési hirdetés
+            </p>
+          </div>
+
+          {/* Seeker ads grid */}
           {seekersLoading ? (
-            <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-32 animate-pulse" />)}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-40 animate-pulse" />)}</div>
           ) : filteredSeekers.length === 0 ? (
-            <div className="text-center py-20 space-y-3">
+            <div className="text-center py-20 glass rounded-3xl space-y-4">
               <div className="w-16 h-16 glass-bubble rounded-2xl flex items-center justify-center mx-auto">
                 <UserSearch className="w-7 h-7 text-zinc-600" />
               </div>
-              <p className="text-zinc-500">Még nem érkezett álláskeresési hirdetés.</p>
+              <div>
+                <p className="text-zinc-400 font-medium">Még nincs álláskeresési hirdetés</p>
+                <p className="text-zinc-600 text-sm mt-1">Legyél az első, aki megtalálható itt</p>
+              </div>
               {user && (
                 <button onClick={() => setView('seeker-create')} className="bg-sky-500/15 border border-sky-500/25 text-sky-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all">
-                  Legyen az első
+                  + Hirdetés feladása
                 </button>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {filteredSeekers.map((ad) => {
                 const typeInfo = JOB_TYPES[ad.type] ?? JOB_TYPES.teljes;
                 const salary = formatSalary(ad.expected_salary_min, ad.expected_salary_max, ad.salary_currency);
                 const expLabel = EXPERIENCE_LIST.find((e) => e.value === ad.experience)?.label;
                 const isOwn = user?.id === ad.user_id;
                 return (
-                  <div key={ad.id} className="glass rounded-2xl p-5 flex flex-col gap-3 group hover:bg-white/[0.03] transition-all">
+                  <div key={ad.id} className="glass rounded-2xl p-5 flex flex-col gap-4 group hover:bg-white/[0.03] hover:border-sky-500/15 border border-transparent transition-all">
+                    {/* Header */}
                     <div className="flex items-start gap-3">
-                      <div className="w-11 h-11 glass-bubble rounded-xl flex items-center justify-center flex-shrink-0">
+                      <div className="w-11 h-11 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <User className="w-5 h-5 text-sky-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <button onClick={() => { setSelectedSeekerAd(ad); setView('seeker-detail'); }} className="text-left w-full">
-                          <p className="font-semibold text-zinc-100 text-sm leading-snug group-hover:text-sky-300 transition-colors line-clamp-2">{ad.title}</p>
-                          <p className="text-zinc-500 text-xs mt-0.5 truncate">
-                            {ad.user?.full_name || ad.user?.username || 'Felhasználó'}
-                          </p>
-                        </button>
+                        <p className="font-semibold text-zinc-100 leading-snug group-hover:text-sky-300 transition-colors line-clamp-1">{ad.title}</p>
+                        <p className="text-zinc-500 text-xs mt-0.5 truncate">
+                          {ad.user?.full_name || ad.user?.username || 'Felhasználó'}
+                        </p>
                       </div>
                       {isOwn && (
                         <div className="flex gap-1 flex-shrink-0">
@@ -1337,32 +1453,38 @@ export default function JobsPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Badges */}
                     <div className="flex flex-wrap gap-1.5">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-medium ${typeInfo.color}`}>{typeInfo.label}</span>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold ${typeInfo.color}`}>{typeInfo.label}</span>
                       {ad.remote && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-medium text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Remote OK</span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Remote OK</span>
                       )}
                       {expLabel && expLabel !== 'Nem megadott' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-medium text-zinc-500 glass-pill border-transparent">{expLabel}</span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium text-zinc-500 glass-pill">{expLabel}</span>
                       )}
                     </div>
+
+                    {/* Description snippet */}
                     <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{ad.description}</p>
-                    <div className="flex items-center justify-between text-xs text-zinc-500">
-                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{ad.location || 'Nem megadott'}</span>
-                      <div className="flex items-center gap-3">
-                        {salary && <span className="flex items-center gap-1 text-sky-400 font-medium"><Banknote className="w-3 h-3" />{salary}</span>}
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelativeTime(ad.created_at)}</span>
-                      </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between text-xs text-zinc-600">
+                      {ad.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{ad.location}</span>}
+                      {salary && <span className="flex items-center gap-1 text-sky-400 font-semibold"><Banknote className="w-3 h-3" />{salary}</span>}
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelativeTime(ad.created_at)}</span>
                     </div>
-                    <div className="flex gap-2">
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-1 border-t border-white/5">
                       <button onClick={() => { setSelectedSeekerAd(ad); setView('seeker-detail'); }}
-                        className="flex-1 text-xs text-zinc-500 hover:text-sky-300 flex items-center justify-center gap-1 py-1.5 glass-pill rounded-xl transition-colors">
-                        Részletek <ChevronRight className="w-3 h-3" />
+                        className="flex-1 text-xs text-zinc-400 hover:text-sky-300 flex items-center justify-center gap-1.5 py-2 glass-pill rounded-xl transition-colors font-medium">
+                        Profil megtekintése <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                       {!isOwn && user && (
                         <button onClick={() => setContactSeekerAd(ad)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-medium hover:bg-emerald-500/20 transition-colors">
-                          <MessageCircle className="w-3.5 h-3.5" />Jelzés
+                          className="flex items-center gap-1.5 px-3 py-2 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-xl text-xs font-medium hover:bg-sky-500/20 transition-colors">
+                          <MessageCircle className="w-3.5 h-3.5" />Üzenet
                         </button>
                       )}
                     </div>
