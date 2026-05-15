@@ -19,6 +19,9 @@ import CheckoutPage from './pages/CheckoutPage';
 import AdminPage from './pages/AdminPage';
 import RulesPage from './pages/RulesPage';
 import JobsPage from './pages/JobsPage';
+import ShopsPage from './pages/ShopsPage';
+import ShopDetailPage from './pages/ShopDetailPage';
+import ShopDashboardPage from './pages/ShopDashboardPage';
 
 function App() {
   const router = useRouterProvider();
@@ -44,6 +47,9 @@ function App() {
     if (path === '/admin') return <AdminPage />;
     if (path === '/rules') return <RulesPage />;
     if (path === '/jobs') return <JobsPage />;
+    if (path === '/shops') return <ShopsPage />;
+    if (path.startsWith('/shops/')) return <ShopDetailPage />;
+    if (path === '/my-shop') return <ShopDashboardPage />;
 
     return (
       <div className="text-center py-20">

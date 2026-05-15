@@ -1,9 +1,9 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import {
-  Home, Search, PlusCircle, Heart, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase
+  Home, Search, Heart, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase, Store
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ChatWidget from './ChatWidget';
 import Footer from './Footer';
 
@@ -17,8 +17,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { icon: Home, label: 'Kezdőlap', path: '/' },
         { icon: ShoppingBag, label: 'Piactér', path: '/search' },
         { icon: Gavel, label: 'Licitek', path: '/auctions' },
+        { icon: Store, label: 'Boltok', path: '/shops' },
         { icon: Briefcase, label: 'Állások', path: '/jobs' },
-        { icon: PlusCircle, label: 'Hirdetés', path: '/create' },
         { icon: Heart, label: 'Kedvencek', path: '/favorites' },
         { icon: User, label: 'Profil', path: `/profile/${user.id}` },
       ]
@@ -26,6 +26,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { icon: Home, label: 'Kezdőlap', path: '/' },
         { icon: ShoppingBag, label: 'Piactér', path: '/search' },
         { icon: Gavel, label: 'Licitek', path: '/auctions' },
+        { icon: Store, label: 'Boltok', path: '/shops' },
         { icon: Briefcase, label: 'Állások', path: '/jobs' },
         { icon: User, label: 'Bejelentkezés', path: '/login' },
       ];
@@ -33,6 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isActive = (p: string) => {
     if (p === '/') return path === '/';
     if (p === '/search') return path === '/search' || path.startsWith('/listing/');
+    if (p === '/shops') return path === '/shops' || path.startsWith('/shops/') || path === '/my-shop';
     return path === p || path.startsWith(p + '/');
   };
 

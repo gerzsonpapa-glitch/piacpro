@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import type { Job, JobSeekerAd } from '../lib/types';
-import { formatRelativeTime, HUNGARIAN_COUNTIES } from '../lib/utils';
+import { formatRelativeTime, HUNGARIAN_COUNTIES, JOB_CATEGORIES } from '../lib/utils';
 import {
   Briefcase, MapPin, Search, PlusCircle, Building2, Clock,
   Wifi, ChevronRight, SlidersHorizontal, X, Banknote, Pencil,
@@ -13,12 +13,7 @@ import {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const JOB_CATEGORIES = [
-  'Összes', 'Fizikai munka', 'Irodai', 'Otthoni / Home office', 'Diákmunka',
-  'Alkalmi / Részmunka', 'Azonnali kezdés', 'Külföld', 'Szakmunka',
-  'IT / Szoftver', 'Egészségügy', 'Vendéglátás', 'Kereskedelem', 'Egyéb',
-];
-const JOB_CATEGORIES_NO_ALL = JOB_CATEGORIES.filter((c) => c !== 'Összes');
+const JOB_CATEGORIES_NO_ALL = (JOB_CATEGORIES as readonly string[]).filter((c) => c !== 'Összes');
 
 const JOB_TYPES: Record<string, { label: string; color: string }> = {
   teljes:     { label: 'Teljes állás',      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
@@ -709,7 +704,7 @@ export default function JobsPage() {
 
   if (view === 'create') {
     const emptyJob: JobFormState = {
-      title: '', company: '', description: '', category: 'IT / Szoftver',
+      title: '', company: '', description: '', category: 'Targoncavezető',
       type: 'teljes', location: '', remote: false, salaryMin: '', salaryMax: '',
       contactEmail: '', contactPhone: '', logoPreview: null,
     };
@@ -895,6 +890,93 @@ export default function JobsPage() {
             onConfirm={() => handleJobDelete(deletingJobId)}
             onCancel={() => setDeletingJobId(null)}
           />
+        )}
+
+        {/* Matching job seekers for this category */}
+        {(() => {
+          const matched = seekerAds.filter(
+            (s) => s.status === 'active' && s.category === selectedJob.category
+          );
+          if (matched.length === 0) return null;
+          return (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-2">
+                <UserSearch className="w-5 h-5 text-emerald-400" />
+                <h2 className="font-bold text-zinc-100">
+                  Munkát keresők ebben a kategóriában
+                </h2>
+                <span className="text-xs glass-pill px-2.5 py-0.5 rounded-full text-zinc-400 ml-auto">
+                  {matched.length} személy
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500">
+                Ezek a személyek <span className="text-zinc-300 font-medium">{selectedJob.category}</span> kategóriában keresnek munkát — felveheted velük a kapcsolatot.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {matched.map((s) => {
+                  const expLabel = EXPERIENCE_LIST.find((e) => e.value === s.experience)?.label;
+                  const salary = formatSalary(s.expected_salary_min, s.expected_salary_max, s.salary_currency);
+                  const typeInfo = JOB_TYPES[s.type] ?? JOB_TYPES.teljes;
+                  return (
+                    <div key={s.id} className="glass-bubble rounded-2xl p-4 space-y-2.5 border border-emerald-500/10 hover:border-emerald-500/25 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 glass rounded-xl flex items-center justify-center flex-shrink-0 bg-emerald-500/10">
+                          <User className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-zinc-100 text-sm truncate">{s.title}</p>
+                          <p className="text-xs text-zinc-500">{s.user?.full_name || s.user?.username || 'Névtelen'}</p>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-lg border font-medium ${typeInfo.color}`}>{typeInfo.label}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[11px] text-zinc-500">
+                        {s.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />{s.location}
+                          </span>
+                        )}
+                        {s.remote && (
+                          <span className="flex items-center gap-1 text-sky-400">
+                            <Wifi className="w-3 h-3" />Remote
+                          </span>
+                        )}
+                        {expLabel && expLabel !== 'Nem megadott' && (
+                          <span className="flex items-center gap-1">
+                            <GraduationCap className="w-3 h-3" />{expLabel}
+                          </span>
+                        )}
+                        {salary && (
+                          <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                            <Banknote className="w-3 h-3" />{salary}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setSelectedSeekerAd(s); setView('seeker-detail'); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 glass-pill text-zinc-400 hover:text-zinc-200 rounded-xl text-xs transition-colors"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />Profil megtekintése
+                        </button>
+                        {user && user.id !== s.user_id && (
+                          <button
+                            onClick={() => setContactSeekerAd(s)}
+                            className="flex items-center gap-1.5 px-3 py-2 glass-pill-active text-emerald-300 rounded-xl text-xs font-medium transition-all hover:scale-[1.02]"
+                          >
+                            <Send className="w-3.5 h-3.5" />Kapcsolat
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {contactSeekerAd && (
+          <ContactSeekerModal seekerAd={contactSeekerAd} onClose={() => setContactSeekerAd(null)} />
         )}
       </div>
     );

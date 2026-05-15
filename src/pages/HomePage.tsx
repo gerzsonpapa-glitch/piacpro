@@ -404,25 +404,24 @@ export default function HomePage() {
       {/* ── CATEGORIES ───────────────────────────────────────────────────── */}
       {categories.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-emerald-400" />Kategóriák
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-zinc-400 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-emerald-400" />Kategóriák
             </h2>
             <button onClick={() => navigate('/search')}
-              className="text-emerald-400 text-sm font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
-              Összes <ArrowRight className="w-4 h-4" />
+              className="text-emerald-400 text-xs font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
+              Összes <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {categories.map((cat) => {
               const Icon = getIcon(cat.slug);
+              const isFree = cat.slug === 'free';
               return (
                 <button key={cat.id} onClick={() => navigate(`/search?category=${cat.slug}`)}
-                  className="flex flex-col items-center gap-2 p-3 glass-bubble rounded-2xl hover:bg-white/8 hover:border-emerald-500/20 border border-transparent transition-all group">
-                  <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/15 rounded-xl flex items-center justify-center group-hover:bg-emerald-500/15 transition-colors">
-                    <Icon className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <span className="text-[10px] font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors text-center leading-tight">{cat.name}</span>
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border border-transparent hover:border-emerald-500/20 glass-bubble ${isFree ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}>
+                  <Icon className={`w-3.5 h-3.5 ${isFree ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                  {cat.name}
                 </button>
               );
             })}

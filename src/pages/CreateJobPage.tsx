@@ -3,15 +3,12 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import { useNotification } from '../contexts/NotificationContext';
-import { HUNGARIAN_COUNTIES } from '../lib/utils';
+import { HUNGARIAN_COUNTIES, JOB_CATEGORIES } from '../lib/utils';
 import {
   Briefcase, Building2, MapPin, ArrowLeft, Send, Banknote, Phone, Mail, Wifi
 } from 'lucide-react';
 
-const JOB_CATEGORIES = [
-  'IT / Szoftver', 'Kereskedelem', 'Pénzügy', 'Egészségügy',
-  'Oktatás', 'Logisztika', 'Építőipar', 'Vendéglátás', 'Marketing', 'Egyéb',
-];
+const JOB_CATEGORIES_NO_ALL = (JOB_CATEGORIES as readonly string[]).filter((c) => c !== 'Összes');
 
 const JOB_TYPES = [
   { value: 'teljes',     label: 'Teljes állás' },
@@ -28,7 +25,7 @@ export default function CreateJobPage() {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('IT / Szoftver');
+  const [category, setCategory] = useState('Targoncavezető');
   const [type, setType] = useState('teljes');
   const [locationCounty, setLocationCounty] = useState('');
   const [locationCity, setLocationCity] = useState('');
@@ -120,7 +117,7 @@ export default function CreateJobPage() {
               <label className="block text-xs text-zinc-500 mb-1.5">Kategória</label>
               <select value={category} onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-3 py-3 glass-input rounded-xl text-zinc-100 focus:outline-none text-sm appearance-none cursor-pointer">
-                {JOB_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                {JOB_CATEGORIES_NO_ALL.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>

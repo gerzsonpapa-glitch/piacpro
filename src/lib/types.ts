@@ -10,6 +10,8 @@ export interface Profile {
   is_banned: boolean;
   verified: boolean;
   is_admin: boolean;
+  is_super_admin: boolean;
+  is_shop_owner: boolean;
   response_speed: 'fast' | 'medium' | 'slow' | 'unknown';
   listings_today: number;
   listings_today_reset: string | null;
@@ -19,6 +21,56 @@ export interface Profile {
   last_seen: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface Shop {
+  id: string;
+  owner_id: string;
+  name: string;
+  slug: string;
+  description: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  category: string;
+  location: string;
+  contact_email: string;
+  contact_phone: string;
+  website: string;
+  is_active: boolean;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  owner?: Profile;
+  products?: ShopProduct[];
+  promotions?: ShopPromotion[];
+  product_count?: number;
+}
+
+export interface ShopProduct {
+  id: string;
+  shop_id: string;
+  name: string;
+  description: string;
+  price: number;
+  compare_at_price: number | null;
+  category_tag: string;
+  images: string[];
+  stock: number | null;
+  is_active: boolean;
+  is_featured: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShopPromotion {
+  id: string;
+  shop_id: string;
+  title: string;
+  description: string;
+  discount_percent: number | null;
+  valid_until: string | null;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Category {

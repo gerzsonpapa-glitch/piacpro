@@ -62,6 +62,40 @@ export function getOnlineLabel(lastSeen: string | null | undefined): string {
   return `Utoljára látva: ${formatRelativeTime(lastSeen)}`;
 }
 
+export const JOB_CATEGORIES = [
+  'Összes',
+  // Raktár / logisztika
+  'Targoncavezető', 'Raktáros', 'Komissiózó', 'Csomagoló / Szortírozó', 'Sofőr / Fuvarozó', 'Futár / Kézbesítő', 'Logisztika / Készletgazdálkodás',
+  // Kereskedelem / bolt
+  'Bolti eladó', 'Pénztáros', 'Árufeltöltő', 'Üzletvezető / Üzletasszisztens', 'Kereskedelmi képviselő', 'Értékesítő', 'Nagykereskedelmi ügyintéző',
+  // Vendéglátás
+  'Pincér / Felszolgáló', 'Szakács / Séf', 'Cukrász / Pék', 'Konyhai kisegítő', 'Barista / Bárpultos', 'Éttermi vezető / Menedzser',
+  // Fizikai / ipari
+  'Gyári munkás / Összeszerelő', 'Hegesztő', 'Gépi forgácsoló / CNC-kezelő', 'Villanyszerelő', 'Vízvezetékszerelő / Gázszerelő', 'Festő / Tapétázó', 'Kőműves / Építőipari munkás', 'Takarító / Tisztasági', 'Kertész / Parkfenntartó', 'Mezőgazdasági munkás',
+  // Irodai / adminisztráció
+  'Irodai adminisztrátor', 'Ügyfélszolgálatos', 'Titkár / Asszisztens', 'Adatrögzítő', 'Könyvelő / Pénzügyi ügyintéző', 'HR / Személyzeti ügyintéző',
+  // IT / tech
+  'Szoftverfejlesztő / Programozó', 'Rendszergazda / IT-üzemeltető', 'Webfejlesztő', 'IT-ügyfélszolgálat / Helpdesk', 'Adatelemző / BI-fejlesztő',
+  // Egészségügy / szociális
+  'Ápoló / Gondozó', 'Orvos / Egészségügyi szakember', 'Szociális munkás / Segítő', 'Gyógytornász / Fizikoterapeuta', 'Gyógyszerész', 'Fogorvos / Asszisztens',
+  // Oktatás
+  'Tanár / Oktató', 'Óvónő / Gondozó', 'Edző / Sportszakember', 'Nyelvtanár / Fordító',
+  // Biztonság / védelem
+  'Biztonsági őr / Portás', 'Tűzoltó / Mentős',
+  // Szépségipar / személyes szolgáltatás
+  'Fodrász / Kozmetikus', 'Masszőr / Testápoló', 'Manikűrös / Pedikűrös',
+  // Média / kreatív
+  'Grafikus / Designer', 'Fotós / Videós', 'Marketing / Social media', 'Copywriter / Tartalom-előállító',
+  // Diák / alkalmi
+  'Diákmunka / Nyári munka', 'Alkalmi munka / Részmunka', 'Otthoni / Home office', 'Azonnali kezdés',
+  // Külföldi
+  'Külföldi munka – EU', 'Külföldi munka – Egyéb',
+  // Egyéb
+  'Egyéb',
+] as const;
+
+export type JobCategory = (typeof JOB_CATEGORIES)[number];
+
 export const HUNGARIAN_COUNTIES = [
   'Bács-Kiskun megye',
   'Baranya megye',
