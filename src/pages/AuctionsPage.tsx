@@ -199,6 +199,7 @@ export default function AuctionsPage() {
       .from('listings')
       .select('*, seller:profiles(*), auction:auctions(*)')
       .eq('listing_type', 'auction')
+      .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
     const all = (data || []).map(normalizeListingAuction);

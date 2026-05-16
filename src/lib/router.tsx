@@ -27,6 +27,7 @@ const ROUTE_PATTERNS = [
   '/chat/:id',
   '/job/:id',
   '/shops/:slug',
+  '/producers/:id',
 ];
 
 export function useRouterProvider(): RouterContextType {

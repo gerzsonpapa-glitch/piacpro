@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
-import { ShoppingBag, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 export default function RegisterPage() {
   const { signUp } = useAuth();
@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,7 +23,7 @@ export default function RegisterPage() {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password, username, fullName);
+    const { error, needsConfirmation } = await signUp(email, password, username, fullName);
     if (error) {
       setError(
         error === 'User already registered'
@@ -30,9 +31,44 @@ export default function RegisterPage() {
           : error
       );
       setLoading(false);
+    } else if (needsConfirmation) {
+      setConfirming(true);
+      setLoading(false);
     } else {
       navigate('/');
     }
+  }
+
+  if (confirming) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="glass rounded-3xl p-8 text-center space-y-5">
+            <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto">
+              <Mail className="w-8 h-8 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-zinc-100 mb-2">Erősítsd meg az email címed</h2>
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                Elküldtünk egy megerősítő linket a{' '}
+                <span className="text-zinc-200 font-medium">{email}</span>{' '}
+                címre. Kattints a levélben lévő linkre a regisztráció befejezéséhez.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+              <CheckCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <p className="text-amber-300 text-xs">Ha nem látod a levelet, nézd meg a spam mappát is.</p>
+            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full py-3 glass-pill-active text-emerald-300 font-semibold rounded-xl transition-all hover:scale-[1.01]"
+            >
+              Bejelentkezés
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

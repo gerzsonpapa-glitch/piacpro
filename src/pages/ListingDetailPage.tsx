@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { useRouter } from '../lib/router';
 import type { Listing, SellerBadge } from '../lib/types';
-import { formatPrice, formatRelativeTime, getOnlineStatus, getOnlineLabel } from '../lib/utils';
+import { formatPrice, formatRelativeTime, getOnlineStatus, getOnlineLabel, RANK_CONFIG } from '../lib/utils';
 import {
   Heart, MessageCircle, MapPin, Tag, Clock, ChevronLeft, ChevronRight,
   Share2, Shield, ArrowLeft, Phone, Mail, Pencil, Trash2,
@@ -134,6 +135,7 @@ function BadgeDisplay({ badge }: { badge: SellerBadge }) {
 export default function ListingDetailPage() {
   const { user } = useAuth();
   const { params, navigate } = useRouter();
+  const { showToast } = useNotification();
   const [listing, setListing] = useState<Listing | null>(null);
   const [sellerBadge, setSellerBadge] = useState<SellerBadge | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -263,7 +265,8 @@ export default function ListingDetailPage() {
   async function deleteListing() {
     if (!user || !listing) return;
     setDeleting(true);
-    await supabase.from('listings').update({ status: 'deleted' }).eq('id', listing.id).eq('seller_id', user.id);
+    const { error } = await supabase.from('listings').update({ status: 'deleted' }).eq('id', listing.id).eq('seller_id', user.id);
+    if (error) { setDeleting(false); showToast('error', 'Hiba', 'A törlés sikertelen.'); return; }
     navigate('/');
   }
 
@@ -661,20 +664,37 @@ export default function ListingDetailPage() {
                   })()}
                 </div>
                 <div className="text-left flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="font-medium text-zinc-200">
                       {listing.seller.full_name || listing.seller.username || 'Felhasználó'}
                     </p>
                     {listing.seller.verified && (
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                     )}
+                    {(listing.seller.rank_level ?? 1) > 1 && (() => {
+                      const cfg = RANK_CONFIG[listing.seller.rank_level ?? 1] ?? RANK_CONFIG[1];
+                      return (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-semibold ${cfg.bg} ${cfg.border} ${cfg.color}`}>
+                          {listing.seller.rank_title}
+                        </span>
+                      );
+                    })()}
                   </div>
-                  <p className={`text-xs mt-0.5 ${
-                    getOnlineStatus(listing.seller.last_seen) === 'online' ? 'text-emerald-400' :
-                    getOnlineStatus(listing.seller.last_seen) === 'recently' ? 'text-amber-400' : 'text-zinc-500'
-                  }`}>
-                    {getOnlineLabel(listing.seller.last_seen)}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className={`text-xs ${
+                      getOnlineStatus(listing.seller.last_seen) === 'online' ? 'text-emerald-400' :
+                      getOnlineStatus(listing.seller.last_seen) === 'recently' ? 'text-amber-400' : 'text-zinc-500'
+                    }`}>
+                      {getOnlineLabel(listing.seller.last_seen)}
+                    </p>
+                    {(listing.seller.avg_rating ?? 0) > 0 && (
+                      <span className="flex items-center gap-0.5 text-xs text-amber-400">
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        {(listing.seller.avg_rating ?? 0).toFixed(1)}
+                        <span className="text-zinc-600">({listing.seller.total_reviews ?? 0})</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
               {sellerBadge && <BadgeDisplay badge={sellerBadge} />}

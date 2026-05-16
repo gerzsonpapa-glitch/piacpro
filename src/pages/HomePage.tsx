@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
-import type { Listing, Job, Category } from '../lib/types';
+import type { Listing, Job, Category, Producer } from '../lib/types';
 import ListingCard from '../components/ListingCard';
 import { normalizeListingAuction, formatPrice } from '../lib/utils';
 import {
@@ -11,7 +11,8 @@ import {
   PlusCircle, Building2, Wifi, Banknote, Package,
   Zap, Star, Clock, ChevronRight,
   Smartphone, Car, Home, Shirt, Baby, Dumbbell,
-  Gamepad2, Wrench, Gift, BookOpen, PawPrint, Monitor
+  Gamepad2, Wrench, Gift, BookOpen, PawPrint, Monitor,
+  Leaf, CheckCircle2
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -176,6 +177,7 @@ export default function HomePage() {
   const [expiringAuctions, setExpiringAuctions] = useState<Listing[]>([]);
   const [allAuctions, setAllAuctions] = useState<Listing[]>([]);
   const [featuredJobs, setFeaturedJobs] = useState<Job[]>([]);
+  const [featuredProducers, setFeaturedProducers] = useState<Producer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Listing[]>([]);
 
@@ -185,7 +187,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchCategories(), fetchRecentlyViewed()])
+    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchCategories(), fetchRecentlyViewed(), fetchProducers()])
       .finally(() => setLoading(false));
   }, []);
 
@@ -235,6 +237,16 @@ export default function HomePage() {
   async function fetchCategories() {
     const { data } = await supabase.from('categories').select('*').order('sort_order').limit(15);
     setCategories((data || []).filter((c) => !c.parent_id));
+  }
+
+  async function fetchProducers() {
+    const { data } = await supabase
+      .from('producers')
+      .select('*, products:producer_products(id, name)')
+      .order('is_verified', { ascending: false })
+      .order('avg_rating', { ascending: false })
+      .limit(4);
+    setFeaturedProducers((data || []) as Producer[]);
   }
 
   async function fetchRecentlyViewed() {
@@ -594,6 +606,58 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* ── KISTERMELŐK ─────────────────────────────────────────────────── */}
+      {(loading || featuredProducers.length > 0) && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Leaf className="w-5 h-5 text-emerald-400" /> Kistermelők a közeledben
+            </h2>
+            <button onClick={() => navigate('/producers')}
+              className="text-emerald-400 text-sm font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
+              Összes <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-32 animate-pulse" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {featuredProducers.map((p) => (
+                <button key={p.id} onClick={() => navigate(`/producers/${p.id}`)}
+                  className="glass-bubble rounded-2xl p-4 text-left hover:bg-white/5 transition-all group flex flex-col gap-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                      <Leaf className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-zinc-200 text-sm leading-snug truncate group-hover:text-emerald-400 transition-colors">{p.name}</p>
+                      <p className="text-xs text-zinc-500 flex items-center gap-0.5 mt-0.5">
+                        <MapPin className="w-2.5 h-2.5" /> {p.location || '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {p.is_verified && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex items-center gap-0.5">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> Hitelesített
+                      </span>
+                    )}
+                    {p.is_available_today && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-green-500/15 text-green-400 border border-green-500/20">Ma elérhető</span>
+                    )}
+                  </div>
+                  {(p.products?.length ?? 0) > 0 && (
+                    <p className="text-xs text-zinc-600 truncate">{p.products!.slice(0, 2).map((x) => x.name).join(', ')}</p>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── CTA ─────────────────────────────────────────────────────────── */}
       {!user && (

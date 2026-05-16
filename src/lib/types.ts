@@ -19,8 +19,68 @@ export interface Profile {
   level_title: string | null;
   badge_color: string | null;
   last_seen: string | null;
+  total_sales: number;
+  avg_rating: number;
+  total_reviews: number;
+  positive_ratio: number;
+  rank_level: number;
+  rank_title: string;
+  is_producer_approved: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface Producer {
+  id: string;
+  user_id: string;
+  name: string;
+  slug: string | null;
+  bio: string;
+  cover_url: string | null;
+  avatar_url: string | null;
+  location: string;
+  lat: number | null;
+  lng: number | null;
+  is_verified: boolean;
+  is_local_favorite: boolean;
+  is_available_today: boolean;
+  categories: string[];
+  contact_phone: string | null;
+  contact_email: string | null;
+  avg_rating: number;
+  review_count: number;
+  transaction_count: number;
+  created_at: string;
+  profile?: Profile;
+  products?: ProducerProduct[];
+}
+
+export interface ProducerProduct {
+  id: string;
+  producer_id: string;
+  name: string;
+  description: string;
+  images: string[];
+  price: number | null;
+  unit: string;
+  category_tag: string | null;
+  is_available: boolean;
+  is_seasonal: boolean;
+  is_fresh_harvest: boolean;
+  stock_note: string | null;
+  stock_quantity: number | null;
+  created_at: string;
+}
+
+export interface ProducerApplication {
+  id: string;
+  user_id: string;
+  message: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  profile?: Profile;
 }
 
 export interface Shop {
@@ -173,14 +233,45 @@ export interface Favorite {
   created_at: string;
 }
 
-export interface Conversation {
+export interface Transaction {
   id: string;
   listing_id: string;
+  seller_id: string;
+  buyer_id: string;
+  conversation_id: string | null;
+  status: 'chat_started' | 'deal_pending' | 'completed' | 'cancelled';
+  sold_to_buyer_id: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListingReview {
+  id: string;
+  transaction_id: string | null;
+  listing_id: string | null;
+  reviewer_id: string;
+  reviewed_id: string;
+  score: number;
+  comment: string;
+  recommended: boolean;
+  created_at: string;
+  reviewer?: Profile;
+  listing?: Listing;
+}
+
+export interface Conversation {
+  id: string;
+  listing_id: string | null;
+  shop_product_id: string | null;
   buyer_id: string;
   seller_id: string;
   last_message_at: string;
+  transaction_id: string | null;
+  sold_status: 'sold' | 'pending' | null;
   created_at: string;
   listing?: Listing;
+  shop_product?: ShopProduct;
   buyer?: Profile;
   seller?: Profile;
   last_message?: Message;

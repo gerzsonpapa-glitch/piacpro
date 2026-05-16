@@ -5,8 +5,8 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useRouter } from '../lib/router';
 import type { Profile, Listing, SellerBadge, ListingRating } from '../lib/types';
 import ListingCard from '../components/ListingCard';
-import { formatRelativeTime, HUNGARIAN_COUNTIES, getOnlineStatus, getOnlineLabel } from '../lib/utils';
-import { User, MapPin, Calendar, Save, X, Phone, Mail, Star, ShieldCheck, Award, MessageCircle, TrendingUp, Package, CheckCircle, AlertTriangle, UserX, Camera, CreditCard as Edit3, FileText, Gavel, Settings } from 'lucide-react';
+import { formatRelativeTime, HUNGARIAN_COUNTIES, getOnlineStatus, getOnlineLabel, RANK_CONFIG } from '../lib/utils';
+import { User, MapPin, Calendar, Save, X, Phone, Mail, Star, ShieldCheck, Award, MessageCircle, TrendingUp, Package, CheckCircle, AlertTriangle, UserX, Camera, CreditCard as Edit3, FileText, Gavel, Settings, ThumbsUp } from 'lucide-react';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -137,13 +137,15 @@ export default function ProfilePage() {
   }, [profileId]);
 
   async function fetchAll() {
-    const [profileRes, listingsRes, badgeRes, ratingsRes] = await Promise.all([
+    const [profileRes, listingsRes, badgeRes, ratingsRes, reviewsRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', profileId).maybeSingle(),
       supabase.from('listings').select('*, seller:profiles(*)')
         .eq('seller_id', profileId).neq('status', 'deleted').order('created_at', { ascending: false }),
       supabase.from('seller_badges').select('*').eq('seller_id', profileId).maybeSingle(),
       supabase.from('listing_ratings').select('*, rater:profiles(id, username, full_name, avatar_url)')
         .eq('rated_id', profileId).order('created_at', { ascending: false }).limit(20),
+      supabase.from('listing_reviews').select('*, reviewer:profiles(id, username, full_name, avatar_url), listing:listings(id, title)')
+        .eq('reviewed_id', profileId).order('created_at', { ascending: false }).limit(30),
     ]);
 
     if (!profileRes.data) {
@@ -153,7 +155,24 @@ export default function ProfilePage() {
     }
     setListings(listingsRes.data || []);
     setBadge(badgeRes.data);
-    setRatings(ratingsRes.data || []);
+    // Merge both rating sources, deduplicate by id, sort by date
+    const legacyRatings = (ratingsRes.data || []).map((r: ListingRating) => ({ ...r, _source: 'legacy' as const }));
+    const newReviews = (reviewsRes.data || []).map((r: import('../lib/types').ListingReview) => ({
+      id: r.id,
+      listing_id: r.listing_id || '',
+      rater_id: r.reviewer_id,
+      rated_id: r.reviewed_id,
+      score: r.score,
+      comment: r.comment,
+      created_at: r.created_at,
+      rater: r.reviewer,
+      recommended: r.recommended,
+      _source: 'new' as const,
+    }));
+    const merged = [...legacyRatings, ...newReviews].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    setRatings(merged as ListingRating[]);
     setLoading(false);
   }
 
@@ -523,8 +542,32 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* Seller badge */}
-                {badge && <div className="mt-3"><BadgeDisplay badge={badge} /></div>}
+                {/* Rang badge */}
+                {profile && (profile.rank_level ?? 1) >= 1 && (() => {
+                  const cfg = RANK_CONFIG[profile.rank_level ?? 1] ?? RANK_CONFIG[1];
+                  return (
+                    <div className="mt-3 flex flex-wrap gap-2 items-center">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-semibold ${cfg.bg} ${cfg.border} ${cfg.color}`}>
+                        <Award className="w-4 h-4" />
+                        {profile.rank_title || cfg.title}
+                      </span>
+                      {profile.total_sales > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-xs text-zinc-400">
+                          <Package className="w-3 h-3" />
+                          {profile.total_sales} sikeres eladás
+                        </span>
+                      )}
+                      {(profile.positive_ratio ?? 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-xs text-zinc-400">
+                          <ThumbsUp className="w-3 h-3 text-emerald-400" />
+                          {profile.positive_ratio}% pozitív
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+                {/* Seller badge (legacy) */}
+                {badge && <div className="mt-2"><BadgeDisplay badge={badge} /></div>}
               </>
             )}
           </div>
@@ -545,13 +588,17 @@ export default function ProfilePage() {
                 <p className="text-xs text-zinc-500 mt-0.5">Aukciók</p>
               </div>
               <div className="glass-subtle rounded-2xl p-3 text-center">
-                {badge && badge.total_ratings > 0 ? (
+                {(profile?.avg_rating ?? 0) > 0 || (badge && badge.total_ratings > 0) ? (
                   <>
                     <div className="flex items-center justify-center gap-1">
-                      <p className="text-2xl font-bold text-amber-400">{badge.avg_score.toFixed(1)}</p>
+                      <p className="text-2xl font-bold text-amber-400">
+                        {(profile?.avg_rating ?? badge?.avg_score ?? 0).toFixed(1)}
+                      </p>
                       <Star className="w-4 h-4 text-amber-400 fill-amber-400 mb-0.5" />
                     </div>
-                    <p className="text-xs text-zinc-500 mt-0.5">{badge.total_ratings} értékelés</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {(profile?.total_reviews ?? badge?.total_ratings ?? 0)} értékelés
+                    </p>
                   </>
                 ) : (
                   <>
@@ -616,37 +663,47 @@ export default function ProfilePage() {
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             Értékelések
             <span className="text-sm font-normal text-zinc-500">({ratings.length})</span>
-            {badge && badge.total_ratings > 0 && (
+            {(profile?.avg_rating ?? 0) > 0 && (
               <div className="ml-auto flex items-center gap-1.5">
-                <StarRating score={badge.avg_score} />
-                <span className="text-sm font-semibold text-amber-400">{badge.avg_score.toFixed(1)}</span>
+                <StarRating score={profile?.avg_rating ?? 0} />
+                <span className="text-sm font-semibold text-amber-400">{(profile?.avg_rating ?? 0).toFixed(1)}</span>
               </div>
             )}
           </h2>
           <div className="space-y-3">
-            {ratings.map((rating) => (
-              <div key={rating.id} className="glass rounded-2xl p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <AvatarImage
-                      src={rating.rater?.avatar_url}
-                      size="sm"
-                      name={rating.rater?.full_name || rating.rater?.username}
-                    />
-                    <div>
-                      <p className="font-medium text-sm text-zinc-200">
-                        {rating.rater?.full_name || rating.rater?.username || 'Névtelen'}
-                      </p>
-                      <StarRating score={rating.score} />
+            {ratings.map((rating) => {
+              const recommended = (rating as ListingRating & { recommended?: boolean }).recommended;
+              return (
+                <div key={rating.id} className="glass rounded-2xl p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <AvatarImage
+                        src={rating.rater?.avatar_url}
+                        size="sm"
+                        name={rating.rater?.full_name || rating.rater?.username}
+                      />
+                      <div>
+                        <p className="font-medium text-sm text-zinc-200">
+                          {rating.rater?.full_name || rating.rater?.username || 'Névtelen'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <StarRating score={rating.score} />
+                          {recommended === true && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-emerald-400 font-medium">
+                              <ThumbsUp className="w-2.5 h-2.5" />Ajánlott
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
+                    <span className="text-xs text-zinc-600 flex-shrink-0">{formatRelativeTime(rating.created_at)}</span>
                   </div>
-                  <span className="text-xs text-zinc-600 flex-shrink-0">{formatRelativeTime(rating.created_at)}</span>
+                  {rating.comment && (
+                    <p className="text-zinc-400 text-sm mt-2.5 leading-relaxed pl-11">{rating.comment}</p>
+                  )}
                 </div>
-                {rating.comment && (
-                  <p className="text-zinc-400 text-sm mt-2.5 leading-relaxed pl-11">{rating.comment}</p>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

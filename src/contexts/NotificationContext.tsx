@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { CheckCircle, AlertCircle, Info, X, Crown, MessageCircle, Gavel } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, X, Crown, MessageCircle, Gavel, Leaf, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatPrice } from '../lib/utils';
 
-export type ToastType = 'success' | 'error' | 'info' | 'outbid' | 'winner' | 'message' | 'auction_end';
+export type ToastType = 'success' | 'error' | 'info' | 'outbid' | 'winner' | 'message' | 'auction_end' | 'producer_app';
 
 interface Toast {
   id: string;
@@ -11,10 +11,11 @@ interface Toast {
   title: string;
   message?: string;
   duration?: number;
+  href?: string;
 }
 
 interface NotificationContextType {
-  showToast: (type: ToastType, title: string, message?: string, duration?: number) => void;
+  showToast: (type: ToastType, title: string, message?: string, duration?: number, href?: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -31,6 +32,8 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     return () => { clearTimeout(show); clearTimeout(hide); };
   }, [toast.id, toast.duration, onRemove]);
 
+  const dismiss = () => { setVisible(false); setTimeout(() => onRemove(toast.id), 300); };
+
   const configs: Record<ToastType, { bg: string; border: string; icon: React.ElementType; iconCls: string }> = {
     success: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', icon: CheckCircle, iconCls: 'text-emerald-400' },
     error: { bg: 'bg-red-500/15', border: 'border-red-500/30', icon: AlertCircle, iconCls: 'text-red-400' },
@@ -39,16 +42,26 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     winner: { bg: 'bg-amber-500/15', border: 'border-amber-500/30', icon: Crown, iconCls: 'text-amber-400' },
     message: { bg: 'bg-emerald-500/12', border: 'border-emerald-500/25', icon: MessageCircle, iconCls: 'text-emerald-400' },
     auction_end: { bg: 'bg-zinc-700/60', border: 'border-zinc-500/30', icon: Gavel, iconCls: 'text-zinc-300' },
+    producer_app: { bg: 'bg-emerald-500/12', border: 'border-emerald-500/25', icon: Leaf, iconCls: 'text-emerald-400' },
   };
 
   const cfg = configs[toast.type];
   const Icon = cfg.icon;
 
+  const handleClick = () => {
+    if (toast.href) {
+      window.history.pushState({}, '', toast.href);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+    dismiss();
+  };
+
   return (
     <div
+      onClick={toast.href ? handleClick : undefined}
       className={`flex items-start gap-3 px-4 py-3.5 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all duration-300 max-w-sm w-full ${cfg.bg} ${cfg.border} ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-      }`}
+      } ${toast.href ? 'cursor-pointer hover:brightness-110' : ''}`}
     >
       <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.iconCls}`} />
       <div className="flex-1 min-w-0">
@@ -56,9 +69,14 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
         {toast.message && (
           <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">{toast.message}</p>
         )}
+        {toast.href && (
+          <p className="text-xs text-emerald-400 mt-1 flex items-center gap-0.5 font-medium">
+            Megnyitás <ChevronRight className="w-3 h-3" />
+          </p>
+        )}
       </div>
       <button
-        onClick={() => { setVisible(false); setTimeout(() => onRemove(toast.id), 300); }}
+        onClick={(e) => { e.stopPropagation(); dismiss(); }}
         className="flex-shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors mt-0.5"
       >
         <X className="w-3.5 h-3.5" />
@@ -71,26 +89,35 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const counterRef = useRef(0);
 
-  const showToast = useCallback((type: ToastType, title: string, message?: string, duration?: number) => {
+  const showToast = useCallback((type: ToastType, title: string, message?: string, duration?: number, href?: string) => {
     const id = `toast-${++counterRef.current}`;
-    setToasts((prev) => [...prev.slice(-4), { id, type, title, message, duration }]);
+    setToasts((prev) => [...prev.slice(-4), { id, type, title, message, duration, href }]);
   }, []);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Global auction win/end watcher — fires regardless of which page the user is on
+  // Global watchers — auction wins + admin producer application alerts
   useEffect(() => {
     let userId: string | null = null;
+    let isAdmin = false;
 
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       userId = user.id;
 
+      // Check if admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin, is_super_admin')
+        .eq('id', user.id)
+        .maybeSingle();
+      isAdmin = !!(profile?.is_admin || profile?.is_super_admin);
+
       const channel = supabase
-        .channel('global-auction-status')
+        .channel('global-notifications')
         .on('postgres_changes', {
           event: 'UPDATE',
           schema: 'public',
@@ -99,10 +126,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           if (!userId) return;
           const updated = payload.new as { status: string; winner_id: string | null; current_price: number };
           if (updated.status !== 'ended' && updated.status !== 'sold') return;
-
           if (updated.winner_id === userId) {
             showToast('winner', 'Gratulalunk! Nyerted az aukciót!', `Nyero ajanlat: ${formatPrice(updated.current_price)}`, 12000);
           }
+        })
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'producer_applications',
+        }, () => {
+          if (!isAdmin) return;
+          showToast('producer_app', 'Új termelői igénylés', 'Kattints a kérelem elbírálásához.', 12000, '/admin?tab=producers');
         })
         .subscribe();
 
@@ -114,6 +148,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       userId = session?.user?.id ?? null;
+      if (!userId) isAdmin = false;
     });
 
     return () => {

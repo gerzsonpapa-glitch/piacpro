@@ -631,8 +631,9 @@ export default function JobsPage() {
   }
 
   async function handleJobDelete(id: string) {
-    await supabase.from('jobs').update({ status: 'deleted' }).eq('id', id);
+    const { error } = await supabase.from('jobs').delete().eq('id', id);
     setDeletingJobId(null);
+    if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); return; }
     showToast('success', 'Törölve', 'Hirdetés eltávolítva.');
     await fetchJobs();
     if (selectedJob?.id === id) { setSelectedJob(null); setView('list'); }
@@ -674,8 +675,9 @@ export default function JobsPage() {
   }
 
   async function handleSeekerDelete(id: string) {
-    await supabase.from('job_seeker_ads').update({ status: 'deleted' }).eq('id', id);
+    const { error } = await supabase.from('job_seeker_ads').delete().eq('id', id);
     setDeletingSeekerAdId(null);
+    if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); return; }
     showToast('success', 'Törölve', 'Hirdetés eltávolítva.');
     await fetchSeekerAds();
     if (selectedSeekerAd?.id === id) { setSelectedSeekerAd(null); setView('list'); }
@@ -683,22 +685,50 @@ export default function JobsPage() {
 
   // ── Filtered data ──────────────────────────────────────────────────────────
 
-  const filteredJobs = jobs.filter((j) => {
-    if (search && !j.title.toLowerCase().includes(search.toLowerCase()) &&
-        !j.company.toLowerCase().includes(search.toLowerCase())) return false;
-    if (category !== 'Összes' && j.category !== category) return false;
-    if (typeFilter && j.type !== typeFilter) return false;
-    if (remoteOnly && !j.remote) return false;
-    return true;
-  });
+  // Category of the current user's own active job seeker ad (for prioritizing job offers)
+  const mySeekingCategory = user
+    ? seekerAds.find((s) => s.user_id === user.id)?.category ?? null
+    : null;
 
-  const filteredSeekers = seekerAds.filter((s) => {
-    if (seekerSearch && !s.title.toLowerCase().includes(seekerSearch.toLowerCase()) &&
-        !s.description.toLowerCase().includes(seekerSearch.toLowerCase())) return false;
-    if (seekerCategory !== 'Összes' && s.category !== seekerCategory) return false;
-    if (seekerRemoteOnly && !s.remote) return false;
-    return true;
-  });
+  // Category of the current user's own active job offer (for prioritizing seekers)
+  const myPostingCategory = user
+    ? jobs.find((j) => j.poster_id === user.id)?.category ?? null
+    : null;
+
+  const filteredJobs = jobs
+    .filter((j) => {
+      if (search && !j.title.toLowerCase().includes(search.toLowerCase()) &&
+          !j.company.toLowerCase().includes(search.toLowerCase())) return false;
+      if (category !== 'Összes' && j.category !== category) return false;
+      if (typeFilter && j.type !== typeFilter) return false;
+      if (remoteOnly && !j.remote) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (mySeekingCategory && category === 'Összes') {
+        const aMatch = a.category === mySeekingCategory ? 0 : 1;
+        const bMatch = b.category === mySeekingCategory ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+      }
+      return 0;
+    });
+
+  const filteredSeekers = seekerAds
+    .filter((s) => {
+      if (seekerSearch && !s.title.toLowerCase().includes(seekerSearch.toLowerCase()) &&
+          !s.description.toLowerCase().includes(seekerSearch.toLowerCase())) return false;
+      if (seekerCategory !== 'Összes' && s.category !== seekerCategory) return false;
+      if (seekerRemoteOnly && !s.remote) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (myPostingCategory && seekerCategory === 'Összes') {
+        const aMatch = a.category === myPostingCategory ? 0 : 1;
+        const bMatch = b.category === myPostingCategory ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+      }
+      return 0;
+    });
 
   // ── Sub-view renders ───────────────────────────────────────────────────────
 
@@ -1080,6 +1110,78 @@ export default function JobsPage() {
             <span>Lejár: {new Date(selectedSeekerAd.expires_at).toLocaleDateString('hu-HU')}</span>
           </div>
         </div>
+
+        {/* Matching job offers for this category */}
+        {(() => {
+          const matched = jobs.filter(
+            (j) => j.status === 'active' && j.category === selectedSeekerAd.category
+          );
+          if (matched.length === 0) return null;
+          return (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-sky-400" />
+                <h2 className="font-bold text-zinc-100">
+                  Állásajánlatok ebben a kategóriában
+                </h2>
+                <span className="text-xs glass-pill px-2.5 py-0.5 rounded-full text-zinc-400 ml-auto">
+                  {matched.length} ajánlat
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500">
+                Ezek a cégek <span className="text-zinc-300 font-medium">{selectedSeekerAd.category}</span> kategóriában hirdetnek munkát — jelentkezhetsz náluk.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {matched.map((j) => {
+                  const salary = formatSalary(j.salary_min, j.salary_max, j.salary_currency);
+                  const typeInfo = JOB_TYPES[j.type] ?? JOB_TYPES.teljes;
+                  return (
+                    <div key={j.id} className="glass-bubble rounded-2xl p-4 space-y-2.5 border border-sky-500/10 hover:border-sky-500/25 transition-colors">
+                      <div className="flex items-start gap-3">
+                        {j.logo_url ? (
+                          <img src={j.logo_url} alt={j.company} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 glass rounded-xl flex items-center justify-center flex-shrink-0 bg-sky-500/10">
+                            <Building2 className="w-5 h-5 text-sky-400" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-zinc-100 text-sm truncate">{j.title}</p>
+                          <p className="text-xs text-zinc-500">{j.company}</p>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-lg border font-medium ${typeInfo.color}`}>{typeInfo.label}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[11px] text-zinc-500">
+                        {j.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />{j.location}
+                          </span>
+                        )}
+                        {j.remote && (
+                          <span className="flex items-center gap-1 text-sky-400">
+                            <Wifi className="w-3 h-3" />Remote
+                          </span>
+                        )}
+                        {salary && (
+                          <span className="flex items-center gap-1 text-sky-400 font-medium">
+                            <Banknote className="w-3 h-3" />{salary}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => { setSelectedJob(j); setView('detail'); }}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 glass-pill text-zinc-400 hover:text-zinc-200 rounded-xl text-xs transition-colors"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />Hirdetés megtekintése
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {deletingSeekerAdId && (
           <DeleteModal
             title={seekerAds.find((s) => s.id === deletingSeekerAdId)?.title || ''}
@@ -1317,6 +1419,9 @@ export default function JobsPage() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-zinc-500">
               <span className="text-zinc-200 font-semibold">{filteredJobs.length}</span> állás ajánlat
+              {mySeekingCategory && category === 'Összes' && (
+                <span className="ml-2 text-xs text-sky-400">· <span className="text-zinc-300 font-medium">{mySeekingCategory}</span> kategória elöl</span>
+              )}
             </p>
             {(category !== 'Összes' || typeFilter || remoteOnly || search) && (
               <button onClick={() => { setCategory('Összes'); setTypeFilter(''); setRemoteOnly(false); setSearch(''); }}
@@ -1487,6 +1592,9 @@ export default function JobsPage() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-zinc-500">
               <span className="text-zinc-200 font-semibold">{filteredSeekers.length}</span> álláskeresési hirdetés
+              {myPostingCategory && seekerCategory === 'Összes' && (
+                <span className="ml-2 text-xs text-emerald-400">· <span className="text-zinc-300 font-medium">{myPostingCategory}</span> kategória elöl</span>
+              )}
             </p>
           </div>
 

@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { useRouter } from '../lib/router';
-import type { Profile, Listing, Report } from '../lib/types';
+import type { Profile, Listing, Report, Job, JobSeekerAd, Auction, ProducerApplication } from '../lib/types';
 import { formatRelativeTime, formatPrice } from '../lib/utils';
 import {
   Shield, Users, LayoutGrid, Flag, TrendingUp,
   Ban, CheckCircle, Trash2, Eye, XCircle, Search,
-  RefreshCw, BarChart3, Award, ChevronDown, Save, X,
-  AlertTriangle, ShieldAlert, Plus, ShieldCheck, ShieldOff, Store
+  RefreshCw, BarChart3, ChevronDown, Save, X,
+  AlertTriangle, ShieldAlert, Plus, ShieldCheck, ShieldOff, Store,
+  Gavel, Briefcase, UserSearch, MapPin, Wifi, Building2, Leaf
 } from 'lucide-react';
 
-type Tab = 'stats' | 'users' | 'listings' | 'reports' | 'scam';
+type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers';
 
 const DEFAULT_SCAM_KEYWORDS = [
   'előre utalás', 'előre fizet', 'előre pénz', 'crypto only', 'bitcoin only',
@@ -206,7 +208,7 @@ function ScamTab() {
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     <button onClick={() => navigate(`/listing/${l.id}`)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-zinc-200 transition-colors"><Eye className="w-3.5 h-3.5" /></button>
-                    <button onClick={async () => { await supabase.from('listings').update({ status: 'deleted' }).eq('id', l.id); setSuspiciousListings((prev) => prev.filter((x) => x.id !== l.id)); }}
+                    <button onClick={async () => { const { error } = await supabase.from('listings').update({ status: 'deleted' }).eq('id', l.id); if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); } else { setSuspiciousListings((prev) => prev.filter((x) => x.id !== l.id)); showToast('success', 'Törölve', 'Hirdetés eltávolítva.'); } }}
                       className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
@@ -224,16 +226,41 @@ function ScamTab() {
   );
 }
 
+// ── Auction type with listing join ────────────────────────────────────────────
+type AuctionAdmin = Auction & { listing?: { id: string; title: string; seller?: Pick<Profile, 'id' | 'username' | 'full_name'> } };
+type JobAdmin = Job & { poster?: Pick<Profile, 'id' | 'username' | 'full_name'> };
+type SeekerAdmin = JobSeekerAd & { user?: Pick<Profile, 'id' | 'username' | 'full_name'> };
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { user, profile } = useAuth();
-  const { navigate } = useRouter();
-  const [tab, setTab] = useState<Tab>('stats');
+  const { navigate, search: routerSearch } = useRouter();
+  const { showToast } = useNotification();
 
-  const [stats, setStats] = useState({ users: 0, listings: 0, auctions: 0, reports: 0, shops: 0 });
+  const initialTab = (() => {
+    const params = new URLSearchParams(routerSearch);
+    const t = params.get('tab') as Tab | null;
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers'];
+    return t && valid.includes(t) ? t : 'stats';
+  })();
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  useEffect(() => {
+    const params = new URLSearchParams(routerSearch);
+    const t = params.get('tab') as Tab | null;
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers'];
+    if (t && valid.includes(t)) setTab(t);
+  }, [routerSearch]);
+
+  const [stats, setStats] = useState({ users: 0, listings: 0, auctions: 0, jobs: 0, seekers: 0, reports: 0, shops: 0 });
   const [users, setUsers] = useState<Profile[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
+  const [auctions, setAuctions] = useState<AuctionAdmin[]>([]);
+  const [jobs, setJobs] = useState<JobAdmin[]>([]);
+  const [seekers, setSeekers] = useState<SeekerAdmin[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [producerApps, setProducerApps] = useState<ProducerApplication[]>([]);
+  const [producers, setProducers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -248,19 +275,21 @@ export default function AdminPage() {
 
   async function loadAll() {
     setLoading(true);
-    await Promise.all([loadStats(), loadUsers(), loadListings(), loadReports()]);
+    await Promise.all([loadStats(), loadUsers(), loadListings(), loadAuctions(), loadJobs(), loadSeekers(), loadReports(), loadProducerApps(), loadProducers()]);
     setLoading(false);
   }
 
   async function loadStats() {
-    const [u, l, a, r, s] = await Promise.all([
+    const [u, l, a, j, sk, r, s] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
       supabase.from('listings').select('id', { count: 'exact', head: true }).neq('status', 'deleted'),
       supabase.from('auctions').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('jobs').select('id', { count: 'exact', head: true }).neq('status', 'deleted'),
+      supabase.from('job_seeker_ads').select('id', { count: 'exact', head: true }).neq('status', 'deleted'),
       supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('shops').select('id', { count: 'exact', head: true }).eq('is_active', true),
     ]);
-    setStats({ users: u.count ?? 0, listings: l.count ?? 0, auctions: a.count ?? 0, reports: r.count ?? 0, shops: s.count ?? 0 });
+    setStats({ users: u.count ?? 0, listings: l.count ?? 0, auctions: a.count ?? 0, jobs: j.count ?? 0, seekers: sk.count ?? 0, reports: r.count ?? 0, shops: s.count ?? 0 });
   }
 
   async function loadUsers() {
@@ -272,11 +301,114 @@ export default function AdminPage() {
       .neq('status', 'deleted').order('created_at', { ascending: false }).limit(200);
     setListings(data || []);
   }
+  async function loadAuctions() {
+    const { data } = await supabase.from('auctions')
+      .select('*, listing:listings(id, title, seller:profiles(id, username, full_name))')
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false }).limit(200);
+    setAuctions((data || []) as AuctionAdmin[]);
+  }
+  async function loadJobs() {
+    const { data } = await supabase.from('jobs')
+      .select('*, poster:profiles(id, username, full_name)')
+      .neq('status', 'deleted')
+      .order('created_at', { ascending: false }).limit(200);
+    setJobs((data || []) as JobAdmin[]);
+  }
+  async function loadSeekers() {
+    const { data } = await supabase.from('job_seeker_ads')
+      .select('*, user:profiles(id, username, full_name)')
+      .neq('status', 'deleted')
+      .order('created_at', { ascending: false }).limit(200);
+    setSeekers((data || []) as SeekerAdmin[]);
+  }
   async function loadReports() {
-    const { data } = await supabase.from('reports')
-      .select('*, reporter:profiles(id, username, full_name), reported_user:profiles!reports_reported_user_id_fkey(id, username, full_name), reported_listing:listings(id, title)')
+    const { data: rawReports } = await supabase.from('reports')
+      .select('*')
       .order('created_at', { ascending: false }).limit(100);
-    setReports(data || []);
+    if (!rawReports || rawReports.length === 0) { setReports([]); return; }
+
+    const reporterIds = [...new Set(rawReports.map((r) => r.reporter_id).filter(Boolean))];
+    const reportedIds = [...new Set(rawReports.map((r) => r.reported_user_id).filter(Boolean))];
+    const listingIds = [...new Set(rawReports.map((r) => r.reported_listing_id).filter(Boolean))];
+    const allUserIds = [...new Set([...reporterIds, ...reportedIds])];
+
+    const [{ data: profilesData }, { data: listingsData }] = await Promise.all([
+      allUserIds.length > 0 ? supabase.from('profiles').select('id, username, full_name').in('id', allUserIds) : Promise.resolve({ data: [] }),
+      listingIds.length > 0 ? supabase.from('listings').select('id, title').in('id', listingIds) : Promise.resolve({ data: [] }),
+    ]);
+
+    const profileMap = Object.fromEntries((profilesData || []).map((p) => [p.id, p]));
+    const listingMap = Object.fromEntries((listingsData || []).map((l) => [l.id, l]));
+
+    setReports(rawReports.map((r) => ({
+      ...r,
+      reporter: profileMap[r.reporter_id] ?? null,
+      reported_user: profileMap[r.reported_user_id] ?? null,
+      reported_listing: listingMap[r.reported_listing_id] ?? null,
+    })));
+  }
+
+  async function loadProducerApps() {
+    const { data: apps } = await supabase
+      .from('producer_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!apps || apps.length === 0) { setProducerApps([]); return; }
+
+    const userIds = [...new Set(apps.map((a) => a.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .in('id', userIds);
+
+    const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
+    setProducerApps(apps.map((a) => ({ ...a, profile: profileMap[a.user_id] ?? null })) as ProducerApplication[]);
+  }
+
+  async function loadProducers() {
+    const { data } = await supabase
+      .from('producers')
+      .select('id, name, location, is_verified, created_at, user_id')
+      .order('created_at', { ascending: false });
+    if (!data || data.length === 0) { setProducers([]); return; }
+    const userIds = [...new Set(data.map((p) => p.user_id))];
+    const { data: profiles } = await supabase.from('profiles').select('id, username, full_name').in('id', userIds);
+    const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
+    setProducers(data.map((p) => ({ ...p, profile: profileMap[p.user_id] ?? null })));
+  }
+
+  async function deleteProducer(producerId: string, _userId: string) {
+    setActionLoading(producerId);
+    const { error } = await supabase.rpc('admin_delete_producer', { p_producer_id: producerId });
+    if (error) { showToast('error', 'Hiba', error.message); setActionLoading(null); return; }
+    showToast('success', 'Termelő törölve');
+    setActionLoading(null);
+    loadProducers();
+  }
+
+  async function revokeProducerRights(producerId: string, userId: string) {
+    setActionLoading(`revoke-${producerId}`);
+    const { error } = await supabase.from('profiles').update({ is_producer_approved: false }).eq('id', userId);
+    if (error) { showToast('error', 'Hiba', error.message); setActionLoading(null); return; }
+    showToast('success', 'Termelői jog visszavonva');
+    setActionLoading(null);
+    loadProducers();
+  }
+
+  async function approveProducerApp(appId: string, userId: string, approve: boolean) {
+    setActionLoading(appId);
+    await supabase.from('producer_applications').update({
+      status: approve ? 'approved' : 'rejected',
+      reviewed_by: profile!.id,
+      reviewed_at: new Date().toISOString(),
+    }).eq('id', appId);
+    if (approve) {
+      await supabase.from('profiles').update({ is_producer_approved: true }).eq('id', userId);
+    }
+    showToast('success', approve ? 'Kérelem jóváhagyva' : 'Kérelem elutasítva');
+    setActionLoading(null);
+    loadProducerApps();
   }
 
   async function banUser(userId: string, ban: boolean) {
@@ -311,8 +443,33 @@ export default function AdminPage() {
   }
   async function deleteListing(listingId: string) {
     setActionLoading(listingId);
-    await supabase.from('listings').update({ status: 'deleted' }).eq('id', listingId);
-    await loadListings();
+    const { error } = await supabase.from('listings').update({ status: 'deleted' }).eq('id', listingId);
+    if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); }
+    else { setListings((prev) => prev.filter((l) => l.id !== listingId)); showToast('success', 'Törölve', 'Hirdetés eltávolítva.'); }
+    setActionLoading(null);
+  }
+  async function deleteAuction(auctionId: string, listingId: string) {
+    setActionLoading(auctionId);
+    const [r1, r2] = await Promise.all([
+      supabase.from('auctions').update({ status: 'cancelled' }).eq('id', auctionId),
+      supabase.from('listings').update({ status: 'deleted' }).eq('id', listingId),
+    ]);
+    if (r1.error || r2.error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); }
+    else { setAuctions((prev) => prev.filter((a) => a.id !== auctionId)); showToast('success', 'Törölve', 'Licit eltávolítva.'); }
+    setActionLoading(null);
+  }
+  async function deleteJob(jobId: string) {
+    setActionLoading(jobId);
+    const { error } = await supabase.from('jobs').delete().eq('id', jobId);
+    if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); }
+    else { setJobs((prev) => prev.filter((j) => j.id !== jobId)); showToast('success', 'Törölve', 'Álláshirdetés eltávolítva.'); }
+    setActionLoading(null);
+  }
+  async function deleteSeeker(seekerId: string) {
+    setActionLoading(seekerId);
+    const { error } = await supabase.from('job_seeker_ads').delete().eq('id', seekerId);
+    if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); }
+    else { setSeekers((prev) => prev.filter((s) => s.id !== seekerId)); showToast('success', 'Törölve', 'Hirdetés eltávolítva.'); }
     setActionLoading(null);
   }
   async function resolveReport(reportId: string, status: 'resolved' | 'dismissed') {
@@ -330,14 +487,29 @@ export default function AdminPage() {
   const filteredListings = listings.filter((l) =>
     !search || l.title.toLowerCase().includes(search.toLowerCase())
   );
+  const filteredAuctions = auctions.filter((a) =>
+    !search || a.listing?.title?.toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredJobs = jobs.filter((j) =>
+    !search || j.title.toLowerCase().includes(search.toLowerCase()) || j.company.toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredSeekers = seekers.filter((s) =>
+    !search || s.title.toLowerCase().includes(search.toLowerCase())
+  );
   const pendingReports = reports.filter((r) => r.status === 'pending');
+
+  const pendingProducerApps = producerApps.filter((a) => a.status === 'pending');
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: 'stats', label: 'Áttekintés', icon: BarChart3 },
     { id: 'users', label: 'Felhasználók', icon: Users, badge: users.filter((u) => u.is_banned).length || undefined },
     { id: 'listings', label: 'Hirdetések', icon: LayoutGrid },
+    { id: 'auctions', label: 'Licitek', icon: Gavel },
+    { id: 'jobs', label: 'Állások', icon: Briefcase },
+    { id: 'seekers', label: 'Munkakeresők', icon: UserSearch },
     { id: 'reports', label: 'Bejelentések', icon: Flag, badge: pendingReports.length || undefined },
     { id: 'scam', label: 'Scam figyelő', icon: ShieldAlert },
+    { id: 'producers', label: 'Termelők', icon: Leaf, badge: pendingProducerApps.length || undefined },
   ];
 
   return (
@@ -392,11 +564,13 @@ export default function AdminPage() {
               {/* KPI row */}
               <div>
                 <SectionTitle>Platform összesítő</SectionTitle>
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <StatCard icon={Users} label="Felhasználók" value={stats.users} />
                   <StatCard icon={LayoutGrid} label="Aktív hirdetések" value={stats.listings} />
-                  <StatCard icon={TrendingUp} label="Aktív licitek" value={stats.auctions} color="text-amber-400" />
+                  <StatCard icon={Gavel} label="Aktív licitek" value={stats.auctions} color="text-amber-400" />
                   <StatCard icon={Store} label="Aktív boltok" value={stats.shops} color="text-teal-400" />
+                  <StatCard icon={Briefcase} label="Aktív állások" value={stats.jobs} color="text-sky-400" />
+                  <StatCard icon={UserSearch} label="Munkakeresők" value={stats.seekers} color="text-violet-400" />
                   <StatCard icon={Flag} label="Függő bejelentések" value={stats.reports} color="text-red-400" />
                 </div>
               </div>
@@ -623,8 +797,330 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* ── AUCTIONS TAB ──────────────────────────────────────────────── */}
+          {tab === 'auctions' && (
+            <div className="space-y-4">
+              <div className="glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Licithirdetés keresése..."
+                  className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+                <span className="text-xs text-zinc-600 flex-shrink-0">{filteredAuctions.length} db</span>
+              </div>
+              <div className="glass rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/5 text-zinc-500 text-xs">
+                        <th className="text-left px-4 py-3">Hirdetés</th>
+                        <th className="text-left px-4 py-3">Eladó</th>
+                        <th className="text-left px-4 py-3">Jelenlegi ár</th>
+                        <th className="text-left px-4 py-3">Licitek</th>
+                        <th className="text-left px-4 py-3">Állapot</th>
+                        <th className="text-left px-4 py-3">Lejár</th>
+                        <th className="text-right px-4 py-3">Műv.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAuctions.map((a) => (
+                        <tr key={a.id} className="border-b border-white/3 hover:bg-white/3 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-zinc-200 text-xs truncate max-w-[180px]">{a.listing?.title ?? '—'}</p>
+                            <p className="text-[10px] text-zinc-600">{formatRelativeTime(a.created_at)}</p>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-400 text-xs">
+                            {(a.listing as AuctionAdmin['listing'] & { seller?: Pick<Profile,'username'|'full_name'|'id'> })?.seller?.full_name ||
+                             (a.listing as AuctionAdmin['listing'] & { seller?: Pick<Profile,'username'|'full_name'|'id'> })?.seller?.username || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-amber-400 font-semibold text-xs">{formatPrice(a.current_price)}</td>
+                          <td className="px-4 py-3 text-zinc-400 text-xs">{a.bid_count}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-lg border ${
+                              a.status === 'active' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                              a.status === 'sold' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                              'bg-zinc-500/10 border-zinc-500/20 text-zinc-400'
+                            }`}>{a.status}</span>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-500 text-xs">{a.ends_at ? new Date(a.ends_at).toLocaleDateString('hu-HU') : '—'}</td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {a.listing?.id && (
+                                <button onClick={() => navigate(`/listing/${a.listing!.id}`)}
+                                  className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-zinc-200 transition-colors">
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button onClick={() => deleteAuction(a.id, a.listing_id)} disabled={actionLoading === a.id}
+                                className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors disabled:opacity-50">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredAuctions.length === 0 && (
+                        <tr><td colSpan={7} className="px-4 py-10 text-center text-zinc-600 text-sm">Nincs megjeleníthető licithirdetés</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── JOBS TAB ──────────────────────────────────────────────────── */}
+          {tab === 'jobs' && (
+            <div className="space-y-4">
+              <div className="glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Állás keresése..."
+                  className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+                <span className="text-xs text-zinc-600 flex-shrink-0">{filteredJobs.length} db</span>
+              </div>
+              <div className="glass rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/5 text-zinc-500 text-xs">
+                        <th className="text-left px-4 py-3">Pozíció / Cég</th>
+                        <th className="text-left px-4 py-3">Hirdető</th>
+                        <th className="text-left px-4 py-3">Kategória</th>
+                        <th className="text-left px-4 py-3">Helyszín</th>
+                        <th className="text-left px-4 py-3">Állapot</th>
+                        <th className="text-left px-4 py-3">Feladva</th>
+                        <th className="text-right px-4 py-3">Műv.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredJobs.map((j) => (
+                        <tr key={j.id} className="border-b border-white/3 hover:bg-white/3 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-zinc-200 text-xs truncate max-w-[180px]">{j.title}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Building2 className="w-2.5 h-2.5 text-zinc-600" />
+                              <p className="text-[10px] text-zinc-500 truncate max-w-[160px]">{j.company}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-400 text-xs">{j.poster?.full_name || j.poster?.username || '—'}</td>
+                          <td className="px-4 py-3 text-zinc-400 text-xs">{j.category}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-zinc-500 text-xs">
+                              {j.remote ? <Wifi className="w-3 h-3 text-sky-400" /> : <MapPin className="w-3 h-3" />}
+                              <span className="truncate max-w-[100px]">{j.remote ? 'Remote' : (j.location || '—')}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-lg border ${
+                              j.status === 'active' ? 'bg-sky-500/10 border-sky-500/20 text-sky-400' :
+                              j.status === 'closed' ? 'bg-zinc-500/10 border-zinc-500/20 text-zinc-400' :
+                              'bg-red-500/10 border-red-500/20 text-red-400'
+                            }`}>{j.status}</span>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-600 text-xs">{formatRelativeTime(j.created_at)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => deleteJob(j.id)} disabled={actionLoading === j.id}
+                              className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors disabled:opacity-50">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredJobs.length === 0 && (
+                        <tr><td colSpan={7} className="px-4 py-10 text-center text-zinc-600 text-sm">Nincs megjeleníthető álláshirdetés</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── SEEKERS TAB ───────────────────────────────────────────────── */}
+          {tab === 'seekers' && (
+            <div className="space-y-4">
+              <div className="glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Munkakereső keresése..."
+                  className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+                <span className="text-xs text-zinc-600 flex-shrink-0">{filteredSeekers.length} db</span>
+              </div>
+              <div className="glass rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/5 text-zinc-500 text-xs">
+                        <th className="text-left px-4 py-3">Munkakör</th>
+                        <th className="text-left px-4 py-3">Felhasználó</th>
+                        <th className="text-left px-4 py-3">Kategória</th>
+                        <th className="text-left px-4 py-3">Helyszín</th>
+                        <th className="text-left px-4 py-3">Tapasztalat</th>
+                        <th className="text-left px-4 py-3">Feladva</th>
+                        <th className="text-right px-4 py-3">Műv.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSeekers.map((s) => (
+                        <tr key={s.id} className="border-b border-white/3 hover:bg-white/3 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-zinc-200 text-xs truncate max-w-[180px]">{s.title}</p>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-400 text-xs">{s.user?.full_name || s.user?.username || '—'}</td>
+                          <td className="px-4 py-3 text-zinc-400 text-xs truncate max-w-[120px]">{s.category}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-zinc-500 text-xs">
+                              {s.remote ? <Wifi className="w-3 h-3 text-sky-400" /> : <MapPin className="w-3 h-3" />}
+                              <span className="truncate max-w-[100px]">{s.remote ? 'Remote' : (s.location || '—')}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-500 text-xs">{s.experience || '—'}</td>
+                          <td className="px-4 py-3 text-zinc-600 text-xs">{formatRelativeTime(s.created_at)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => deleteSeeker(s.id)} disabled={actionLoading === s.id}
+                              className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors disabled:opacity-50">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredSeekers.length === 0 && (
+                        <tr><td colSpan={7} className="px-4 py-10 text-center text-zinc-600 text-sm">Nincs megjeleníthető álláskereső hirdetés</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── SCAM TAB ──────────────────────────────────────────────────── */}
           {tab === 'scam' && <ScamTab />}
+
+          {/* ── PRODUCERS TAB ─────────────────────────────────────────────── */}
+          {tab === 'producers' && (
+            <div className="space-y-6">
+              {/* Kérelmek */}
+              <div className="space-y-3">
+                <h2 className="font-bold text-zinc-100 flex items-center gap-2">
+                  <Leaf className="w-5 h-5 text-emerald-400" /> Termelői kérelmek
+                  {producerApps.filter(a => a.status === 'pending').length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-semibold">
+                      {producerApps.filter(a => a.status === 'pending').length} függőben
+                    </span>
+                  )}
+                </h2>
+                {producerApps.length === 0 ? (
+                  <div className="glass rounded-2xl p-8 text-center text-zinc-500">Nincsenek termelői kérelmek.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {producerApps.map((app) => (
+                      <div key={app.id} className="glass rounded-2xl p-4 flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-zinc-200 text-sm">
+                              {(app as any).profile?.full_name || (app as any).profile?.username || 'Felhasználó'}
+                            </p>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                              app.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                              app.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {app.status === 'pending' ? 'Függőben' : app.status === 'approved' ? 'Jóváhagyva' : 'Elutasítva'}
+                            </span>
+                          </div>
+                          {app.message && <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{app.message}</p>}
+                          <p className="text-xs text-zinc-700 mt-1">{new Date(app.created_at).toLocaleDateString('hu-HU')}</p>
+                        </div>
+                        {app.status === 'pending' && (
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => approveProducerApp(app.id, app.user_id, true)}
+                              disabled={actionLoading === app.id}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-xs font-medium hover:scale-105 transition-all disabled:opacity-50"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" /> Jóváhagyás
+                            </button>
+                            <button
+                              onClick={() => approveProducerApp(app.id, app.user_id, false)}
+                              disabled={actionLoading === app.id}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/15 text-red-400 border border-red-500/25 text-xs font-medium hover:scale-105 transition-all disabled:opacity-50"
+                            >
+                              <XCircle className="w-3.5 h-3.5" /> Elutasítás
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Aktív termelők */}
+              <div className="space-y-3">
+                <h2 className="font-bold text-zinc-100 flex items-center gap-2">
+                  <Leaf className="w-5 h-5 text-emerald-400" /> Aktív termelők
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-700/50 text-zinc-400 font-semibold">{producers.length} db</span>
+                </h2>
+                {producers.length === 0 ? (
+                  <div className="glass rounded-2xl p-8 text-center text-zinc-500">Nincsenek regisztrált termelők.</div>
+                ) : (
+                  <div className="glass rounded-2xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/5 text-zinc-500 text-xs">
+                          <th className="text-left px-4 py-3">Termelő neve</th>
+                          <th className="text-left px-4 py-3">Felhasználó</th>
+                          <th className="text-left px-4 py-3">Helyszín</th>
+                          <th className="text-left px-4 py-3">Státusz</th>
+                          <th className="text-left px-4 py-3">Regisztrált</th>
+                          <th className="text-right px-4 py-3">Műv.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {producers.map((p) => (
+                          <tr key={p.id} className="border-b border-white/3 hover:bg-white/3 transition-colors">
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-zinc-200 text-xs truncate max-w-[160px]">{p.name}</p>
+                            </td>
+                            <td className="px-4 py-3 text-zinc-400 text-xs">{p.profile?.full_name || p.profile?.username || '—'}</td>
+                            <td className="px-4 py-3 text-zinc-500 text-xs truncate max-w-[120px]">{p.location || '—'}</td>
+                            <td className="px-4 py-3">
+                              {p.is_verified
+                                ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold">Hitelesített</span>
+                                : <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-700/50 text-zinc-400 font-semibold">Normál</span>
+                              }
+                            </td>
+                            <td className="px-4 py-3 text-zinc-600 text-xs">{formatRelativeTime(p.created_at)}</td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => revokeProducerRights(p.id, p.user_id)}
+                                  disabled={!!actionLoading}
+                                  className="p-1.5 glass-pill rounded-lg text-amber-500 hover:text-amber-300 transition-colors disabled:opacity-50"
+                                  title="Jog visszavonása (profil megmarad)"
+                                >
+                                  <ShieldOff className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => deleteProducer(p.id, p.user_id)}
+                                  disabled={!!actionLoading}
+                                  className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors disabled:opacity-50"
+                                  title="Termelő törlése (profil + jog törlése)"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

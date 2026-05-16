@@ -120,3 +120,11 @@ export const HUNGARIAN_COUNTIES = [
 ] as const;
 
 export type HungarianCounty = (typeof HUNGARIAN_COUNTIES)[number];
+
+export const RANK_CONFIG: Record<number, { title: string; color: string; bg: string; border: string; emoji: string }> = {
+  1: { title: 'Újonc',            color: 'text-zinc-400',    bg: 'bg-zinc-500/10',    border: 'border-zinc-500/20',    emoji: '🌱' },
+  2: { title: 'Megbízható Eladó', color: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    emoji: '✅' },
+  3: { title: 'Profi Eladó',      color: 'text-teal-400',    bg: 'bg-teal-500/10',    border: 'border-teal-500/20',    emoji: '⭐' },
+  4: { title: 'Kiemelt Eladó',    color: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   emoji: '🏆' },
+  5: { title: 'PiacPro Partner',  color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', emoji: '💎' },
+};

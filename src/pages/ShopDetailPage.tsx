@@ -78,20 +78,20 @@ function ProductModal({
     if (!user) { navigate('/login'); return; }
     if (user.id === shopOwnerId) return;
     setMsgLoading(true);
-    // Conversations require a listing_id — use NULL workaround like JobsPage
+    // Look for existing conversation for this specific product
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
       .eq('buyer_id', user.id)
       .eq('seller_id', shopOwnerId)
-      .is('listing_id', null)
+      .eq('shop_product_id', product.id)
       .maybeSingle();
     if (existing) {
       navigate(`/chat/${existing.id}`);
     } else {
       const { data: newConv } = await supabase
         .from('conversations')
-        .insert({ buyer_id: user.id, seller_id: shopOwnerId, listing_id: null })
+        .insert({ buyer_id: user.id, seller_id: shopOwnerId, listing_id: null, shop_product_id: product.id })
         .select('id').maybeSingle();
       if (newConv) navigate(`/chat/${newConv.id}`);
     }

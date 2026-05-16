@@ -1,9 +1,10 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import {
-  Home, Search, Heart, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase, Store
+  Home, Search, Heart, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase, Store, Leaf
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import ChatWidget from './ChatWidget';
 import Footer from './Footer';
 
@@ -11,6 +12,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut, unreadCount } = useAuth();
   const { navigate, path } = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingProducerApps, setPendingProducerApps] = useState(0);
+
+  useEffect(() => {
+    if (!profile?.is_admin && !profile?.is_super_admin) return;
+    fetchPendingApps();
+
+    const channel = supabase
+      .channel('layout-producer-apps')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'producer_applications' }, () => {
+        fetchPendingApps();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.is_admin, profile?.is_super_admin]);
+
+  async function fetchPendingApps() {
+    const { count } = await supabase
+      .from('producer_applications')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    setPendingProducerApps(count ?? 0);
+  }
 
   const navItems = user
     ? [
@@ -18,6 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { icon: ShoppingBag, label: 'Piactér', path: '/search' },
         { icon: Gavel, label: 'Licitek', path: '/auctions' },
         { icon: Store, label: 'Boltok', path: '/shops' },
+        { icon: Leaf, label: 'Termelők', path: '/producers' },
         { icon: Briefcase, label: 'Állások', path: '/jobs' },
         { icon: Heart, label: 'Kedvencek', path: '/favorites' },
         { icon: User, label: 'Profil', path: `/profile/${user.id}` },
@@ -27,6 +52,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { icon: ShoppingBag, label: 'Piactér', path: '/search' },
         { icon: Gavel, label: 'Licitek', path: '/auctions' },
         { icon: Store, label: 'Boltok', path: '/shops' },
+        { icon: Leaf, label: 'Termelők', path: '/producers' },
         { icon: Briefcase, label: 'Állások', path: '/jobs' },
         { icon: User, label: 'Bejelentkezés', path: '/login' },
       ];
@@ -35,6 +61,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (p === '/') return path === '/';
     if (p === '/search') return path === '/search' || path.startsWith('/listing/');
     if (p === '/shops') return path === '/shops' || path.startsWith('/shops/') || path === '/my-shop';
+    if (p === '/producers') return path === '/producers' || path.startsWith('/producers/');
     return path === p || path.startsWith(p + '/');
   };
 
@@ -78,11 +105,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {user && profile?.is_admin && (
               <button
                 onClick={() => navigate('/admin')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-200 ${
+                className={`relative flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-200 ${
                   isActive('/admin') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
                 }`}
               >
-                <Shield className="w-4 h-4" />
+                <span className="relative">
+                  <Shield className="w-4 h-4" />
+                  {pendingProducerApps > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {pendingProducerApps > 9 ? '9+' : pendingProducerApps}
+                    </span>
+                  )}
+                </span>
                 Admin
               </button>
             )}
@@ -152,8 +186,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         isActive('/admin') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
                       }`}
                     >
-                      <Shield className="w-5 h-5" />
+                      <span className="relative">
+                        <Shield className="w-5 h-5" />
+                        {pendingProducerApps > 0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            {pendingProducerApps > 9 ? '9+' : pendingProducerApps}
+                          </span>
+                        )}
+                      </span>
                       Admin
+                      {pendingProducerApps > 0 && (
+                        <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold">
+                          {pendingProducerApps} termelői kérelem
+                        </span>
+                      )}
                     </button>
                   )}
                   <button

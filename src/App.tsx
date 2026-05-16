@@ -22,6 +22,9 @@ import JobsPage from './pages/JobsPage';
 import ShopsPage from './pages/ShopsPage';
 import ShopDetailPage from './pages/ShopDetailPage';
 import ShopDashboardPage from './pages/ShopDashboardPage';
+import ProducersPage from './pages/ProducersPage';
+import ProducerProfilePage from './pages/ProducerProfilePage';
+import ProducerSetupPage from './pages/ProducerSetupPage';
 
 function App() {
   const router = useRouterProvider();
@@ -50,6 +53,10 @@ function App() {
     if (path === '/shops') return <ShopsPage />;
     if (path.startsWith('/shops/')) return <ShopDetailPage />;
     if (path === '/my-shop') return <ShopDashboardPage />;
+    if (path === '/producers') return <ProducersPage />;
+    if (path === '/producers/apply') return <ProducerSetupPage />;
+    if (path.startsWith('/producers/') && !path.endsWith('/edit')) return <ProducerProfilePage />;
+    if (path.startsWith('/producers/') && path.endsWith('/edit')) return <ProducerSetupPage />;
 
     return (
       <div className="text-center py-20">
