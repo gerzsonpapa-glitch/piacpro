@@ -418,6 +418,16 @@ export default function ShopDashboardPage() {
     setShopSaving(false);
   }
 
+  async function deleteShop() {
+    if (!shop) return;
+    if (!confirm(`Biztosan törlöd a(z) "${shop.name}" boltot? Ez az összes terméket és akciót is törli.`)) return;
+    const { error } = await supabase.from('shops').delete().eq('id', shop.id);
+    if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); return; }
+    await supabase.from('profiles').update({ is_shop_owner: false }).eq('id', user!.id);
+    showToast('success', 'Bolt törölve');
+    navigate('/shops');
+  }
+
   async function deleteProduct(id: string) {
     if (!confirm('Biztosan törlöd a terméket?')) return;
     await supabase.from('shop_products').delete().eq('id', id);
@@ -512,11 +522,19 @@ export default function ShopDashboardPage() {
             )}
           </div>
         </div>
-        {shop?.is_verified && (
-          <span className="flex items-center gap-1 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-            <ShieldCheck className="w-3.5 h-3.5" />Hitelesített
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {shop?.is_verified && (
+            <span className="flex items-center gap-1 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+              <ShieldCheck className="w-3.5 h-3.5" />Hitelesített
+            </span>
+          )}
+          {shop && (
+            <button onClick={deleteShop}
+              className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 px-3 py-1.5 rounded-xl transition-colors">
+              <Trash2 className="w-3.5 h-3.5" />Bolt törlése
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

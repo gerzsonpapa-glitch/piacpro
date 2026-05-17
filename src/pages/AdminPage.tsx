@@ -13,7 +13,7 @@ import {
   Gavel, Briefcase, UserSearch, MapPin, Wifi, Building2, Leaf
 } from 'lucide-react';
 
-type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers';
+type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops';
 
 const DEFAULT_SCAM_KEYWORDS = [
   'előre utalás', 'előre fizet', 'előre pénz', 'crypto only', 'bitcoin only',
@@ -240,7 +240,7 @@ export default function AdminPage() {
   const initialTab = (() => {
     const params = new URLSearchParams(routerSearch);
     const t = params.get('tab') as Tab | null;
-    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers'];
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops'];
     return t && valid.includes(t) ? t : 'stats';
   })();
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -248,7 +248,7 @@ export default function AdminPage() {
   useEffect(() => {
     const params = new URLSearchParams(routerSearch);
     const t = params.get('tab') as Tab | null;
-    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers'];
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops'];
     if (t && valid.includes(t)) setTab(t);
   }, [routerSearch]);
 
@@ -261,6 +261,7 @@ export default function AdminPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [producerApps, setProducerApps] = useState<ProducerApplication[]>([]);
   const [producers, setProducers] = useState<any[]>([]);
+  const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -275,7 +276,7 @@ export default function AdminPage() {
 
   async function loadAll() {
     setLoading(true);
-    await Promise.all([loadStats(), loadUsers(), loadListings(), loadAuctions(), loadJobs(), loadSeekers(), loadReports(), loadProducerApps(), loadProducers()]);
+    await Promise.all([loadStats(), loadUsers(), loadListings(), loadAuctions(), loadJobs(), loadSeekers(), loadReports(), loadProducerApps(), loadProducers(), loadShops()]);
     setLoading(false);
   }
 
@@ -385,6 +386,23 @@ export default function AdminPage() {
     showToast('success', 'Termelő törölve');
     setActionLoading(null);
     loadProducers();
+  }
+
+  async function loadShops() {
+    const { data } = await supabase
+      .from('shops')
+      .select('id, name, slug, location, category, is_active, is_verified, created_at, owner_id, owner:profiles(id, username, full_name)')
+      .order('created_at', { ascending: false });
+    setShops(data || []);
+  }
+
+  async function deleteShop(shopId: string) {
+    if (!confirm('Biztosan törlöd ezt a boltot?')) return;
+    setActionLoading(shopId);
+    const { error } = await supabase.from('shops').delete().eq('id', shopId);
+    if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); }
+    else { setShops((prev) => prev.filter((s) => s.id !== shopId)); showToast('success', 'Bolt törölve'); }
+    setActionLoading(null);
   }
 
   async function revokeProducerRights(producerId: string, userId: string) {
@@ -517,6 +535,7 @@ export default function AdminPage() {
     { id: 'reports', label: 'Bejelentések', icon: Flag, badge: pendingReports.length || undefined },
     { id: 'scam', label: 'Scam figyelő', icon: ShieldAlert },
     { id: 'producers', label: 'Termelők', icon: Leaf, badge: pendingProducerApps.length || undefined },
+    { id: 'shops', label: 'Boltok', icon: Store },
   ];
 
   return (
@@ -1165,6 +1184,74 @@ export default function AdminPage() {
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+          {/* ── SHOPS TAB ─────────────────────────────────────────────────── */}
+          {tab === 'shops' && (
+            <div className="space-y-4">
+              <div className="glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Bolt neve vagy helyszín..."
+                  className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+                <span className="text-xs text-zinc-600 flex-shrink-0">{shops.filter((s) => !search || s.name?.toLowerCase().includes(search.toLowerCase()) || s.location?.toLowerCase().includes(search.toLowerCase())).length} db</span>
+              </div>
+              <div className="glass rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/5 text-zinc-500 text-xs">
+                        <th className="text-left px-4 py-3">Bolt neve</th>
+                        <th className="text-left px-4 py-3">Tulajdonos</th>
+                        <th className="text-left px-4 py-3">Helyszín</th>
+                        <th className="text-left px-4 py-3">Kategória</th>
+                        <th className="text-left px-4 py-3">Állapot</th>
+                        <th className="text-right px-4 py-3">Műv.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shops
+                        .filter((s) => !search || s.name?.toLowerCase().includes(search.toLowerCase()) || s.location?.toLowerCase().includes(search.toLowerCase()))
+                        .map((s) => (
+                          <tr key={s.id} className="border-b border-white/3 hover:bg-white/3 transition-colors">
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-zinc-200 text-xs truncate max-w-[180px]">{s.name}</p>
+                              <p className="text-[10px] text-zinc-600">/{s.slug}</p>
+                            </td>
+                            <td className="px-4 py-3 text-zinc-400 text-xs">{s.owner?.full_name || s.owner?.username || '—'}</td>
+                            <td className="px-4 py-3 text-zinc-400 text-xs truncate max-w-[120px]">{s.location || '—'}</td>
+                            <td className="px-4 py-3 text-zinc-400 text-xs">{s.category || '—'}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-lg border ${
+                                s.is_active
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                  : 'bg-zinc-500/10 border-zinc-500/20 text-zinc-500'
+                              }`}>{s.is_active ? 'Aktív' : 'Inaktív'}</span>
+                              {s.is_verified && (
+                                <span className="ml-1 text-[10px] px-2 py-0.5 rounded-lg border bg-teal-500/10 border-teal-500/20 text-teal-400">Hitelesített</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={() => navigate(`/shops/${s.slug}`)}
+                                  className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-zinc-200 transition-colors">
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => deleteShop(s.id)} disabled={actionLoading === s.id}
+                                  className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors disabled:opacity-50">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                  {shops.length === 0 && (
+                    <div className="py-12 text-center text-zinc-600 text-sm">Nincsenek boltok</div>
+                  )}
+                </div>
               </div>
             </div>
           )}

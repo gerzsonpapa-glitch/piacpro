@@ -4,7 +4,7 @@ import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import type { ProducerApplication } from '../lib/types';
-import { Leaf, CheckCircle2, Clock, XCircle, ChevronLeft, Sprout, Sun, Apple, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, Save, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Leaf, CheckCircle2, Clock, XCircle, ChevronLeft, Sprout, Sun, Apple, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, Save, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 
 const CATEGORIES = [
   { key: 'vegetable', label: 'Zöldség', icon: Sprout },
@@ -122,6 +122,17 @@ export default function ProducerSetupPage() {
       showToast('success', 'Termelői profil létrehozva!');
       if (data) navigate(`/producers/${data.id}`);
     }
+  }
+
+  async function deleteProducer() {
+    if (!producerId) return;
+    if (!confirm('Biztosan törlöd a termelői profilodat? Ez visszavonhatatlan, és az összes terméked törlődik.')) return;
+    const { error } = await supabase.rpc('admin_delete_producer', { p_producer_id: producerId });
+    if (error) { showToast('error', 'Hiba', error.message); return; }
+    await supabase.from('profiles').update({ is_producer_approved: false }).eq('id', user!.id);
+    await refreshProfile();
+    showToast('success', 'Termelői profil törölve');
+    navigate('/producers');
   }
 
   function toggleCategory(key: string) {
@@ -318,6 +329,16 @@ export default function ProducerSetupPage() {
             <Save className="w-4 h-4" />
             {saving ? 'Mentés...' : hasProducer ? 'Változtatások mentése' : 'Profil létrehozása'}
           </button>
+
+          {hasProducer && (
+            <button
+              onClick={deleteProducer}
+              className="w-full py-2.5 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20"
+            >
+              <Trash2 className="w-4 h-4" />
+              Termelői profil törlése
+            </button>
+          )}
         </div>
       )}
     </div>
