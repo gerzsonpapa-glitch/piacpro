@@ -4,7 +4,7 @@ import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import type { Producer, ProducerProduct } from '../lib/types';
-import { MapPin, Star, CheckCircle2, Leaf, MessageCircle, Phone, Mail, Award, Clock, Package, Plus, Trash2, X, Save, ToggleLeft, ToggleRight, ChevronLeft, Sprout, Sun, Apple, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, Tag, User, Camera, ImagePlus, CreditCard as Edit2, ChevronRight, ChevronLeft as ChevLeft, ShoppingCart, Minus, Send, Search, Loader2 } from 'lucide-react';
+import { MapPin, Star, CheckCircle2, Leaf, MessageCircle, Phone, Mail, Award, Clock, Package, Plus, Trash2, X, Save, ToggleLeft, ToggleRight, ChevronLeft, Sprout, Sun, Apple, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, Tag, User, Camera, ImagePlus, CreditCard as Edit2, ChevronRight, ChevronLeft as ChevLeft, ShoppingCart, Minus, Send, Search, Loader2, Lock } from 'lucide-react';
 
 // ── Hungarian counties ─────────────────────────────────────────────────────────
 const HU_COUNTIES = [
@@ -1068,18 +1068,28 @@ export default function ProducerProfilePage() {
 
           {producer.bio && <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">{producer.bio}</p>}
 
-          <div className="flex flex-wrap gap-4 text-sm">
-            {producer.contact_phone && (
-              <a href={`tel:${producer.contact_phone}`} className="flex items-center gap-1.5 text-zinc-500 hover:text-emerald-400 transition-colors">
-                <Phone className="w-3.5 h-3.5" /> {producer.contact_phone}
-              </a>
-            )}
-            {producer.contact_email && (
-              <a href={`mailto:${producer.contact_email}`} className="flex items-center gap-1.5 text-zinc-500 hover:text-emerald-400 transition-colors">
-                <Mail className="w-3.5 h-3.5" /> {producer.contact_email}
-              </a>
-            )}
-          </div>
+          {(producer.contact_phone || producer.contact_email) && (
+            <div className="flex flex-wrap gap-4 text-sm">
+              {user ? (
+                <>
+                  {producer.contact_phone && (
+                    <a href={`tel:${producer.contact_phone}`} className="flex items-center gap-1.5 text-zinc-500 hover:text-emerald-400 transition-colors">
+                      <Phone className="w-3.5 h-3.5" /> {producer.contact_phone}
+                    </a>
+                  )}
+                  {producer.contact_email && (
+                    <a href={`mailto:${producer.contact_email}`} className="flex items-center gap-1.5 text-zinc-500 hover:text-emerald-400 transition-colors">
+                      <Mail className="w-3.5 h-3.5" /> {producer.contact_email}
+                    </a>
+                  )}
+                </>
+              ) : (
+                <button onClick={() => navigate('/login')} className="flex items-center gap-1.5 text-zinc-600 hover:text-emerald-400 transition-colors text-xs">
+                  <Lock className="w-3.5 h-3.5" /> Bejelentkezés az elérhetőség megtekintéséhez
+                </button>
+              )}
+            </div>
+          )}
 
           {(producer.categories ?? []).length > 0 && (
             <div className="flex flex-wrap gap-2">

@@ -26,6 +26,7 @@ export interface Profile {
   rank_level: number;
   rank_title: string;
   is_producer_approved: boolean;
+  ai_access: boolean;
   created_at: string;
   updated_at: string;
 }

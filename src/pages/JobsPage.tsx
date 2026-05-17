@@ -2,13 +2,14 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { useRouter } from '../lib/router';
 import type { Job, JobSeekerAd } from '../lib/types';
 import { formatRelativeTime, HUNGARIAN_COUNTIES, JOB_CATEGORIES } from '../lib/utils';
 import {
   Briefcase, MapPin, Search, PlusCircle, Building2, Clock,
   Wifi, ChevronRight, SlidersHorizontal, X, Banknote, Pencil,
   Trash2, Camera, Save, Phone, Mail, ArrowLeft, CheckCircle, AlertCircle,
-  UserSearch, Send, User, GraduationCap, MessageCircle
+  UserSearch, Send, User, GraduationCap, MessageCircle, Lock
 } from 'lucide-react';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -519,6 +520,7 @@ type View = 'list' | 'detail' | 'create' | 'edit' | 'seeker-create' | 'seeker-de
 export default function JobsPage() {
   const { user } = useAuth();
   const { showToast } = useNotification();
+  const { navigate } = useRouter();
 
   // Tab
   const [mainTab, setMainTab] = useState<MainTab>('offers');
@@ -895,18 +897,24 @@ export default function JobsPage() {
           {(selectedJob.contact_email || selectedJob.contact_phone) && (
             <div className="border-t border-white/5 pt-5 space-y-3">
               <h2 className="font-semibold text-zinc-200 text-sm">Kapcsolat</h2>
-              <div className="flex flex-wrap gap-3">
-                {selectedJob.contact_email && (
-                  <a href={`mailto:${selectedJob.contact_email}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-emerald-300 hover:text-emerald-200 transition-colors font-medium">
-                    <Mail className="w-4 h-4" />{selectedJob.contact_email}
-                  </a>
-                )}
-                {selectedJob.contact_phone && (
-                  <a href={`tel:${selectedJob.contact_phone}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-emerald-300 hover:text-emerald-200 transition-colors font-medium">
-                    <Phone className="w-4 h-4" />{selectedJob.contact_phone}
-                  </a>
-                )}
-              </div>
+              {user ? (
+                <div className="flex flex-wrap gap-3">
+                  {selectedJob.contact_email && (
+                    <a href={`mailto:${selectedJob.contact_email}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-emerald-300 hover:text-emerald-200 transition-colors font-medium">
+                      <Mail className="w-4 h-4" />{selectedJob.contact_email}
+                    </a>
+                  )}
+                  {selectedJob.contact_phone && (
+                    <a href={`tel:${selectedJob.contact_phone}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-emerald-300 hover:text-emerald-200 transition-colors font-medium">
+                      <Phone className="w-4 h-4" />{selectedJob.contact_phone}
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <button onClick={() => navigate('/login')} className="flex items-center gap-2 text-sm text-zinc-500 hover:text-emerald-400 transition-colors">
+                  <Lock className="w-4 h-4" /> Bejelentkezés az elérhetőség megtekintéséhez
+                </button>
+              )}
             </div>
           )}
           <div className="border-t border-white/5 pt-4 flex items-center justify-between text-xs text-zinc-600">
@@ -1091,18 +1099,24 @@ export default function JobsPage() {
           {(selectedSeekerAd.contact_email || selectedSeekerAd.contact_phone) && !isOwn && (
             <div className="border-t border-white/5 pt-5 space-y-3">
               <h2 className="font-semibold text-zinc-200 text-sm">Közvetlen elérhetőség</h2>
-              <div className="flex flex-wrap gap-3">
-                {selectedSeekerAd.contact_email && (
-                  <a href={`mailto:${selectedSeekerAd.contact_email}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-sky-300 hover:text-sky-200 transition-colors font-medium">
-                    <Mail className="w-4 h-4" />{selectedSeekerAd.contact_email}
-                  </a>
-                )}
-                {selectedSeekerAd.contact_phone && (
-                  <a href={`tel:${selectedSeekerAd.contact_phone}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-sky-300 hover:text-sky-200 transition-colors font-medium">
-                    <Phone className="w-4 h-4" />{selectedSeekerAd.contact_phone}
-                  </a>
-                )}
-              </div>
+              {user ? (
+                <div className="flex flex-wrap gap-3">
+                  {selectedSeekerAd.contact_email && (
+                    <a href={`mailto:${selectedSeekerAd.contact_email}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-sky-300 hover:text-sky-200 transition-colors font-medium">
+                      <Mail className="w-4 h-4" />{selectedSeekerAd.contact_email}
+                    </a>
+                  )}
+                  {selectedSeekerAd.contact_phone && (
+                    <a href={`tel:${selectedSeekerAd.contact_phone}`} className="flex items-center gap-2 glass-pill px-4 py-2.5 rounded-xl text-sm text-sky-300 hover:text-sky-200 transition-colors font-medium">
+                      <Phone className="w-4 h-4" />{selectedSeekerAd.contact_phone}
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <button onClick={() => navigate('/login')} className="flex items-center gap-2 text-sm text-zinc-500 hover:text-emerald-400 transition-colors">
+                  <Lock className="w-4 h-4" /> Bejelentkezés az elérhetőség megtekintéséhez
+                </button>
+              )}
             </div>
           )}
           <div className="border-t border-white/5 pt-4 flex items-center justify-between text-xs text-zinc-600">

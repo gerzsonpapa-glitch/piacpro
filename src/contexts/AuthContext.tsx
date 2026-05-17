@@ -130,7 +130,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username, full_name: fullName } },
+      options: {
+        data: { username, full_name: fullName },
+        emailRedirectTo: 'https://www.piacpro.hu',
+      },
     });
     const needsConfirmation = !error && !data.session;
     return { error: error?.message ?? null, needsConfirmation };

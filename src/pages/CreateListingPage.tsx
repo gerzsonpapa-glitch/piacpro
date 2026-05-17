@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
@@ -7,8 +7,8 @@ import type { Category } from '../lib/types';
 import { HUNGARIAN_COUNTIES } from '../lib/utils';
 import {
   Upload, X, MapPin, DollarSign, Tag, FileText, ImagePlus, Phone, Mail,
-  Truck, Package, Handshake, Video, Play, Shield, Sparkles, PenLine,
-  RefreshCw, ChevronRight, Wand2, Image as ImageIcon, Gift
+  Truck, Package, Handshake, Video, Play, Shield,
+  Image as ImageIcon, Gift, Sparkles, Lock, Clock
 } from 'lucide-react';
 
 const FREE_CATEGORY_ID = 'cf52d829-a11f-4b71-95a0-c7c2bcfc38e5';
@@ -53,19 +53,10 @@ const HUNGARIAN_CATEGORIES = [
   'Számítógép és IT', 'Egyéb',
 ];
 
-interface ImagePreview {
-  file: File;
-  url: string;
-  base64: string;
-}
+const AI_MIN_DAYS = 90;
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+function getAccountAgeDays(createdAt: string): number {
+  return Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
 }
 
 type Mode = 'manual' | 'ai';
@@ -79,21 +70,17 @@ const SCAM_KEYWORDS = [
 ];
 
 export default function CreateListingPage() {
-  const { user } = useAuth();
-  const { navigate, search } = useRouter();
+  const { user, profile } = useAuth();
+  const { navigate } = useRouter();
   const { showToast } = useNotification();
 
   const [mode, setMode] = useState<Mode>('manual');
 
-  // --- AI mode state ---
-  const [aiText, setAiText] = useState('');
-  const [aiImages, setAiImages] = useState<ImagePreview[]>([]);
-  const [aiIsDragging, setAiIsDragging] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiGenerated, setAiGenerated] = useState(false);
-  const aiFileRef = useRef<HTMLInputElement>(null);
+  const accountAgeDays = user?.created_at ? getAccountAgeDays(user.created_at) : 0;
+  const aiEligible = (profile?.ai_access === true) || accountAgeDays >= AI_MIN_DAYS;
+  const aiDaysLeft = Math.max(0, AI_MIN_DAYS - accountAgeDays);
 
-  // --- Shared form fields ---
+  // --- Form fields ---
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -120,16 +107,6 @@ export default function CreateListingPage() {
     loadProfileContact();
   }, [user]);
 
-  useEffect(() => {
-    if (!search) return;
-    const params = new URLSearchParams(search);
-    const aiTitle = params.get('ai_title');
-    const aiDescription = params.get('ai_description');
-    const aiPrice = params.get('ai_price');
-    if (aiTitle) setTitle(aiTitle);
-    if (aiDescription) setDescription(aiDescription);
-    if (aiPrice) setPrice(aiPrice);
-  }, [search]);
 
   async function fetchCategories() {
     const { data } = await supabase.from('categories').select('*').order('sort_order');
@@ -149,88 +126,7 @@ export default function CreateListingPage() {
     }
   }
 
-  // --- AI image handling ---
-  const processAiFiles = useCallback(async (files: FileList | File[]) => {
-    const arr = Array.from(files);
-    const remaining = 4 - aiImages.length;
-    if (remaining <= 0) { showToast('error', 'Maximum 4 kép tölthető fel'); return; }
-    const toAdd = arr.slice(0, remaining);
-    const previews: ImagePreview[] = [];
-    for (const file of toAdd) {
-      if (!file.type.startsWith('image/')) continue;
-      if (file.size > 5 * 1024 * 1024) { showToast('error', `${file.name} túl nagy (max 5MB)`); continue; }
-      const url = URL.createObjectURL(file);
-      const base64 = await fileToBase64(file);
-      previews.push({ file, url, base64 });
-    }
-    setAiImages((prev) => [...prev, ...previews]);
-  }, [aiImages.length, showToast]);
-
-  const handleAiDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    setAiIsDragging(false);
-    await processAiFiles(e.dataTransfer.files);
-  }, [processAiFiles]);
-
-  const removeAiImage = (idx: number) => {
-    setAiImages((prev) => { URL.revokeObjectURL(prev[idx].url); return prev.filter((_, i) => i !== idx); });
-  };
-
-  async function generateWithAI() {
-    if (!aiText.trim() && aiImages.length === 0) {
-      showToast('error', 'Írj le valamit a termékről, vagy tölts fel képet!');
-      return;
-    }
-    if (!user) { showToast('error', 'Bejelentkezés szükséges'); navigate('/login'); return; }
-
-    setAiLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-listing-assistant`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'Apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({
-            userText: aiText.trim(),
-            imageBase64List: aiImages.map((img) => img.base64),
-            mode: 'generate',
-          }),
-        }
-      );
-
-      const json = await res.json();
-      if (!res.ok || json.error) { showToast('error', json.error ?? 'Generálás sikertelen'); return; }
-
-      const result = json.data;
-      setTitle(result.title ?? '');
-      setDescription(result.description ?? '');
-      setPrice(result.suggestedPrice ? String(result.suggestedPrice) : '');
-
-      // Match AI category name to DB category id
-      if (result.category && categories.length > 0) {
-        const match = categories.find(
-          (c) => c.name.toLowerCase() === result.category.toLowerCase()
-        );
-        if (match) setCategoryId(match.id);
-      }
-
-      setAiGenerated(true);
-      showToast('success', 'AI generálás kész!', 'Ellenőrizd és egészítsd ki az adatokat.');
-    } catch {
-      showToast('error', 'Hálózati hiba. Próbáld újra!');
-    } finally {
-      setAiLoading(false);
-    }
-  }
-
-  // --- Manual image upload ---
+  // --- Image upload ---
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || !user) return;
@@ -319,121 +215,47 @@ export default function CreateListingPage() {
         <button
           type="button"
           onClick={() => setMode('manual')}
-          className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-            mode === 'manual'
-              ? 'bg-zinc-700/60 text-zinc-100 shadow-sm'
-              : 'text-zinc-500 hover:text-zinc-300'
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            mode === 'manual' ? 'bg-zinc-700/60 text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
-          <PenLine className="w-4 h-4" />
-          Magam írom meg
+          Saját szöveg
         </button>
         <button
           type="button"
           onClick={() => setMode('ai')}
-          className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
             mode === 'ai'
-              ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 shadow-sm'
+              ? aiEligible
+                ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 shadow-sm'
+                : 'bg-amber-500/10 border border-amber-500/20 text-amber-400 shadow-sm'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
           <Sparkles className="w-4 h-4" />
           AI generálás
+          {!aiEligible && <Lock className="w-3.5 h-3.5 opacity-70" />}
         </button>
       </div>
 
-      {/* AI panel */}
-      {mode === 'ai' && (
-        <div className="glass rounded-2xl p-5 mb-6 space-y-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Wand2 className="w-4.5 h-4.5 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-zinc-100">AI Hirdetés Asszisztens</p>
-              <p className="text-xs text-zinc-500">Írj pár szót vagy tölts fel képet — az AI megírja helyetted</p>
-            </div>
+      {/* AI locked panel */}
+      {mode === 'ai' && !aiEligible && (
+        <div className="glass rounded-2xl p-6 mb-6 text-center space-y-4">
+          <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto">
+            <Lock className="w-6 h-6 text-amber-400" />
           </div>
-
-          {/* AI image drop zone */}
           <div>
-            <p className="text-xs font-medium text-zinc-400 mb-2 flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
-              Képek az AI-nak ({aiImages.length}/4)
-            </p>
-            <div
-              onDragOver={(e) => { e.preventDefault(); setAiIsDragging(true); }}
-              onDragLeave={() => setAiIsDragging(false)}
-              onDrop={handleAiDrop}
-              onClick={() => aiFileRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 ${
-                aiIsDragging
-                  ? 'border-emerald-400/60 bg-emerald-500/5'
-                  : 'border-zinc-700/60 hover:border-emerald-500/40 hover:bg-emerald-500/3'
-              }`}
-            >
-              <input
-                ref={aiFileRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={async (e) => { if (e.target.files) await processAiFiles(e.target.files); e.target.value = ''; }}
-                className="hidden"
-              />
-              <Upload className={`w-6 h-6 mx-auto mb-1.5 transition-colors ${aiIsDragging ? 'text-emerald-400' : 'text-zinc-600'}`} />
-              <p className="text-xs text-zinc-400">{aiIsDragging ? 'Engedd el...' : 'Húzd ide a képeket, vagy kattints'}</p>
-              <p className="text-[11px] text-zinc-600 mt-0.5">Max 4 kép · 5 MB/db</p>
-            </div>
-            {aiImages.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {aiImages.map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
-                    <button
-                      type="button"
-                      onClick={() => removeAiImage(i)}
-                      className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3 text-white" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="text-zinc-100 font-semibold text-sm">Az AI Asszisztens még zárolt</p>
+            <p className="text-zinc-500 text-xs mt-1">Ez a funkció legalább 3 hónapos fiókhoz szükséges</p>
           </div>
-
-          {/* AI text input */}
-          <div>
-            <p className="text-xs font-medium text-zinc-400 mb-2">Rövid leírás a termékről</p>
-            <textarea
-              value={aiText}
-              onChange={(e) => setAiText(e.target.value)}
-              rows={3}
-              placeholder={`Pl: "Toyota Corolla 2018, 120 000 km, benzin, klíma, szervizkönyv megvan"`}
-              className="w-full px-3.5 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-600 focus:outline-none text-sm resize-none leading-relaxed"
-            />
+          <div className="flex items-center justify-center gap-2 px-4 py-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+            <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span className="text-amber-300 font-semibold text-sm">{aiDaysLeft} nap</span>
+            <span className="text-zinc-500 text-sm">van hátra a feloldásig</span>
           </div>
-
-          <button
-            type="button"
-            onClick={generateWithAI}
-            disabled={aiLoading}
-            className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20"
-          >
-            {aiLoading ? (
-              <><RefreshCw className="w-4 h-4 animate-spin" />AI generál...</>
-            ) : (
-              <><Sparkles className="w-4 h-4" />{aiGenerated ? 'Újragenerálás' : 'Hirdetés adatok generálása'}</>
-            )}
-          </button>
-
-          {aiGenerated && (
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-500/8 border border-emerald-500/20 rounded-xl">
-              <ChevronRight className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-              <p className="text-xs text-emerald-300">Adatok kitöltve — ellenőrizd és egészítsd ki az alábbi mezőket, majd töltsd fel a hirdetés képeit.</p>
-            </div>
-          )}
+          <p className="text-zinc-600 text-xs">
+            Regisztrációtól számítva: {accountAgeDays} / {AI_MIN_DAYS} nap
+          </p>
         </div>
       )}
 
@@ -510,7 +332,7 @@ export default function CreateListingPage() {
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1.5">
             <Tag className="w-4 h-4 inline mr-1" />
-            Cím
+            Termék neve
           </label>
           <input
             type="text"

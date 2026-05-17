@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import {
   Sparkles, Upload, X, Image, RefreshCw, ArrowRight,
   Tag, DollarSign, FileText, Search, Wand2, ChevronDown,
-  AlertCircle, CheckCircle, Lightbulb
+  AlertCircle, CheckCircle, Lightbulb, Lock, Clock
 } from 'lucide-react';
 
 interface AIResult {
@@ -83,10 +83,11 @@ function EditableField({
 }
 
 export default function AIAssistantPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { navigate } = useRouter();
   const { showToast } = useNotification();
 
+  const [accountAgeDays, setAccountAgeDays] = useState<number | null>(null);
   const [userText, setUserText] = useState('');
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -103,6 +104,13 @@ export default function AIAssistantPage() {
   const [newTag, setNewTag] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!user) { navigate('/login'); return; }
+    const created = new Date(user.created_at ?? '');
+    const days = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+    setAccountAgeDays(Math.floor(days));
+  }, [user]);
 
   const applyResult = (r: AIResult) => {
     setResult(r);
@@ -227,6 +235,10 @@ export default function AIAssistantPage() {
     navigate(`/create?${params.toString()}`);
   };
 
+  const MIN_DAYS = 90;
+  const isEligible = (profile?.ai_access === true) || (accountAgeDays !== null && accountAgeDays >= MIN_DAYS);
+  const daysLeft = accountAgeDays !== null ? Math.max(0, MIN_DAYS - accountAgeDays) : MIN_DAYS;
+
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       {/* Header */}
@@ -255,6 +267,28 @@ export default function AIAssistantPage() {
           ))}
         </div>
       </div>
+
+      {/* Locked banner */}
+      {!isEligible && accountAgeDays !== null && (
+        <div className="flex items-center gap-4 px-5 py-4 bg-amber-500/8 border border-amber-500/25 rounded-2xl">
+          <div className="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Lock className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-300">Funkció zárolva</p>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Ez a funkció 3 hónapos fiókhoz szükséges. Regisztrációtól számítva {accountAgeDays} / {MIN_DAYS} nap telt el.
+            </p>
+          </div>
+          <div className="flex flex-col items-center flex-shrink-0">
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/15 border border-amber-500/20 rounded-xl">
+              <Clock className="w-4 h-4 text-amber-400" />
+              <span className="text-amber-300 font-bold text-lg tabular-nums">{daysLeft}</span>
+            </div>
+            <span className="text-zinc-600 text-[11px] mt-1">nap van hátra</span>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Left: Input */}
@@ -331,13 +365,22 @@ export default function AIAssistantPage() {
           {/* Generate button */}
           <button
             onClick={generate}
-            disabled={loading}
-            className="w-full py-4 rounded-2xl font-semibold text-sm transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 hover:scale-[1.01] active:scale-[0.99]"
+            disabled={loading || !isEligible}
+            className={`w-full py-4 rounded-2xl font-semibold text-sm transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] ${
+              !isEligible
+                ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400/60'
+                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+            }`}
           >
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
                 AI generál...
+              </>
+            ) : !isEligible ? (
+              <>
+                <Lock className="w-4 h-4" />
+                Zárolva — még {daysLeft} nap
               </>
             ) : (
               <>

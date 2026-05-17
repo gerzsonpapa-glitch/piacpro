@@ -441,6 +441,13 @@ export default function AdminPage() {
     await loadUsers();
     setActionLoading(null);
   }
+  async function toggleAiAccess(userId: string, grant: boolean) {
+    if (!isSuperAdmin) return;
+    setActionLoading(userId + '-ai');
+    await supabase.from('profiles').update({ ai_access: grant }).eq('id', userId);
+    await loadUsers();
+    setActionLoading(null);
+  }
   async function deleteListing(listingId: string) {
     setActionLoading(listingId);
     const { error } = await supabase.from('listings').update({ status: 'deleted' }).eq('id', listingId);
@@ -638,27 +645,67 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* Shop owners */}
+              {/* Shop owners + AI access in a 2-col grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="glass rounded-2xl p-5">
+                  <SectionTitle>Boltnyitási joggal rendelkezők ({users.filter((u) => u.is_shop_owner).length})</SectionTitle>
+                  {users.filter((u) => u.is_shop_owner).length === 0 ? (
+                    <p className="text-zinc-600 text-sm">Még senki</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {users.filter((u) => u.is_shop_owner).map((u) => (
+                        <div key={u.id} className="inline-flex items-center gap-2 glass-pill px-3 py-1.5 rounded-xl text-sm">
+                          <Store className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-zinc-300">{u.full_name || u.username || u.id.slice(0, 8)}</span>
+                          {isSuperAdmin && (
+                            <button onClick={() => toggleShopOwner(u.id, false)} disabled={actionLoading === u.id + '-shop'}
+                              className="text-[10px] text-zinc-500 hover:text-red-400 transition-colors ml-1">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="glass rounded-2xl p-5 border border-sky-500/10">
+                  <SectionTitle>AI Asszisztens hozzáférés ({users.filter((u) => u.ai_access).length})</SectionTitle>
+                  {users.filter((u) => u.ai_access).length === 0 ? (
+                    <p className="text-zinc-600 text-sm">Még senki</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {users.filter((u) => u.ai_access).map((u) => (
+                        <div key={u.id} className="inline-flex items-center gap-2 glass-pill px-3 py-1.5 rounded-xl text-sm border border-sky-500/15">
+                          <Wifi className="w-3.5 h-3.5 text-sky-400" />
+                          <span className="text-zinc-300">{u.full_name || u.username || u.id.slice(0, 8)}</span>
+                          {isSuperAdmin && (
+                            <button onClick={() => toggleAiAccess(u.id, false)} disabled={actionLoading === u.id + '-ai'}
+                              className="text-[10px] text-zinc-500 hover:text-red-400 transition-colors ml-1">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Recent registrations */}
               <div className="glass rounded-2xl p-5">
-                <SectionTitle>Boltnyitási joggal rendelkezők ({users.filter((u) => u.is_shop_owner).length})</SectionTitle>
-                {users.filter((u) => u.is_shop_owner).length === 0 ? (
-                  <p className="text-zinc-600 text-sm">Még senki</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {users.filter((u) => u.is_shop_owner).map((u) => (
-                      <div key={u.id} className="inline-flex items-center gap-2 glass-pill px-3 py-1.5 rounded-xl text-sm">
-                        <Store className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-zinc-300">{u.full_name || u.username || u.id.slice(0, 8)}</span>
-                        {isSuperAdmin && (
-                          <button onClick={() => toggleShopOwner(u.id, false)} disabled={actionLoading === u.id + '-shop'}
-                            className="text-[10px] text-zinc-500 hover:text-red-400 transition-colors ml-1">
-                            <X className="w-3 h-3" />
-                          </button>
-                        )}
+                <SectionTitle>Legutóbbi regisztrációk</SectionTitle>
+                <div className="space-y-2">
+                  {users.slice(0, 10).map((u) => (
+                    <div key={u.id} className="flex items-center justify-between py-1.5 border-b border-white/4 last:border-0">
+                      <div>
+                        <p className="text-sm text-zinc-300">{u.full_name || u.username || 'Névtelen'}</p>
+                        {u.username && <p className="text-[10px] text-zinc-600">@{u.username}</p>}
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <span className="text-[10px] text-zinc-600">{formatRelativeTime(u.created_at)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -685,7 +732,7 @@ export default function AdminPage() {
                   <div className="divide-y divide-white/3">
                     {filteredUsers.filter((u) => u.is_banned).map((u) => (
                       <UserRow key={u.id} u={u} currentUserId={user!.id} isSuperAdmin={isSuperAdmin} actionLoading={actionLoading}
-                        onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} />
+                        onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} onAiAccess={toggleAiAccess} />
                     ))}
                   </div>
                 </div>
@@ -700,7 +747,7 @@ export default function AdminPage() {
                 <div className="divide-y divide-white/3">
                   {filteredUsers.filter((u) => !u.is_banned).map((u) => (
                     <UserRow key={u.id} u={u} currentUserId={user!.id} isSuperAdmin={isSuperAdmin} actionLoading={actionLoading}
-                      onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} />
+                      onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} onAiAccess={toggleAiAccess} />
                   ))}
                 </div>
               </div>
@@ -1128,7 +1175,7 @@ export default function AdminPage() {
 }
 
 // ── User Row ──────────────────────────────────────────────────────────────────
-function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerify, onAdmin, onShopOwner, onLevel }: {
+function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerify, onAdmin, onShopOwner, onLevel, onAiAccess }: {
   u: Profile;
   currentUserId: string;
   isSuperAdmin: boolean;
@@ -1138,6 +1185,7 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
   onAdmin: (id: string, v: boolean) => void;
   onShopOwner: (id: string, v: boolean) => void;
   onLevel: (u: Profile) => void;
+  onAiAccess: (id: string, v: boolean) => void;
 }) {
   const isCurrentUser = u.id === currentUserId;
   const canModify = !isCurrentUser && !u.is_super_admin;
@@ -1152,6 +1200,7 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
           {u.is_super_admin && <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">SUPER</span>}
           {u.is_admin && !u.is_super_admin && <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">ADMIN</span>}
           {u.is_shop_owner && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5"><Store className="w-2.5 h-2.5" />BOLT</span>}
+          {u.ai_access && <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">AI</span>}
           {u.is_banned && <span className="text-[9px] font-bold text-zinc-500 bg-zinc-500/10 px-1.5 py-0.5 rounded">TILTOTT</span>}
           {u.verified && <span className="text-[9px] font-bold text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded">VER.</span>}
         </div>
@@ -1192,6 +1241,17 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
               : <button onClick={() => onShopOwner(u.id, true)} disabled={actionLoading === u.id + '-shop'}
                   className="text-[10px] text-emerald-400 hover:text-emerald-300 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
                   <Store className="w-3 h-3" />Bolt jog
+                </button>
+          )}
+          {isSuperAdmin && (
+            u.ai_access
+              ? <button onClick={() => onAiAccess(u.id, false)} disabled={actionLoading === u.id + '-ai'}
+                  className="text-[10px] text-zinc-400 hover:text-zinc-200 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
+                  <Wifi className="w-3 h-3" />AI le
+                </button>
+              : <button onClick={() => onAiAccess(u.id, true)} disabled={actionLoading === u.id + '-ai'}
+                  className="text-[10px] text-sky-400 hover:text-sky-300 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
+                  <Wifi className="w-3 h-3" />AI jog
                 </button>
           )}
           {u.verified

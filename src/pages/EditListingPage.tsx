@@ -266,7 +266,7 @@ export default function EditListingPage() {
         {/* Title */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-            <Tag className="w-4 h-4 inline mr-1" />Cím
+            <Tag className="w-4 h-4 inline mr-1" />Termék neve
           </label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={100}
             className="w-full px-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all" />
