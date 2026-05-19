@@ -339,12 +339,12 @@ export default function ListingDetailPage() {
               </button>
             </>
           )}
-          <img
-            src={images[lightboxIndex]}
-            alt={listing?.title}
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            {images.map((src, i) => (
+              <img key={src} src={src} alt={listing?.title}
+                className={`max-w-[90vw] max-h-[90vh] object-contain rounded-2xl transition-opacity duration-300 ${i === lightboxIndex ? 'opacity-100 relative' : 'opacity-0 absolute inset-0'}`} />
+            ))}
+          </div>
           {images.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
               {images.map((_, i) => (
@@ -383,12 +383,14 @@ export default function ListingDetailPage() {
           <div className="relative aspect-[4/3] glass-bubble rounded-3xl overflow-hidden group/img">
             {images.length > 0 ? (
               <>
-                <img src={images[currentImage]} alt={listing.title}
-                  className="w-full h-full object-cover cursor-zoom-in"
-                  onClick={() => openLightbox(currentImage)} />
+                {images.map((src, i) => (
+                  <img key={src} src={src} alt={listing.title}
+                    className={`absolute inset-0 w-full h-full object-cover cursor-zoom-in transition-opacity duration-300 ${i === currentImage ? 'opacity-100' : 'opacity-0'}`}
+                    onClick={() => openLightbox(currentImage)} />
+                ))}
                 <button
                   onClick={() => openLightbox(currentImage)}
-                  className="absolute top-3 right-3 w-9 h-9 glass-strong rounded-xl flex items-center justify-center text-white/70 hover:text-white opacity-0 group-hover/img:opacity-100 transition-opacity">
+                  className="absolute top-3 right-3 w-9 h-9 glass-strong rounded-xl flex items-center justify-center text-white/70 hover:text-white opacity-0 group-hover/img:opacity-100 transition-opacity z-10">
                   <ZoomIn className="w-4 h-4" />
                 </button>
                 {listing.status === 'sold' && (
@@ -399,17 +401,17 @@ export default function ListingDetailPage() {
                 {images.length > 1 && (
                   <>
                     <button onClick={() => setCurrentImage((currentImage - 1 + images.length) % images.length)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 glass-strong rounded-full flex items-center justify-center hover:bg-white/20">
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 glass-strong rounded-full flex items-center justify-center hover:bg-white/20 z-10">
                       <ChevronLeft className="w-5 h-5 text-white" />
                     </button>
                     <button onClick={() => setCurrentImage((currentImage + 1) % images.length)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 glass-strong rounded-full flex items-center justify-center hover:bg-white/20">
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 glass-strong rounded-full flex items-center justify-center hover:bg-white/20 z-10">
                       <ChevronRight className="w-5 h-5 text-white" />
                     </button>
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                       {images.map((_, i) => (
                         <button key={i} onClick={() => setCurrentImage(i)}
-                          className={`w-2 h-2 rounded-full transition-colors ${i === currentImage ? 'bg-white' : 'bg-white/40'}`} />
+                          className={`h-2 rounded-full transition-all ${i === currentImage ? 'bg-white w-4' : 'w-2 bg-white/40'}`} />
                       ))}
                     </div>
                   </>

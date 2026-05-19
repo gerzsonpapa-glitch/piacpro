@@ -11,8 +11,6 @@ import {
   Image as ImageIcon, Gift, Sparkles, Lock, Clock
 } from 'lucide-react';
 
-const FREE_CATEGORY_ID = 'cf52d829-a11f-4b71-95a0-c7c2bcfc38e5';
-
 const DELIVERY_OPTIONS = [
   {
     id: 'gls',
@@ -43,14 +41,6 @@ const conditions = [
   { value: 'used', label: 'Használt', desc: 'Jó állapot, nyomokkal', emoji: '👍' },
   { value: 'fair', label: 'Közepes', desc: 'Látható kopás, működik', emoji: '🔧' },
   { value: 'poor', label: 'Rossz', desc: 'Javításra szorul', emoji: '⚠️' },
-];
-
-const HUNGARIAN_CATEGORIES = [
-  'Elektronika', 'Ruházat és divat', 'Otthon és kert', 'Sport és szabadidő',
-  'Játékok és gyerekfelszerelés', 'Könyvek, filmek, zene', 'Autó és motor',
-  'Ingatlan', 'Állatok és állatfelszerelés', 'Élelmiszer és ital',
-  'Egészség és szépség', 'Hobbi és gyűjtők', 'Bútorok és lakberendezés',
-  'Számítógép és IT', 'Egyéb',
 ];
 
 const AI_MIN_DAYS = 90;
@@ -176,7 +166,7 @@ export default function CreateListingPage() {
 
     setLoading(true);
     const finalPrice = parseFloat(price) || 0;
-    const finalCategoryId = finalPrice === 0 ? FREE_CATEGORY_ID : (categoryId || null);
+    const finalCategoryId = categoryId || null;
 
     const { data, error } = await supabase
       .from('listings')
@@ -415,9 +405,19 @@ export default function CreateListingPage() {
             className="w-full px-4 py-3 glass-input rounded-xl text-zinc-100 focus:outline-none transition-all"
           >
             <option value="">Válassz kategóriát</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
+            {categories.filter((c) => !c.parent_id).map((parent) => {
+              const children = categories.filter((c) => c.parent_id === parent.id);
+              return children.length > 0 ? (
+                <optgroup key={parent.id} label={parent.name}>
+                  <option value={parent.id}>{parent.name} — összes</option>
+                  {children.map((child) => (
+                    <option key={child.id} value={child.id}>{child.name}</option>
+                  ))}
+                </optgroup>
+              ) : (
+                <option key={parent.id} value={parent.id}>{parent.name}</option>
+              );
+            })}
           </select>
         </div>
 

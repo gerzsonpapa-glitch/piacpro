@@ -13,7 +13,7 @@ import {
   Gavel, Briefcase, UserSearch, MapPin, Wifi, Building2, Leaf
 } from 'lucide-react';
 
-type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops';
+type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops' | 'moderation';
 
 const DEFAULT_SCAM_KEYWORDS = [
   'előre utalás', 'előre fizet', 'előre pénz', 'crypto only', 'bitcoin only',
@@ -262,6 +262,8 @@ export default function AdminPage() {
   const [producerApps, setProducerApps] = useState<ProducerApplication[]>([]);
   const [producers, setProducers] = useState<any[]>([]);
   const [shops, setShops] = useState<any[]>([]);
+  const [pendingDonations, setPendingDonations] = useState<any[]>([]);
+  const [pendingJobs, setPendingJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -276,7 +278,7 @@ export default function AdminPage() {
 
   async function loadAll() {
     setLoading(true);
-    await Promise.all([loadStats(), loadUsers(), loadListings(), loadAuctions(), loadJobs(), loadSeekers(), loadReports(), loadProducerApps(), loadProducers(), loadShops()]);
+    await Promise.all([loadStats(), loadUsers(), loadListings(), loadAuctions(), loadJobs(), loadSeekers(), loadReports(), loadProducerApps(), loadProducers(), loadShops(), loadPendingModeration()]);
     setLoading(false);
   }
 
@@ -394,6 +396,31 @@ export default function AdminPage() {
       .select('id, name, slug, location, category, is_active, is_verified, created_at, owner_id, owner:profiles(id, username, full_name)')
       .order('created_at', { ascending: false });
     setShops(data || []);
+  }
+
+  async function loadPendingModeration() {
+    const [{ data: donationData }, { data: jobData }] = await Promise.all([
+      supabase.from('donations').select('*, creator:profiles(id, username, full_name, trust_level)').eq('moderation_status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('jobs').select('*, poster:profiles(id, username, full_name, trust_level)').eq('moderation_status', 'pending').order('created_at', { ascending: false }),
+    ]);
+    setPendingDonations(donationData || []);
+    setPendingJobs(jobData || []);
+  }
+
+  async function moderateDonation(id: string, status: 'active' | 'rejected') {
+    setActionLoading(id);
+    const { error } = await supabase.rpc('admin_moderate_donation', { donation_id: id, new_status: status });
+    if (error) { showToast('error', 'Hiba', error.message); }
+    else { showToast('success', status === 'active' ? 'Kampány jóváhagyva' : 'Kampány elutasítva'); loadPendingModeration(); }
+    setActionLoading(null);
+  }
+
+  async function moderateJob(id: string, status: 'active' | 'rejected') {
+    setActionLoading(id);
+    const { error } = await supabase.rpc('admin_moderate_job', { job_id: id, new_status: status });
+    if (error) { showToast('error', 'Hiba', error.message); }
+    else { showToast('success', status === 'active' ? 'Állás jóváhagyva' : 'Állás elutasítva'); loadPendingModeration(); }
+    setActionLoading(null);
   }
 
   async function deleteShop(shopId: string) {
@@ -536,6 +563,7 @@ export default function AdminPage() {
     { id: 'scam', label: 'Scam figyelő', icon: ShieldAlert },
     { id: 'producers', label: 'Termelők', icon: Leaf, badge: pendingProducerApps.length || undefined },
     { id: 'shops', label: 'Boltok', icon: Store },
+    { id: 'moderation', label: 'Moderáció', icon: ShieldCheck, badge: (pendingDonations.length + pendingJobs.length) || undefined },
   ];
 
   return (
@@ -1187,6 +1215,114 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+          {/* ── MODERATION TAB ───────────────────────────────────────────── */}
+          {tab === 'moderation' && (
+            <div className="space-y-6">
+              {/* Pending donations */}
+              <div>
+                <h3 className="text-sm font-bold text-zinc-300 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                  Jóváhagyásra váró adománygyűjtések
+                  {pendingDonations.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-xs font-bold border border-rose-500/20">
+                      {pendingDonations.length}
+                    </span>
+                  )}
+                </h3>
+                {pendingDonations.length === 0 ? (
+                  <div className="glass-bubble rounded-2xl p-8 text-center text-zinc-500 text-sm">
+                    Nincs jóváhagyásra váró kampány
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingDonations.map((d: any) => (
+                      <div key={d.id} className="glass-bubble rounded-2xl p-4 flex items-start gap-4">
+                        {d.images?.[0] && (
+                          <img src={d.images[0]} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-zinc-200 text-sm">{d.title}</p>
+                          <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-zinc-600">
+                            <span>Szervező: <strong className="text-zinc-400">{d.creator?.full_name || d.creator?.username}</strong></span>
+                            <span>Trust szint: <strong className="text-zinc-400">{d.creator?.trust_level ?? 1}</strong></span>
+                            {d.goal_amount > 0 && <span>Cél: <strong className="text-emerald-400">{d.goal_amount.toLocaleString('hu-HU')} Ft</strong></span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => moderateDonation(d.id, 'active')}
+                            disabled={actionLoading === d.id}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 transition-all disabled:opacity-50"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />Jóváhagy
+                          </button>
+                          <button
+                            onClick={() => moderateDonation(d.id, 'rejected')}
+                            disabled={actionLoading === d.id}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/25 transition-all disabled:opacity-50"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />Elutasít
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pending jobs */}
+              <div>
+                <h3 className="text-sm font-bold text-zinc-300 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-400" />
+                  Jóváhagyásra váró állások
+                  {pendingJobs.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-xs font-bold border border-blue-500/20">
+                      {pendingJobs.length}
+                    </span>
+                  )}
+                </h3>
+                {pendingJobs.length === 0 ? (
+                  <div className="glass-bubble rounded-2xl p-8 text-center text-zinc-500 text-sm">
+                    Nincs jóváhagyásra váró állás
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingJobs.map((j: any) => (
+                      <div key={j.id} className="glass-bubble rounded-2xl p-4 flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-zinc-200 text-sm">{j.title}</p>
+                          <p className="text-xs text-zinc-500 mt-0.5">{j.company} — {j.location}</p>
+                          <p className="text-xs text-zinc-600 mt-1 line-clamp-2">{j.description}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-zinc-600">
+                            <span>Feladó: <strong className="text-zinc-400">{j.poster?.full_name || j.poster?.username}</strong></span>
+                            <span>Trust szint: <strong className="text-zinc-400">{j.poster?.trust_level ?? 1}</strong></span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => moderateJob(j.id, 'active')}
+                            disabled={actionLoading === j.id}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 transition-all disabled:opacity-50"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />Jóváhagy
+                          </button>
+                          <button
+                            onClick={() => moderateJob(j.id, 'rejected')}
+                            disabled={actionLoading === j.id}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/25 transition-all disabled:opacity-50"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />Elutasít
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── SHOPS TAB ─────────────────────────────────────────────────── */}
           {tab === 'shops' && (
             <div className="space-y-4">

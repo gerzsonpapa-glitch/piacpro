@@ -253,25 +253,28 @@ function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
     </div>
   );
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-zinc-900">
-      <img src={images[idx]} alt={alt} className="w-full aspect-video object-cover" />
+    <div className="relative rounded-2xl overflow-hidden bg-zinc-900 aspect-video">
+      {images.map((src, i) => (
+        <img key={src} src={src} alt={alt}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${i === idx ? 'opacity-100' : 'opacity-0'}`} />
+      ))}
       {images.length > 1 && (
         <>
           <button
             onClick={() => setIdx((i) => (i - 1 + images.length) % images.length)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10"
           >
             <ChevLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIdx((i) => (i + 1) % images.length)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
             {images.map((_, i) => (
-              <button key={i} onClick={() => setIdx(i)} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? 'bg-white' : 'bg-white/40'}`} />
+              <button key={i} onClick={() => setIdx(i)} className={`h-1.5 rounded-full transition-all ${i === idx ? 'bg-white w-3' : 'w-1.5 bg-white/40'}`} />
             ))}
           </div>
         </>

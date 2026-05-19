@@ -1,3 +1,24 @@
+// Trust szintek: 0=új, 1=alap, 2=megbízható, 3=ellenőrzött eladó, 4=partner, 5=official
+export type TrustLevel = 0 | 1 | 2 | 3 | 4 | 5;
+
+export const TRUST_LEVEL_LABELS: Record<TrustLevel, string> = {
+  0: 'Új felhasználó',
+  1: 'Alap felhasználó',
+  2: 'Megbízható',
+  3: 'Ellenőrzött eladó',
+  4: 'Partner',
+  5: 'Hivatalos szervezet',
+};
+
+export const TRUST_LEVEL_COLORS: Record<TrustLevel, string> = {
+  0: 'text-zinc-500',
+  1: 'text-zinc-400',
+  2: 'text-blue-400',
+  3: 'text-teal-400',
+  4: 'text-amber-400',
+  5: 'text-emerald-400',
+};
+
 export interface Profile {
   id: string;
   username: string | null;
@@ -27,6 +48,7 @@ export interface Profile {
   rank_title: string;
   is_producer_approved: boolean;
   ai_access: boolean;
+  trust_level: TrustLevel;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +167,9 @@ export interface Category {
   subcategories?: Category[];
 }
 
+export type ListingType = 'regular' | 'auction' | 'job' | 'donation' | 'shop' | 'producer' | 'service';
+export type ModerationStatus = 'pending' | 'active' | 'rejected' | 'hidden';
+
 export interface Listing {
   id: string;
   seller_id: string;
@@ -155,6 +180,8 @@ export interface Listing {
   currency: string;
   condition: string;
   location: string;
+  lat: number | null;
+  lng: number | null;
   phone: string;
   contact_email: string;
   images: string[];
@@ -164,7 +191,9 @@ export interface Listing {
   is_featured: boolean;
   views: number;
   status: 'active' | 'sold' | 'ended' | 'deleted';
-  listing_type: 'regular' | 'auction';
+  listing_type: ListingType;
+  moderation_status: ModerationStatus;
+  trust_required: number;
   delivery_options: string[];
   sold_at: string | null;
   ended_at: string | null;
@@ -333,6 +362,71 @@ export interface JobSeekerAd {
   created_at: string;
   updated_at: string;
   user?: Profile;
+}
+
+export interface Donation {
+  id: string;
+  creator_id: string;
+  title: string;
+  description: string;
+  category: 'gyerek' | 'allatvédelem' | 'raszorulok' | 'kozossegi' | 'egeszseg' | 'katasztrofa' | 'oktatás' | 'sport' | 'vallasi' | 'kornyezet' | 'egyeb';
+  goal_amount: number;
+  current_amount: number;
+  escrow_amount: number;
+  images: string[];
+  location: string;
+  is_verified: boolean;
+  status: 'active' | 'ended' | 'cancelled';
+  moderation_status: ModerationStatus;
+  ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+  creator?: Profile;
+  contributions?: DonationContribution[];
+}
+
+export interface DonationContribution {
+  id: string;
+  donation_id: string;
+  donor_id: string | null;
+  amount: number;
+  message: string;
+  is_anonymous: boolean;
+  created_at: string;
+  donor?: Profile;
+}
+
+export type OfferType = 'item' | 'service';
+export type OfferStatus = 'active' | 'pending' | 'claimed' | 'fulfilled';
+
+export type OfferCategory =
+  | 'gyerek' | 'allatvédelem' | 'raszorulok' | 'kozossegi'
+  | 'egeszseg' | 'katasztrofa' | 'oktatás' | 'sport' | 'vallasi' | 'kornyezet'
+  | 'ruha' | 'elelmiszer' | 'butor' | 'jatekok' | 'felszereles'
+  | 'fuvar' | 'rendezvenysegites' | 'szaksegitseg' | 'egyeb';
+
+export interface SupportOffer {
+  id: string;
+  donation_id: string | null;
+  user_id: string;
+  type: OfferType;
+  title: string;
+  description: string;
+  category: OfferCategory;
+  item_type: string | null;
+  service_type: string | null;
+  quantity: number | null;
+  location: string;
+  lat: number | null;
+  lng: number | null;
+  images: string[];
+  status: OfferStatus;
+  claimed_by: string | null;
+  claimed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: Profile;
+  claimer?: Profile;
 }
 
 export interface Report {

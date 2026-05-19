@@ -322,7 +322,19 @@ export default function EditListingPage() {
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
             className="w-full px-4 py-3 glass-input rounded-xl text-zinc-100 focus:outline-none transition-all">
             <option value="">Kategória nélkül</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {categories.filter((c) => !c.parent_id).map((parent) => {
+              const children = categories.filter((c) => c.parent_id === parent.id);
+              return children.length > 0 ? (
+                <optgroup key={parent.id} label={parent.name}>
+                  <option value={parent.id}>{parent.name} — összes</option>
+                  {children.map((child) => (
+                    <option key={child.id} value={child.id}>{child.name}</option>
+                  ))}
+                </optgroup>
+              ) : (
+                <option key={parent.id} value={parent.id}>{parent.name}</option>
+              );
+            })}
           </select>
         </div>
 

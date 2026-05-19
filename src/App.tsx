@@ -25,6 +25,11 @@ import ShopDashboardPage from './pages/ShopDashboardPage';
 import ProducersPage from './pages/ProducersPage';
 import ProducerProfilePage from './pages/ProducerProfilePage';
 import ProducerSetupPage from './pages/ProducerSetupPage';
+import DonationsPage from './pages/DonationsPage';
+import DonationDetailPage from './pages/DonationDetailPage';
+import CreateDonationPage from './pages/CreateDonationPage';
+import DiscoverPage from './pages/DiscoverPage';
+import CreateOfferPage from './pages/CreateOfferPage';
 
 function App() {
   const router = useRouterProvider();
@@ -39,6 +44,7 @@ function App() {
     if (path === '/create-auction') return <CreateAuctionPage />;
     if (path === '/auctions') return <AuctionsPage />;
     if (path === '/search') return <SearchPage />;
+    if (path === '/discover') return <DiscoverPage />;
     if (path === '/favorites') return <FavoritesPage />;
     if (path === '/messages') return <MessagesPage />;
     if (path.startsWith('/listing/')) return <ListingDetailPage />;
@@ -57,6 +63,10 @@ function App() {
     if (path === '/producers/apply') return <ProducerSetupPage />;
     if (path.startsWith('/producers/') && !path.endsWith('/edit')) return <ProducerProfilePage />;
     if (path.startsWith('/producers/') && path.endsWith('/edit')) return <ProducerSetupPage />;
+    if (path === '/donations') return <DonationsPage />;
+    if (path === '/donations/create') return <CreateDonationPage />;
+    if (path.startsWith('/donations/')) return <DonationDetailPage />;
+    if (path === '/offers/create') return <CreateOfferPage />;
 
     return (
       <div className="text-center py-20">

@@ -117,34 +117,33 @@ function ProductModal({
         </button>
 
         {/* Image carousel */}
-        <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden">
+        <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden flex">
           {images.length > 0 ? (
             <>
-              <img
-                src={images[imgIdx]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+              {images.map((src, i) => (
+                <img key={src} src={src} alt={product.name}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${i === imgIdx ? 'opacity-100' : 'opacity-0'}`} />
+              ))}
               {images.length > 1 && (
                 <>
                   <button
                     onClick={() => setImgIdx((i) => (i - 1 + images.length) % images.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 glass-bubble rounded-full flex items-center justify-center text-zinc-200 hover:text-white transition-colors"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 glass-bubble rounded-full flex items-center justify-center text-zinc-200 hover:text-white transition-colors z-10"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setImgIdx((i) => (i + 1) % images.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 glass-bubble rounded-full flex items-center justify-center text-zinc-200 hover:text-white transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 glass-bubble rounded-full flex items-center justify-center text-zinc-200 hover:text-white transition-colors z-10"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                     {images.map((_, i) => (
                       <button
                         key={i}
                         onClick={() => setImgIdx(i)}
-                        className={`w-1.5 h-1.5 rounded-full transition-all ${i === imgIdx ? 'bg-white scale-125' : 'bg-white/40'}`}
+                        className={`h-1.5 rounded-full transition-all ${i === imgIdx ? 'bg-white w-3' : 'w-1.5 bg-white/40'}`}
                       />
                     ))}
                   </div>

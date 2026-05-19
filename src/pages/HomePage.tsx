@@ -2,35 +2,33 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
-import type { Listing, Job, Category, Producer } from '../lib/types';
+import type { Listing, Job, Category, Producer, Donation } from '../lib/types';
 import ListingCard from '../components/ListingCard';
 import { normalizeListingAuction, formatPrice } from '../lib/utils';
 import {
   Search, ArrowRight, ShoppingBag, Gavel, Briefcase,
   Timer, Flame, Users, TrendingUp, MapPin,
-  PlusCircle, Building2, Wifi, Banknote, Package,
+  PlusCircle, Building2, Wifi, Package,
   Zap, Star, Clock, ChevronRight,
-  Smartphone, Car, Home, Shirt, Baby, Dumbbell,
-  Gamepad2, Wrench, Gift, BookOpen, PawPrint, Monitor,
-  Leaf, CheckCircle2
+  Home, Leaf, CheckCircle2,
+  Palette, Scissors, Sprout, Monitor, Music, Shirt,
+  Apple, BookOpen, Lightbulb, Gift, Heart, Target
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  electronics: Smartphone,
-  gaming: Gamepad2,
-  phones: Smartphone,
-  computers: Monitor,
-  vehicles: Car,
-  fashion: Shirt,
-  kids: Baby,
-  furniture: Home,
-  tools: Wrench,
-  free: Gift,
-  sport: Dumbbell,
-  books: BookOpen,
-  'real-estate': Building2,
-  pets: PawPrint,
-  other: Package,
+  alkotasok: Palette,
+  kezmuvesek: Scissors,
+  termelok: Sprout,
+  digitalis: Monitor,
+  media: Music,
+  'lakas-dekor': Home,
+  divat: Shirt,
+  elelmiszer: Apple,
+  szolgaltatasok: Briefcase,
+  oktatas: BookOpen,
+  kreatif: Lightbulb,
+  egyedi: Star,
+  egyeb: Package,
 };
 
 function getIcon(slug: string): React.ElementType {
@@ -180,6 +178,7 @@ export default function HomePage() {
   const [featuredProducers, setFeaturedProducers] = useState<Producer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Listing[]>([]);
+  const [featuredDonations, setFeaturedDonations] = useState<Donation[]>([]);
 
   const [listingCount, setListingCount] = useState(0);
   const [auctionCount, setAuctionCount] = useState(0);
@@ -187,7 +186,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchCategories(), fetchRecentlyViewed(), fetchProducers()])
+    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchCategories(), fetchRecentlyViewed(), fetchProducers(), fetchDonations()])
       .finally(() => setLoading(false));
   }, []);
 
@@ -249,6 +248,17 @@ export default function HomePage() {
     setFeaturedProducers((data || []) as Producer[]);
   }
 
+  async function fetchDonations() {
+    const { data } = await supabase
+      .from('donations')
+      .select('*')
+      .eq('status', 'active')
+      .order('is_verified', { ascending: false })
+      .order('current_amount', { ascending: false })
+      .limit(3);
+    setFeaturedDonations((data || []) as Donation[]);
+  }
+
   async function fetchRecentlyViewed() {
     try {
       const ids: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
@@ -268,6 +278,14 @@ export default function HomePage() {
   }
 
   function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (searchLocation) params.set('location', searchLocation);
+    navigate(`/discover?${params.toString()}`);
+  }
+
+  function handleMarketSearch(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.set('q', searchQuery.trim());
@@ -305,25 +323,33 @@ export default function HomePage() {
             Minden egy helyen: termékhirdetések, élő licitek és állásajánlatok. Gyors, egyszerű, megbízható.
           </p>
 
-          <form onSubmit={handleSearch} className="mt-8 flex flex-col sm:flex-row gap-2.5 max-w-xl">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Mit keresel? Termék, állás..."
-                className="w-full pl-11 pr-4 py-3.5 glass-input rounded-2xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+          <form onSubmit={handleSearch} className="mt-8 space-y-2.5 max-w-xl">
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Mit keresel? Termék, állás, termelő..."
+                  className="w-full pl-11 pr-4 py-3.5 glass-input rounded-2xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+              </div>
+              <div className="relative sm:w-44">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                <select value={searchLocation} onChange={(e) => setSearchLocation(e.target.value)}
+                  className="w-full pl-8 pr-3 py-3.5 glass-input rounded-2xl text-zinc-100 focus:outline-none text-sm cursor-pointer">
+                  <option value="">Országos</option>
+                  {COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="relative sm:w-48">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
-              <select value={searchLocation} onChange={(e) => setSearchLocation(e.target.value)}
-                className="w-full pl-8 pr-3 py-3.5 glass-input rounded-2xl text-zinc-100 focus:outline-none text-sm cursor-pointer">
-                <option value="">Országos</option>
-                {COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+            <div className="flex gap-2">
+              <button type="submit"
+                className="flex-1 py-3 glass-pill-active text-emerald-300 font-semibold rounded-2xl transition-all hover:scale-[1.01] text-sm">
+                Keresés mindenben
+              </button>
+              <button type="button" onClick={(e) => handleMarketSearch(e as unknown as React.FormEvent)}
+                className="px-4 py-3 glass-pill text-zinc-400 hover:text-zinc-200 rounded-2xl text-sm font-medium transition-colors">
+                Csak piactér
+              </button>
             </div>
-            <button type="submit"
-              className="px-7 py-3.5 glass-pill-active text-emerald-300 font-semibold rounded-2xl transition-all hover:scale-[1.02] text-sm whitespace-nowrap">
-              Keresés
-            </button>
           </form>
         </div>
       </section>
@@ -416,24 +442,31 @@ export default function HomePage() {
       {/* ── CATEGORIES ───────────────────────────────────────────────────── */}
       {categories.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-zinc-400 flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-emerald-400" />Kategóriák
-            </h2>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-emerald-400" />Kategóriák
+              </h2>
+              <p className="text-zinc-500 text-sm mt-0.5">Alkotók, termelők, szolgáltatók — minden egy helyen</p>
+            </div>
             <button onClick={() => navigate('/search')}
-              className="text-emerald-400 text-xs font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
-              Összes <ArrowRight className="w-3.5 h-3.5" />
+              className="text-emerald-400 text-sm font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
+              Összes <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
             {categories.map((cat) => {
               const Icon = getIcon(cat.slug);
-              const isFree = cat.slug === 'free';
+              const destination = cat.slug === 'termelok' ? '/producers' : `/search?category=${cat.slug}`;
               return (
-                <button key={cat.id} onClick={() => navigate(`/search?category=${cat.slug}`)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border border-transparent hover:border-emerald-500/20 glass-bubble ${isFree ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}>
-                  <Icon className={`w-3.5 h-3.5 ${isFree ? 'text-emerald-400' : 'text-zinc-500'}`} />
-                  {cat.name}
+                <button key={cat.id} onClick={() => navigate(destination)}
+                  className="group flex flex-col items-center gap-2.5 p-4 glass-bubble rounded-2xl transition-all duration-300 hover:scale-[1.04] hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/15">
+                  <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                    <Icon className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <span className="text-xs font-medium text-zinc-400 group-hover:text-emerald-300 transition-colors text-center leading-tight line-clamp-2">
+                    {cat.name}
+                  </span>
                 </button>
               );
             })}
@@ -606,6 +639,58 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* ── ADOMÁNY KAMPÁNYOK ────────────────────────────────────────────── */}
+      {(loading || featuredDonations.length > 0) && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Heart className="w-5 h-5 text-rose-400" />Adomány kampányok
+            </h2>
+            <button onClick={() => navigate('/donations')}
+              className="text-rose-400 text-sm font-medium hover:text-rose-300 flex items-center gap-1 transition-colors">
+              Összes <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="glass-bubble rounded-3xl overflow-hidden animate-pulse"><div className="aspect-video bg-white/5" /><div className="p-4 space-y-2"><div className="h-4 bg-white/5 rounded w-3/4" /><div className="h-1.5 bg-white/5 rounded" /><div className="h-4 bg-white/5 rounded w-1/2" /></div></div>)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {featuredDonations.map((d) => {
+                const pct = d.goal_amount > 0 ? Math.min(Math.round((d.current_amount / d.goal_amount) * 100), 100) : 0;
+                return (
+                  <button key={d.id} onClick={() => navigate(`/donations/${d.id}`)}
+                    className="group glass-bubble rounded-3xl overflow-hidden text-left hover:scale-[1.02] transition-all duration-300">
+                    <div className="aspect-video bg-zinc-900 relative overflow-hidden">
+                      {d.images?.[0]
+                        ? <img src={d.images[0]} alt={d.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        : <div className="w-full h-full flex items-center justify-center"><Heart className="w-10 h-10 text-zinc-700" /></div>
+                      }
+                      {d.is_verified && (
+                        <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-500/90 px-2 py-1 rounded-lg text-white text-[10px] font-bold">
+                          <CheckCircle2 className="w-3 h-3" />Hitelesített
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <p className="font-semibold text-zinc-100 line-clamp-1 group-hover:text-rose-300 transition-colors text-sm">{d.title}</p>
+                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-400 font-bold text-sm">{d.current_amount.toLocaleString('hu-HU')} Ft</span>
+                        {d.goal_amount > 0 && <span className="text-zinc-600 text-xs flex items-center gap-0.5"><Target className="w-3 h-3" />{pct}%</span>}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── KISTERMELŐK ─────────────────────────────────────────────────── */}
       {(loading || featuredProducers.length > 0) && (

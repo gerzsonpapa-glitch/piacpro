@@ -7,7 +7,7 @@ import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Search, SlidersHorizontal, X, MapPin, ChevronDown, ShoppingBag, Plus,
-  Tag, Package
+  Tag, Package, Navigation
 } from 'lucide-react';
 
 // ── Compact dropdown ──────────────────────────────────────────────────────────
@@ -352,6 +352,15 @@ export default function SearchPage() {
             </button>
           ))}
         </CompactSelect>
+
+        {/* Radius hint chip — links to location-based filter */}
+        <button
+          onClick={() => navigate('/producers')}
+          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-medium glass-pill text-zinc-400 hover:text-emerald-300 transition-all whitespace-nowrap border border-transparent hover:border-emerald-500/20"
+        >
+          <Navigation className="w-3.5 h-3.5" />
+          Közeliek
+        </button>
 
         {/* Sort */}
         <CompactSelect
