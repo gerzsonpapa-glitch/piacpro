@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import type { Donation } from '../lib/types';
 import {
   Heart, Plus, Search, X, CheckCircle2, Baby, PawPrint,
   Users, Lightbulb, Package, MapPin, Clock, Target, ArrowRight,
   Activity, Zap, GraduationCap, Trophy, Church, Leaf,
-  HandHeart, Wrench
+  HandHeart, Wrench, MessageCircle, ExternalLink
 } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
 
@@ -114,6 +115,7 @@ function DonationCard({ donation }: { donation: Donation }) {
 export default function DonationsPage() {
   const { navigate } = useRouter();
   const { user } = useAuth();
+  const { showToast } = useNotification();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -124,6 +126,22 @@ export default function DonationsPage() {
 
   useEffect(() => { fetchDonations(); }, [query, category]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { fetchRecentOffers(); }, []);
+
+  async function handleContactOffer(targetUserId: string) {
+    if (!user) { navigate('/login'); return; }
+    if (targetUserId === user.id) { showToast('Saját felajánlásodra nem tudsz üzenni', 'error'); return; }
+    const { data: existing } = await supabase
+      .from('conversations').select('id')
+      .eq('buyer_id', user.id).eq('seller_id', targetUserId).is('listing_id', null).maybeSingle();
+    let convId = existing?.id ?? null;
+    if (!convId) {
+      const { data: newConv } = await supabase
+        .from('conversations').insert({ buyer_id: user.id, seller_id: targetUserId, listing_id: null })
+        .select('id').single();
+      convId = newConv?.id ?? null;
+    }
+    if (convId) navigate(`/messages?conv=${convId}`);
+  }
 
   async function fetchRecentOffers() {
     const [{ data }, { count }] = await Promise.all([
@@ -298,8 +316,9 @@ export default function DonationsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {recentOffers.map((o: any) => {
               const isItem = o.type === 'item';
+              const isOwn = user?.id === o.user_id;
               return (
-                <div key={o.id} className="glass-bubble rounded-2xl p-3.5 flex items-start gap-3">
+                <div key={o.id} className="glass-bubble rounded-2xl p-3.5 flex items-start gap-3 group">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isItem ? 'bg-teal-500/10' : 'bg-blue-500/10'}`}>
                     {o.images?.[0]
                       ? <img src={o.images[0]} alt="" className="w-full h-full object-cover rounded-xl" />
@@ -318,6 +337,26 @@ export default function DonationsPage() {
                       {o.location && <span>{o.location}</span>}
                       <span>{(o.user?.full_name || o.user?.username) ?? 'Ismeretlen'}</span>
                     </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {o.donation_id && (
+                      <button
+                        onClick={() => navigate(`/donations/${o.donation_id}`)}
+                        title="Kampány megtekintése"
+                        className="p-1.5 rounded-lg glass-bubble hover:bg-white/10 text-zinc-500 hover:text-zinc-200 transition-all"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {!isOwn && (
+                      <button
+                        onClick={() => handleContactOffer(o.user_id)}
+                        title="Üzenet a felajánlónak"
+                        className="p-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-500 hover:text-teal-400 transition-all"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );

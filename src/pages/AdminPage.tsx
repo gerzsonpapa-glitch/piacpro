@@ -566,47 +566,71 @@ export default function AdminPage() {
     { id: 'moderation', label: 'Moderáció', icon: ShieldCheck, badge: (pendingDonations.length + pendingJobs.length) || undefined },
   ];
 
+  const activeTab = tabs.find((t) => t.id === tab);
+
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-7xl mx-auto">
       {editingUser && (
         <LevelEditor user={editingUser} onSave={saveUserLevel} onClose={() => setEditingUser(null)} />
       )}
 
       {/* Header */}
-      <div className="glass rounded-2xl p-5 flex items-center justify-between">
+      <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 glass-bubble rounded-xl flex items-center justify-center ${isSuperAdmin ? 'bg-amber-500/10' : ''}`}>
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${isSuperAdmin ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
             <Shield className={`w-5 h-5 ${isSuperAdmin ? 'text-amber-400' : 'text-red-400'}`} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold">Admin Panel</h1>
+              <h1 className="text-xl font-bold tracking-tight">Admin Panel</h1>
               {isSuperAdmin && (
-                <span className="text-[10px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-2 py-0.5 rounded-lg">SUPER ADMIN</span>
+                <span className="text-[10px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-2 py-0.5 rounded-lg tracking-wider">SUPER</span>
               )}
             </div>
-            <p className="text-zinc-500 text-xs">Moderáció és platformkezelés</p>
+            <p className="text-zinc-500 text-xs mt-0.5">Moderáció és platformkezelés</p>
           </div>
         </div>
-        <button onClick={loadAll} className="glass-pill px-3 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 text-xs">
+        <button onClick={loadAll} className="glass-pill px-3.5 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 text-xs border border-white/5 hover:border-white/10">
           <RefreshCw className="w-3.5 h-3.5" />Frissítés
         </button>
       </div>
 
-      {/* Tab nav */}
-      <div className="flex gap-2 flex-wrap">
-        {tabs.map((t) => (
-          <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${tab === t.id ? 'glass-pill-active text-emerald-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'}`}>
-            <t.icon className="w-4 h-4" />
-            {t.label}
-            {t.badge ? <span className="ml-0.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{t.badge}</span> : null}
-          </button>
-        ))}
-      </div>
+      <div className="flex gap-5 items-start">
+        {/* Sidebar nav */}
+        <div className="w-52 flex-shrink-0 glass rounded-2xl p-2 space-y-0.5 sticky top-20">
+          {tabs.map((t) => (
+            <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-left ${
+                tab === t.id
+                  ? 'bg-white/8 text-zinc-100'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/4'
+              }`}>
+              <t.icon className={`w-4 h-4 flex-shrink-0 ${tab === t.id ? 'text-emerald-400' : ''}`} />
+              <span className="flex-1 truncate">{t.label}</span>
+              {t.badge ? (
+                <span className="bg-red-500 text-white text-[10px] w-5 h-5 rounded-full font-bold flex items-center justify-center flex-shrink-0">
+                  {t.badge > 9 ? '9+' : t.badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Section title */}
+          <div className="mb-4 flex items-center gap-2">
+            {activeTab && <activeTab.icon className="w-5 h-5 text-emerald-400" />}
+            <h2 className="font-bold text-zinc-100 text-base">{activeTab?.label}</h2>
+            {activeTab?.badge ? (
+              <span className="bg-red-500/20 border border-red-500/30 text-red-400 text-xs px-2 py-0.5 rounded-full font-bold">
+                {activeTab.badge}
+              </span>
+            ) : null}
+          </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-pulse">
+        <div className="grid grid-cols-2 gap-3 animate-pulse">
           {Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-24" />)}
         </div>
       ) : (
@@ -1393,6 +1417,8 @@ export default function AdminPage() {
           )}
         </>
       )}
+        </div>
+      </div>
     </div>
   );
 }

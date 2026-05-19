@@ -85,7 +85,7 @@ export default function CreateDonationPage() {
       const { error } = await supabase.storage.from('listing-images').upload(path, file);
       if (!error) {
         const { data } = supabase.storage.from('listing-images').getPublicUrl(path);
-        uploaded.push(data.publicUrl);
+        uploaded.push(`${data.publicUrl}?t=${Date.now()}`);
       }
     }
     setImages((prev) => [...prev, ...uploaded].slice(0, 4));

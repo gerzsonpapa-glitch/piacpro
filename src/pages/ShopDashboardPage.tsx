@@ -59,7 +59,7 @@ function ProductForm({
     const { error } = await supabase.storage.from('listing-images').upload(path, file);
     if (!error) {
       const { data } = supabase.storage.from('listing-images').getPublicUrl(path);
-      setImages((prev) => [...prev, data.publicUrl]);
+      setImages((prev) => [...prev, `${data.publicUrl}?t=${Date.now()}`]);
     }
     setUploading(false);
     e.target.value = '';
@@ -373,7 +373,8 @@ export default function ShopDashboardPage() {
       showToast('error', 'Feltöltési hiba: ' + error.message);
     } else {
       const { data } = supabase.storage.from('listing-images').getPublicUrl(path);
-      type === 'logo' ? setShopLogoUrl(data.publicUrl) : setShopBannerUrl(data.publicUrl);
+      const busted = `${data.publicUrl}?t=${Date.now()}`;
+      type === 'logo' ? setShopLogoUrl(busted) : setShopBannerUrl(busted);
     }
     type === 'logo' ? setUploadingLogo(false) : setUploadingBanner(false);
     e.target.value = '';

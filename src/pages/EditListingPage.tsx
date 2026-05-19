@@ -136,7 +136,7 @@ export default function EditListingPage() {
       const { error } = await supabase.storage.from('listing-images').upload(path, file);
       if (!error) {
         const { data: u } = supabase.storage.from('listing-images').getPublicUrl(path);
-        newUrls.push(u.publicUrl);
+        newUrls.push(`${u.publicUrl}?t=${Date.now()}`);
       }
     }
     setImageUrls((prev) => [...prev, ...newUrls]);

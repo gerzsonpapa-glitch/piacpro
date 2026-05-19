@@ -10,7 +10,8 @@ import {
   PawPrint, Lightbulb, Package, Activity, Zap,
   GraduationCap, Trophy, Church, Leaf, HandHeart,
   Wrench, Shirt, UtensilsCrossed, Armchair, Gamepad2,
-  Car, CalendarDays, Scissors, Plus
+  Car, CalendarDays, Scissors, Plus, MessageCircle,
+  Settings, Pencil, XCircle, CheckSquare, Trash2, AlertTriangle
 } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
 
@@ -58,10 +59,11 @@ function ProgressBar({ current, goal }: { current: number; goal: number }) {
   );
 }
 
-function OfferCard({ offer, onClaim }: { offer: SupportOffer; onClaim: (id: string) => void }) {
+function OfferCard({ offer, onClaim, onContact, currentUserId }: { offer: SupportOffer; onClaim: (id: string) => void; onContact: (userId: string) => void; currentUserId?: string }) {
   const catInfo = CATEGORY_LABELS[offer.category] ?? CATEGORY_LABELS.egyeb;
   const CatIcon = catInfo.icon;
   const isItem = offer.type === 'item';
+  const isOwn = !!currentUserId && currentUserId === offer.user_id;
 
   const statusColors: Record<string, string> = {
     active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -118,14 +120,29 @@ function OfferCard({ offer, onClaim }: { offer: SupportOffer; onClaim: (id: stri
         </div>
       </div>
 
-      {offer.status === 'active' && (
-        <button
-          onClick={() => onClaim(offer.id)}
-          className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-teal-500/15 border border-teal-500/25 text-teal-400 text-xs font-semibold hover:bg-teal-500/25 transition-all whitespace-nowrap"
-        >
-          Igénylés
-        </button>
-      )}
+      <div className="flex flex-col gap-1.5 flex-shrink-0">
+        {offer.status === 'active' && !isOwn && (
+          <button
+            onClick={() => onClaim(offer.id)}
+            className="px-3 py-1.5 rounded-xl bg-teal-500/15 border border-teal-500/25 text-teal-400 text-xs font-semibold hover:bg-teal-500/25 transition-all whitespace-nowrap"
+          >
+            Igénylés
+          </button>
+        )}
+        {!isOwn && (
+          <button
+            onClick={() => onContact(offer.user_id)}
+            className="px-3 py-1.5 rounded-xl bg-zinc-700/50 border border-white/8 text-zinc-400 text-xs font-semibold hover:bg-zinc-700 hover:text-zinc-200 transition-all whitespace-nowrap flex items-center gap-1.5"
+          >
+            <MessageCircle className="w-3 h-3" />Üzenet
+          </button>
+        )}
+        {isOwn && (
+          <span className="px-3 py-1.5 rounded-xl bg-white/4 border border-white/8 text-zinc-600 text-xs whitespace-nowrap text-center">
+            Saját
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -146,6 +163,10 @@ export default function DonationDetailPage() {
   const [donating, setDonating] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [activeTab, setActiveTab] = useState<'money' | 'offers'>('money');
+  const [showOwnerPanel, setShowOwnerPanel] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.id) fetchAll(params.id);
@@ -204,6 +225,28 @@ export default function DonationDetailPage() {
     setDonating(false);
   }
 
+  async function handleContact(targetUserId: string) {
+    if (!user) { navigate('/login'); return; }
+    if (targetUserId === user.id) { showToast('Saját felajánlásodra nem tudsz üzenni', 'error'); return; }
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('buyer_id', user.id)
+      .eq('seller_id', targetUserId)
+      .is('listing_id', null)
+      .maybeSingle();
+    let convId = existing?.id ?? null;
+    if (!convId) {
+      const { data: newConv } = await supabase
+        .from('conversations')
+        .insert({ buyer_id: user.id, seller_id: targetUserId, listing_id: null })
+        .select('id')
+        .single();
+      convId = newConv?.id ?? null;
+    }
+    if (convId) navigate(`/messages?conv=${convId}`);
+  }
+
   async function handleClaim(offerId: string) {
     if (!user) { navigate('/login'); return; }
     const { error } = await supabase.rpc('claim_support_offer', { offer_id: offerId });
@@ -213,6 +256,78 @@ export default function DonationDetailPage() {
       showToast('Felajánlást sikeresen igényelted!', 'success');
       setOffers((prev) => prev.map((o) => o.id === offerId ? { ...o, status: 'claimed' } : o));
     }
+  }
+
+  async function handleFulfillOffer(offerId: string) {
+    setActionLoading(offerId);
+    const { error } = await supabase.rpc('fulfill_support_offer', { offer_id: offerId });
+    if (error) {
+      showToast(error.message || 'Hiba történt', 'error');
+    } else {
+      showToast('Felajánlás teljesítettnek jelölve', 'success');
+      setOffers((prev) => prev.map((o) => o.id === offerId ? { ...o, status: 'fulfilled' } : o));
+    }
+    setActionLoading(null);
+  }
+
+  async function handleDeleteOffer(offerId: string) {
+    setActionLoading('del-' + offerId);
+    const { error } = await supabase.from('support_offers').delete().eq('id', offerId);
+    if (error) {
+      showToast('Nem sikerült törölni', 'error');
+    } else {
+      showToast('Felajánlás törölve', 'success');
+      setOffers((prev) => prev.filter((o) => o.id !== offerId));
+    }
+    setActionLoading(null);
+  }
+
+  async function handleCloseCampaign() {
+    if (!donation) return;
+    setActionLoading('close');
+    const { error } = await supabase.from('donations').update({ status: 'ended' }).eq('id', donation.id);
+    if (error) {
+      showToast('Hiba történt a kampány lezárásakor', 'error');
+    } else {
+      showToast('Kampány lezárva', 'success');
+      setDonation((prev) => prev ? { ...prev, status: 'ended' } : prev);
+      setConfirmClose(false);
+    }
+    setActionLoading(null);
+  }
+
+  async function handleDeleteCampaign() {
+    if (!donation) return;
+    setActionLoading('delcamp');
+    const { error } = await supabase.from('donations').delete().eq('id', donation.id);
+    if (error) {
+      showToast('Nem sikerült törölni a kampányt', 'error');
+    } else {
+      showToast('Kampány törölve', 'success');
+      navigate('/donations');
+    }
+    setActionLoading(null);
+  }
+
+  async function handleContactDonor(donorId: string) {
+    if (!user) { navigate('/login'); return; }
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('buyer_id', user.id)
+      .eq('seller_id', donorId)
+      .is('listing_id', null)
+      .maybeSingle();
+    let convId = existing?.id ?? null;
+    if (!convId) {
+      const { data: newConv } = await supabase
+        .from('conversations')
+        .insert({ buyer_id: user.id, seller_id: donorId, listing_id: null })
+        .select('id')
+        .single();
+      convId = newConv?.id ?? null;
+    }
+    if (convId) navigate(`/messages?conv=${convId}`);
   }
 
   if (loading) {
@@ -242,14 +357,196 @@ export default function DonationDetailPage() {
   const visibleContribs = showAllContribs ? contributions : contributions.slice(0, 5);
   const itemOffers = offers.filter((o) => o.type === 'item');
   const serviceOffers = offers.filter((o) => o.type === 'service');
+  const isOwner = !!user && user.id === donation.creator_id;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
 
-      {/* Back */}
-      <button onClick={() => navigate('/donations')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm">
-        <ArrowLeft className="w-4 h-4" />Vissza a kampányokhoz
-      </button>
+      {/* Back + owner controls */}
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate('/donations')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm">
+          <ArrowLeft className="w-4 h-4" />Vissza a kampányokhoz
+        </button>
+        {isOwner && (
+          <button
+            onClick={() => setShowOwnerPanel(!showOwnerPanel)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${showOwnerPanel ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' : 'glass-bubble border-white/8 text-zinc-400 hover:text-zinc-200'}`}
+          >
+            <Settings className="w-3.5 h-3.5" />Kezelés
+          </button>
+        )}
+      </div>
+
+      {/* Owner management panel */}
+      {isOwner && showOwnerPanel && (
+        <div className="glass rounded-3xl p-5 border border-amber-500/20 space-y-5">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+              <Settings className="w-4 h-4 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="font-bold text-amber-300 text-sm">Kampánykezelő</h3>
+              <p className="text-zinc-500 text-xs">Csak te látod ezt a panelt</p>
+            </div>
+            <div className="ml-auto">
+              {donation.status === 'active' && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">Aktív kampány</span>
+              )}
+              {donation.status === 'ended' && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-500/15 text-zinc-400 border border-zinc-500/20">Lezárt kampány</span>
+              )}
+            </div>
+          </div>
+
+          {/* Felajánlások kezelése */}
+          {offers.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Felajánlások kezelése</p>
+              <div className="space-y-2">
+                {offers.map((o) => {
+                  const isItem = o.type === 'item';
+                  const offererName = (o.user as { full_name?: string; username?: string } | undefined)?.full_name
+                    || (o.user as { username?: string } | undefined)?.username
+                    || 'Ismeretlen';
+                  return (
+                    <div key={o.id} className="glass-bubble rounded-2xl p-3 flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isItem ? 'bg-teal-500/10' : 'bg-blue-500/10'}`}>
+                        {isItem ? <Package className="w-4 h-4 text-teal-400" /> : <Wrench className="w-4 h-4 text-blue-400" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-zinc-200 truncate">{o.title}</p>
+                        <p className="text-xs text-zinc-500">{offererName} · {o.status === 'active' ? 'Elérhető' : o.status === 'claimed' ? 'Lefoglalt' : o.status === 'fulfilled' ? 'Teljesített' : o.status}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {o.user_id !== user?.id && (
+                          <button
+                            onClick={() => handleContact(o.user_id)}
+                            title="Üzenet a felajánlónak"
+                            className="p-1.5 rounded-lg glass-bubble hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 transition-all"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {o.status !== 'fulfilled' && (
+                          <button
+                            onClick={() => handleFulfillOffer(o.id)}
+                            disabled={actionLoading === o.id}
+                            title="Teljesítettnek jelöl"
+                            className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 hover:text-emerald-400 transition-all disabled:opacity-50"
+                          >
+                            <CheckSquare className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteOffer(o.id)}
+                          disabled={actionLoading === 'del-' + o.id}
+                          title="Felajánlás törlése"
+                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 transition-all disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Adományozók */}
+          {contributions.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Adományozók ({contributions.length})</p>
+              <div className="space-y-2">
+                {contributions.slice(0, 10).map((c) => {
+                  const donorName = c.is_anonymous ? 'Névtelen' : (c.donor as { username?: string } | undefined)?.username || 'Ismeretlen';
+                  const donorId = c.donor_id;
+                  return (
+                    <div key={c.id} className="glass-bubble rounded-xl px-3 py-2.5 flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center flex-shrink-0">
+                        <Heart className="w-3.5 h-3.5 text-rose-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-zinc-300">{donorName}</p>
+                        {c.message && <p className="text-[11px] text-zinc-600 truncate">"{c.message}"</p>}
+                      </div>
+                      <span className="text-rose-400 font-bold text-xs flex-shrink-0">{c.amount.toLocaleString('hu-HU')} Ft</span>
+                      {!c.is_anonymous && donorId && (
+                        <button
+                          onClick={() => handleContactDonor(donorId)}
+                          title="Köszönet üzenet küldése"
+                          className="p-1.5 rounded-lg glass-bubble hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 transition-all flex-shrink-0"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Kampány szerkesztése / lezárása */}
+          <div className="space-y-3 pt-2 border-t border-white/5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Kampány műveletek</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate(`/donations/edit/${donation.id}`)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold glass-bubble border border-white/8 text-zinc-300 hover:text-white hover:bg-white/5 transition-all"
+              >
+                <Pencil className="w-3.5 h-3.5" />Kampány szerkesztése
+              </button>
+              {donation.status === 'active' && (
+                <>
+                  {!confirmClose ? (
+                    <button
+                      onClick={() => setConfirmClose(true)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />Kampány lezárása
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                      <span className="text-xs text-amber-300">Biztosan lezárod?</span>
+                      <button
+                        onClick={handleCloseCampaign}
+                        disabled={actionLoading === 'close'}
+                        className="text-xs font-bold text-amber-300 hover:text-amber-200 disabled:opacity-50"
+                      >
+                        Igen
+                      </button>
+                      <button onClick={() => setConfirmClose(false)} className="text-xs text-zinc-500 hover:text-zinc-300">Mégse</button>
+                    </div>
+                  )}
+                </>
+              )}
+              {!confirmDelete ? (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />Kampány törlése
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/30">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                  <span className="text-xs text-red-300">Visszavonhatatlan! Biztosan törlöd?</span>
+                  <button
+                    onClick={handleDeleteCampaign}
+                    disabled={actionLoading === 'delcamp'}
+                    className="text-xs font-bold text-red-300 hover:text-red-200 disabled:opacity-50"
+                  >
+                    Törlés
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className="text-xs text-zinc-500 hover:text-zinc-300">Mégse</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -381,7 +678,7 @@ export default function DonationDetailPage() {
                     <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
                       <Package className="w-3 h-3" />Tárgyak ({itemOffers.length})
                     </p>
-                    {itemOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} />)}
+                    {itemOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} onContact={handleContact} currentUserId={user?.id} />)}
                   </div>
                 )}
 
@@ -391,7 +688,7 @@ export default function DonationDetailPage() {
                     <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
                       <Wrench className="w-3 h-3" />Szolgáltatások ({serviceOffers.length})
                     </p>
-                    {serviceOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} />)}
+                    {serviceOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} onContact={handleContact} currentUserId={user?.id} />)}
                   </div>
                 )}
               </div>

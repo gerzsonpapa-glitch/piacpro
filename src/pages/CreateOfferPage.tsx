@@ -118,7 +118,7 @@ export default function CreateOfferPage() {
       const { error } = await supabase.storage.from('listing-images').upload(path, file);
       if (!error) {
         const { data: { publicUrl } } = supabase.storage.from('listing-images').getPublicUrl(path);
-        setImages((prev) => [...prev, publicUrl]);
+        setImages((prev) => [...prev, `${publicUrl}?t=${Date.now()}`]);
       }
     }
     setUploading(false);
