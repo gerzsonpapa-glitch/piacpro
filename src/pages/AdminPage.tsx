@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useRouter } from '../lib/router';
-import type { Profile, Listing, Report, Job, JobSeekerAd, Auction, ProducerApplication } from '../lib/types';
+import type { Profile, Listing, Report, Job, JobSeekerAd, Auction, ProducerApplication, ForumThread, BugReport } from '../lib/types';
 import { formatRelativeTime, formatPrice } from '../lib/utils';
 import {
   Shield, Users, LayoutGrid, Flag, TrendingUp,
   Ban, CheckCircle, Trash2, Eye, XCircle, Search,
   RefreshCw, BarChart3, ChevronDown, Save, X,
   AlertTriangle, ShieldAlert, Plus, ShieldCheck, ShieldOff, Store,
-  Gavel, Briefcase, UserSearch, MapPin, Wifi, Building2, Leaf
+  Gavel, Briefcase, UserSearch, MapPin, Wifi, Building2, Leaf,
+  MessageCircle, Pin, Lock, Bug, Lightbulb, Zap, HelpCircle, ChevronUp
 } from 'lucide-react';
 
-type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops' | 'moderation';
+type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops' | 'moderation' | 'forum' | 'bugreports';
 
 const DEFAULT_SCAM_KEYWORDS = [
   'előre utalás', 'előre fizet', 'előre pénz', 'crypto only', 'bitcoin only',
@@ -240,7 +241,7 @@ export default function AdminPage() {
   const initialTab = (() => {
     const params = new URLSearchParams(routerSearch);
     const t = params.get('tab') as Tab | null;
-    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops'];
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops', 'forum', 'bugreports'];
     return t && valid.includes(t) ? t : 'stats';
   })();
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -248,7 +249,7 @@ export default function AdminPage() {
   useEffect(() => {
     const params = new URLSearchParams(routerSearch);
     const t = params.get('tab') as Tab | null;
-    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops'];
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops', 'forum', 'bugreports'];
     if (t && valid.includes(t)) setTab(t);
   }, [routerSearch]);
 
@@ -264,6 +265,8 @@ export default function AdminPage() {
   const [shops, setShops] = useState<any[]>([]);
   const [pendingDonations, setPendingDonations] = useState<any[]>([]);
   const [pendingJobs, setPendingJobs] = useState<any[]>([]);
+  const [forumThreads, setForumThreads] = useState<ForumThread[]>([]);
+  const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -278,7 +281,7 @@ export default function AdminPage() {
 
   async function loadAll() {
     setLoading(true);
-    await Promise.all([loadStats(), loadUsers(), loadListings(), loadAuctions(), loadJobs(), loadSeekers(), loadReports(), loadProducerApps(), loadProducers(), loadShops(), loadPendingModeration()]);
+    await Promise.all([loadStats(), loadUsers(), loadListings(), loadAuctions(), loadJobs(), loadSeekers(), loadReports(), loadProducerApps(), loadProducers(), loadShops(), loadPendingModeration(), loadForumThreads(), loadBugReports()]);
     setLoading(false);
   }
 
@@ -396,6 +399,61 @@ export default function AdminPage() {
       .select('id, name, slug, location, category, is_active, is_verified, created_at, owner_id, owner:profiles(id, username, full_name)')
       .order('created_at', { ascending: false });
     setShops(data || []);
+  }
+
+  async function loadForumThreads() {
+    const { data } = await supabase
+      .from('forum_threads')
+      .select('*, author:profiles!forum_threads_author_id_fkey(id, username, full_name, avatar_url), category:forum_categories(*)')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    setForumThreads((data ?? []) as ForumThread[]);
+  }
+
+  async function loadBugReports() {
+    const { data } = await supabase
+      .from('bug_reports')
+      .select('*, reporter:profiles(id, username, full_name, avatar_url)')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    setBugReports((data ?? []) as BugReport[]);
+  }
+
+  async function adminDeleteThread(threadId: string) {
+    setActionLoading(threadId);
+    await supabase.from('forum_threads').delete().eq('id', threadId);
+    setForumThreads((prev) => prev.filter((t) => t.id !== threadId));
+    showToast('success', 'Téma törölve');
+    setActionLoading(null);
+  }
+
+  async function adminTogglePin(thread: ForumThread) {
+    setActionLoading('pin-' + thread.id);
+    await supabase.from('forum_threads').update({ is_pinned: !thread.is_pinned }).eq('id', thread.id);
+    setForumThreads((prev) => prev.map((t) => t.id === thread.id ? { ...t, is_pinned: !t.is_pinned } : t));
+    setActionLoading(null);
+  }
+
+  async function adminToggleLock(thread: ForumThread) {
+    setActionLoading('lock-' + thread.id);
+    await supabase.from('forum_threads').update({ is_locked: !thread.is_locked }).eq('id', thread.id);
+    setForumThreads((prev) => prev.map((t) => t.id === thread.id ? { ...t, is_locked: !t.is_locked } : t));
+    setActionLoading(null);
+  }
+
+  async function updateBugReport(reportId: string, updates: Partial<BugReport>) {
+    setActionLoading(reportId);
+    await supabase.from('bug_reports').update(updates).eq('id', reportId);
+    setBugReports((prev) => prev.map((r) => r.id === reportId ? { ...r, ...updates } : r));
+    setActionLoading(null);
+  }
+
+  async function deleteBugReport(reportId: string) {
+    setActionLoading(reportId);
+    await supabase.from('bug_reports').delete().eq('id', reportId);
+    setBugReports((prev) => prev.filter((r) => r.id !== reportId));
+    showToast('success', 'Bejegyzés törölve');
+    setActionLoading(null);
   }
 
   async function loadPendingModeration() {
@@ -564,6 +622,8 @@ export default function AdminPage() {
     { id: 'producers', label: 'Termelők', icon: Leaf, badge: pendingProducerApps.length || undefined },
     { id: 'shops', label: 'Boltok', icon: Store },
     { id: 'moderation', label: 'Moderáció', icon: ShieldCheck, badge: (pendingDonations.length + pendingJobs.length) || undefined },
+    { id: 'forum', label: 'Fórum', icon: MessageCircle },
+    { id: 'bugreports', label: 'Hibajelentések', icon: Bug, badge: bugReports.filter((r) => r.status === 'open').length || undefined },
   ];
 
   const activeTab = tabs.find((t) => t.id === tab);
@@ -1347,6 +1407,152 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* ── FORUM TAB ─────────────────────────────────────────────────── */}
+          {tab === 'forum' && (
+            <div className="space-y-4">
+              <div className="glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Téma keresése cím vagy szerző alapján..."
+                  className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+                <span className="text-xs text-zinc-600 flex-shrink-0">
+                  {forumThreads.filter((t) => !search || t.title.toLowerCase().includes(search.toLowerCase()) || (t.author?.full_name || t.author?.username || '').toLowerCase().includes(search.toLowerCase())).length} db
+                </span>
+              </div>
+
+              <div className="glass rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/5 text-zinc-500 text-xs">
+                        <th className="text-left px-4 py-3">Cím</th>
+                        <th className="text-left px-4 py-3">Szerző</th>
+                        <th className="text-left px-4 py-3">Kategória</th>
+                        <th className="text-left px-4 py-3">Válaszok</th>
+                        <th className="text-left px-4 py-3">Állapot</th>
+                        <th className="text-left px-4 py-3">Létrehozva</th>
+                        <th className="text-right px-4 py-3">Műv.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {forumThreads
+                        .filter((t) => !search || t.title.toLowerCase().includes(search.toLowerCase()) || (t.author?.full_name || t.author?.username || '').toLowerCase().includes(search.toLowerCase()))
+                        .map((t) => (
+                          <tr key={t.id} className="border-b border-white/3 hover:bg-white/3 transition-colors">
+                            <td className="px-4 py-3 max-w-[220px]">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {t.is_pinned && <Pin className="w-3 h-3 text-amber-400 flex-shrink-0" />}
+                                {t.is_locked && <Lock className="w-3 h-3 text-zinc-500 flex-shrink-0" />}
+                                <p className="font-medium text-zinc-200 text-xs line-clamp-1">{t.title}</p>
+                              </div>
+                              <p className="text-[10px] text-zinc-600 mt-0.5 line-clamp-1">{t.content.slice(0, 60)}...</p>
+                            </td>
+                            <td className="px-4 py-3 text-zinc-400 text-xs whitespace-nowrap">{t.author?.full_name || t.author?.username || '—'}</td>
+                            <td className="px-4 py-3 text-zinc-500 text-xs">{(t.category as any)?.name || '—'}</td>
+                            <td className="px-4 py-3 text-zinc-400 text-xs text-center">{t.reply_count}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-lg border ${
+                                t.status === 'active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                'bg-zinc-500/10 border-zinc-500/20 text-zinc-500'
+                              }`}>{t.status === 'active' ? 'Aktív' : t.status}</span>
+                            </td>
+                            <td className="px-4 py-3 text-zinc-600 text-xs whitespace-nowrap">{formatRelativeTime(t.created_at)}</td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => adminTogglePin(t)}
+                                  disabled={actionLoading === 'pin-' + t.id}
+                                  title={t.is_pinned ? 'Kitűzés megszüntetése' : 'Kitűzés'}
+                                  className={`p-1.5 glass-pill rounded-lg transition-colors ${t.is_pinned ? 'text-amber-400 hover:text-amber-200' : 'text-zinc-600 hover:text-amber-400'}`}>
+                                  <Pin className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => adminToggleLock(t)}
+                                  disabled={actionLoading === 'lock-' + t.id}
+                                  title={t.is_locked ? 'Zárolás feloldása' : 'Téma zárolása'}
+                                  className={`p-1.5 glass-pill rounded-lg transition-colors ${t.is_locked ? 'text-sky-400 hover:text-sky-200' : 'text-zinc-600 hover:text-sky-400'}`}>
+                                  <Lock className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => adminDeleteThread(t.id)}
+                                  disabled={actionLoading === t.id}
+                                  title="Téma törlése"
+                                  className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors disabled:opacity-50">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      {forumThreads.length === 0 && (
+                        <tr><td colSpan={7} className="px-4 py-10 text-center text-zinc-600 text-sm">Nincs fórum téma</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── BUG REPORTS TAB ───────────────────────────────────────────── */}
+          {tab === 'bugreports' && (
+            <div className="space-y-4">
+              {/* Filter bar */}
+              <div className="glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Keresés cím alapján..."
+                  className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+                <span className="text-xs text-zinc-600 flex-shrink-0">{bugReports.length} db</span>
+              </div>
+
+              {/* Open reports */}
+              {['open', 'in_progress', 'resolved', 'closed', 'duplicate'].map((status) => {
+                const items = bugReports.filter((r) =>
+                  r.status === status &&
+                  (!search || r.title.toLowerCase().includes(search.toLowerCase()) || r.description?.toLowerCase().includes(search.toLowerCase()))
+                );
+                if (items.length === 0) return null;
+
+                const statusMeta: Record<string, { label: string; color: string; dot: string }> = {
+                  open:        { label: 'Nyitott',      color: 'text-amber-400', dot: 'bg-amber-400' },
+                  in_progress: { label: 'Folyamatban',  color: 'text-sky-400',   dot: 'bg-sky-400' },
+                  resolved:    { label: 'Megoldva',     color: 'text-emerald-400', dot: 'bg-emerald-400' },
+                  closed:      { label: 'Lezárva',      color: 'text-zinc-500',  dot: 'bg-zinc-500' },
+                  duplicate:   { label: 'Duplikált',    color: 'text-zinc-500',  dot: 'bg-zinc-600' },
+                };
+                const sm = statusMeta[status];
+
+                return (
+                  <div key={status}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`w-2 h-2 rounded-full ${sm.dot}`} />
+                      <h3 className={`text-xs font-semibold uppercase tracking-wider ${sm.color}`}>{sm.label} ({items.length})</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {items.map((r) => (
+                        <BugReportAdminCard
+                          key={r.id}
+                          report={r}
+                          actionLoading={actionLoading}
+                          onUpdate={updateBugReport}
+                          onDelete={deleteBugReport}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {bugReports.filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase())).length === 0 && (
+                <div className="glass rounded-2xl p-12 text-center">
+                  <Bug className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                  <p className="text-zinc-500">Nincs hibajelentés</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── SHOPS TAB ─────────────────────────────────────────────────── */}
           {tab === 'shops' && (
             <div className="space-y-4">
@@ -1519,6 +1725,126 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
                 <Ban className="w-3 h-3" />Tilt
               </button>
           }
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Bug Report Admin Card ─────────────────────────────────────────────────────
+const BUG_TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string }> = {
+  bug:         { label: 'Hiba',               Icon: Bug,         color: 'text-red-400' },
+  suggestion:  { label: 'Fejlesztési ötlet',  Icon: Lightbulb,   color: 'text-amber-400' },
+  improvement: { label: 'Javítási javaslat',  Icon: Zap,         color: 'text-sky-400' },
+  question:    { label: 'Kérdés a csapatnak', Icon: HelpCircle,  color: 'text-teal-400' },
+};
+const BUG_PRIORITY_META: Record<string, { label: string; color: string }> = {
+  low:      { label: 'Alacsony', color: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20' },
+  medium:   { label: 'Közepes',  color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  high:     { label: 'Magas',    color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+  critical: { label: 'Kritikus', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+};
+const BUG_STATUS_OPTIONS = [
+  { value: 'open',        label: 'Nyitott' },
+  { value: 'in_progress', label: 'Folyamatban' },
+  { value: 'resolved',    label: 'Megoldva' },
+  { value: 'closed',      label: 'Lezárva' },
+  { value: 'duplicate',   label: 'Duplikált' },
+];
+
+function BugReportAdminCard({ report, actionLoading, onUpdate, onDelete }: {
+  report: BugReport;
+  actionLoading: string | null;
+  onUpdate: (id: string, updates: Partial<BugReport>) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [adminNote, setAdminNote] = useState(report.admin_note || '');
+  const [savingNote, setSavingNote] = useState(false);
+  const typeMeta = BUG_TYPE_META[report.type] ?? BUG_TYPE_META.bug;
+  const priorityMeta = BUG_PRIORITY_META[report.priority] ?? BUG_PRIORITY_META.medium;
+  const TypeIcon = typeMeta.Icon;
+
+  async function saveNote() {
+    setSavingNote(true);
+    await onUpdate(report.id, { admin_note: adminNote });
+    setSavingNote(false);
+  }
+
+  return (
+    <div className="glass rounded-2xl overflow-hidden border border-white/5">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <TypeIcon className={`w-3.5 h-3.5 flex-shrink-0 ${typeMeta.color}`} />
+              <p className="font-semibold text-zinc-200 text-sm line-clamp-1">{report.title}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap text-[10px]">
+              <span className={`px-2 py-0.5 rounded-lg border font-semibold ${priorityMeta.color}`}>{priorityMeta.label}</span>
+              <span className="text-zinc-500">{typeMeta.label}</span>
+              <span className="text-zinc-600">{report.reporter?.full_name || report.reporter?.username || '—'}</span>
+              <span className="text-zinc-700">{formatRelativeTime(report.created_at)}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Priority selector */}
+            <select
+              value={report.priority}
+              onChange={(e) => onUpdate(report.id, { priority: e.target.value as BugReport['priority'] })}
+              disabled={actionLoading === report.id}
+              className="text-[10px] glass-input rounded-lg px-2 py-1 text-zinc-300 focus:outline-none cursor-pointer">
+              <option value="low">Alacsony</option>
+              <option value="medium">Közepes</option>
+              <option value="high">Magas</option>
+              <option value="critical">Kritikus</option>
+            </select>
+            {/* Status selector */}
+            <select
+              value={report.status}
+              onChange={(e) => onUpdate(report.id, { status: e.target.value as BugReport['status'] })}
+              disabled={actionLoading === report.id}
+              className="text-[10px] glass-input rounded-lg px-2 py-1 text-zinc-300 focus:outline-none cursor-pointer">
+              {BUG_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <button onClick={() => setExpanded(!expanded)}
+              className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-zinc-200 transition-colors">
+              {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+            <button onClick={() => onDelete(report.id)} disabled={actionLoading === report.id}
+              className="p-1.5 glass-pill rounded-lg text-red-500 hover:text-red-300 transition-colors disabled:opacity-50">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-white/5 p-4 space-y-3 bg-white/[0.01]">
+          <div>
+            <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">Leírás</p>
+            <p className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">{report.description}</p>
+          </div>
+          {report.steps_to_reproduce && (
+            <div>
+              <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">Reprodukálási lépések</p>
+              <p className="text-xs text-zinc-500 leading-relaxed whitespace-pre-wrap">{report.steps_to_reproduce}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">Admin megjegyzés (látják a felhasználók)</p>
+            <textarea
+              value={adminNote}
+              onChange={(e) => setAdminNote(e.target.value)}
+              rows={2}
+              placeholder="Pl: Köszönjük, a következő kiadásban javítjuk..."
+              className="w-full px-3 py-2 glass-input rounded-xl text-zinc-100 placeholder-zinc-600 focus:outline-none text-xs resize-none"
+            />
+            <button onClick={saveNote} disabled={savingNote}
+              className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 glass-pill-active text-emerald-300 rounded-xl text-xs font-medium disabled:opacity-60">
+              <Save className="w-3 h-3" />{savingNote ? 'Mentés...' : 'Megjegyzés mentése'}
+            </button>
+          </div>
         </div>
       )}
     </div>

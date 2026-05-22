@@ -25,11 +25,16 @@ import ShopDashboardPage from './pages/ShopDashboardPage';
 import ProducersPage from './pages/ProducersPage';
 import ProducerProfilePage from './pages/ProducerProfilePage';
 import ProducerSetupPage from './pages/ProducerSetupPage';
+import LocalBusinessesPage from './pages/LocalBusinessesPage';
+import BusinessProfilePage from './pages/BusinessProfilePage';
+import BusinessSetupPage from './pages/BusinessSetupPage';
 import DonationsPage from './pages/DonationsPage';
 import DonationDetailPage from './pages/DonationDetailPage';
 import CreateDonationPage from './pages/CreateDonationPage';
 import DiscoverPage from './pages/DiscoverPage';
 import CreateOfferPage from './pages/CreateOfferPage';
+import OfferDetailPage from './pages/OfferDetailPage';
+import ForumPage from './pages/ForumPage';
 
 function App() {
   const router = useRouterProvider();
@@ -63,10 +68,19 @@ function App() {
     if (path === '/producers/apply') return <ProducerSetupPage />;
     if (path.startsWith('/producers/') && !path.endsWith('/edit')) return <ProducerProfilePage />;
     if (path.startsWith('/producers/') && path.endsWith('/edit')) return <ProducerSetupPage />;
+    if (path === '/helyi-vallalkozasok') return <LocalBusinessesPage />;
+    if (path === '/vallalkozas-regisztracio') return <BusinessSetupPage />;
+    if (path === '/vallalkozasom') return <BusinessSetupPage />;
+    if (path.startsWith('/helyi-vallalkozasok/')) return <BusinessProfilePage id={router.params.id} />;
     if (path === '/donations') return <DonationsPage />;
     if (path === '/donations/create') return <CreateDonationPage />;
+    if (path.startsWith('/donations/edit/')) return <CreateDonationPage />;
     if (path.startsWith('/donations/')) return <DonationDetailPage />;
     if (path === '/offers/create') return <CreateOfferPage />;
+    if (path.startsWith('/offers/')) return <OfferDetailPage />;
+    if (path === '/forum') return <ForumPage />;
+    if (path === '/forum/hibak') return <ForumPage />;
+    if (path.startsWith('/forum/')) return <ForumPage />;
 
     return (
       <div className="text-center py-20">

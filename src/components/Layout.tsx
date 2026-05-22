@@ -1,7 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import {
-  Home, Search, Heart, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase, Store, Leaf, Gift
+  Home, Search, Heart, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase, Store, Leaf, Gift, MapPin, Users
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -41,9 +41,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { icon: Home, label: 'Kezdőlap', path: '/' },
         { icon: ShoppingBag, label: 'Piactér', path: '/search' },
         { icon: Gavel, label: 'Licitek', path: '/auctions' },
-        { icon: Store, label: 'Boltok', path: '/shops' },
-        { icon: Leaf, label: 'Termelők', path: '/producers' },
+        { icon: MapPin, label: 'Helyi', path: '/helyi-vallalkozasok' },
         { icon: Briefcase, label: 'Állások', path: '/jobs' },
+        { icon: Users, label: 'Fórum', path: '/forum' },
         { icon: Gift, label: 'Adományozás', path: '/donations' },
         { icon: Heart, label: 'Kedvencek', path: '/favorites' },
         { icon: User, label: 'Profil', path: `/profile/${user.id}` },
@@ -52,9 +52,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { icon: Home, label: 'Kezdőlap', path: '/' },
         { icon: ShoppingBag, label: 'Piactér', path: '/search' },
         { icon: Gavel, label: 'Licitek', path: '/auctions' },
-        { icon: Store, label: 'Boltok', path: '/shops' },
-        { icon: Leaf, label: 'Termelők', path: '/producers' },
+        { icon: MapPin, label: 'Helyi', path: '/helyi-vallalkozasok' },
         { icon: Briefcase, label: 'Állások', path: '/jobs' },
+        { icon: Users, label: 'Fórum', path: '/forum' },
         { icon: Gift, label: 'Adományozás', path: '/donations' },
         { icon: User, label: 'Bejelentkezés', path: '/login' },
       ];
@@ -64,6 +64,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (p === '/search') return path === '/search' || path.startsWith('/listing/');
     if (p === '/shops') return path === '/shops' || path.startsWith('/shops/') || path === '/my-shop';
     if (p === '/producers') return path === '/producers' || path.startsWith('/producers/');
+    if (p === '/helyi-vallalkozasok') return path === '/helyi-vallalkozasok' || path.startsWith('/helyi-vallalkozasok/') || path === '/vallalkozasom' || path === '/vallalkozas-regisztracio';
+    if (p === '/forum') return path === '/forum' || path.startsWith('/forum/');
     if (p === '/donations') return path === '/donations' || path.startsWith('/donations/');
     return path === p || path.startsWith(p + '/');
   };

@@ -388,7 +388,7 @@ export default function AuctionDetailPage() {
         {/* LEFT: Images + Description + Bid history */}
         <div className="lg:col-span-3 space-y-4">
           {/* Gallery */}
-          <div className="relative aspect-[4/3] glass-bubble rounded-3xl overflow-hidden">
+          <div className="relative aspect-[4/3] glass-bubble rounded-3xl overflow-hidden bg-zinc-900">
             {images.length > 0 ? (
               <>
                 {images.map((src, i) => (

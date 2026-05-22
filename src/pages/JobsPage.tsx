@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -9,7 +9,7 @@ import {
   Briefcase, MapPin, Search, PlusCircle, Building2, Clock,
   Wifi, ChevronRight, SlidersHorizontal, X, Banknote, Pencil,
   Trash2, Camera, Save, Phone, Mail, ArrowLeft, CheckCircle, AlertCircle,
-  UserSearch, Send, User, GraduationCap, MessageCircle, Lock
+  UserSearch, Send, User, GraduationCap, MessageCircle, Lock, Sparkles, TrendingUp
 } from 'lucide-react';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -550,8 +550,43 @@ export default function JobsPage() {
   const [deletingSeekerAdId, setDeletingSeekerAdId] = useState<string | null>(null);
   const [contactSeekerAd, setContactSeekerAd] = useState<JobSeekerAd | null>(null);
 
-  useEffect(() => { fetchJobs(); }, []);
-  useEffect(() => { fetchSeekerAds(); }, []);
+  // Recommendation engine state
+  const [userInteractions, setUserInteractions] = useState<{
+    categories: Record<string, number>;
+    locations: Record<string, number>;
+    keywords: string[];
+  }>({ categories: {}, locations: {}, keywords: [] });
+
+  useEffect(() => { fetchJobs(); fetchSeekerAds(); }, []);
+  useEffect(() => { if (user) loadUserInteractions(); }, [user]);
+
+  // Track search queries with debounce
+  useEffect(() => {
+    if (!user || !search.trim() || search.trim().length < 3) return;
+    const timer = setTimeout(() => {
+      trackInteraction('search', { keywords: search.trim().toLowerCase() });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [search, user]);
+
+  useEffect(() => {
+    if (!user || !seekerSearch.trim() || seekerSearch.trim().length < 3) return;
+    const timer = setTimeout(() => {
+      trackInteraction('search', { keywords: seekerSearch.trim().toLowerCase() });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [seekerSearch, user]);
+
+  // Track category filter clicks
+  useEffect(() => {
+    if (!user || category === 'Összes') return;
+    trackInteraction('filter_category', { category });
+  }, [category, user]);
+
+  useEffect(() => {
+    if (!user || seekerCategory === 'Összes') return;
+    trackInteraction('filter_category', { category: seekerCategory });
+  }, [seekerCategory, user]);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -577,6 +612,110 @@ export default function JobsPage() {
       .limit(200);
     setSeekerAds(data || []);
     setSeekersLoading(false);
+  }
+
+  // ── Recommendation engine ─────────────────────────────────────────────────
+
+  async function loadUserInteractions() {
+    if (!user) return;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from('user_job_interactions')
+      .select('interaction_type, category, location, keywords, interaction_count')
+      .eq('user_id', user.id)
+      .gte('last_interacted_at', since);
+    if (!data) return;
+    const categories: Record<string, number> = {};
+    const locations: Record<string, number> = {};
+    const keywordMap: Record<string, number> = {};
+    for (const row of data) {
+      if (row.category) categories[row.category] = (categories[row.category] || 0) + row.interaction_count;
+      if (row.location) locations[row.location] = (locations[row.location] || 0) + row.interaction_count;
+      if (row.keywords) {
+        for (const kw of row.keywords.split(' ').filter(Boolean)) {
+          keywordMap[kw] = (keywordMap[kw] || 0) + row.interaction_count;
+        }
+      }
+    }
+    const keywords = Object.entries(keywordMap).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([k]) => k);
+    setUserInteractions({ categories, locations, keywords });
+  }
+
+  const trackInteraction = useCallback(async (
+    type: 'view_job' | 'view_seeker' | 'search' | 'filter_category' | 'filter_location',
+    opts: { category?: string; location?: string; keywords?: string; jobId?: string; seekerAdId?: string }
+  ) => {
+    if (!user) return;
+    const cat = opts.category || '';
+    const loc = opts.location || '';
+    const kw = opts.keywords || '';
+    // upsert by matching on user+type+category+location+keywords
+    const { data: existing } = await supabase
+      .from('user_job_interactions')
+      .select('id, interaction_count')
+      .eq('user_id', user.id)
+      .eq('interaction_type', type)
+      .eq('category', cat)
+      .eq('location', loc)
+      .eq('keywords', kw)
+      .maybeSingle();
+    if (existing) {
+      await supabase.from('user_job_interactions').update({
+        interaction_count: existing.interaction_count + 1,
+        last_interacted_at: new Date().toISOString(),
+        ...(opts.jobId ? { job_id: opts.jobId } : {}),
+        ...(opts.seekerAdId ? { seeker_ad_id: opts.seekerAdId } : {}),
+      }).eq('id', existing.id);
+    } else {
+      await supabase.from('user_job_interactions').insert({
+        user_id: user.id,
+        interaction_type: type,
+        category: cat,
+        location: loc,
+        keywords: kw,
+        job_id: opts.jobId || null,
+        seeker_ad_id: opts.seekerAdId || null,
+        interaction_count: 1,
+        last_interacted_at: new Date().toISOString(),
+      });
+    }
+    // refresh interactions in background
+    loadUserInteractions();
+  }, [user]);
+
+  // Score a job for the current user based on interaction history
+  function scoreJob(job: Job): number {
+    let score = 0;
+    const catWeight = userInteractions.categories[job.category] || 0;
+    score += catWeight * 3;
+    // location match: extract county from job location
+    const jobCounty = job.location.split(', ').pop() || job.location;
+    const locWeight = userInteractions.locations[jobCounty] || 0;
+    score += locWeight * 2;
+    // keyword match in title/company/description
+    const text = `${job.title} ${job.company} ${job.description}`.toLowerCase();
+    for (const kw of userInteractions.keywords) {
+      if (text.includes(kw.toLowerCase())) score += 1;
+    }
+    // own seeker ad category match: strong boost
+    if (mySeekingCategory && job.category === mySeekingCategory) score += 10;
+    return score;
+  }
+
+  // Score a seeker ad for the current user
+  function scoreSeekerAd(ad: JobSeekerAd): number {
+    let score = 0;
+    const catWeight = userInteractions.categories[ad.category] || 0;
+    score += catWeight * 3;
+    const adCounty = ad.location.split(', ').pop() || ad.location;
+    const locWeight = userInteractions.locations[adCounty] || 0;
+    score += locWeight * 2;
+    const text = `${ad.title} ${ad.description}`.toLowerCase();
+    for (const kw of userInteractions.keywords) {
+      if (text.includes(kw.toLowerCase())) score += 1;
+    }
+    if (myPostingCategory && ad.category === myPostingCategory) score += 10;
+    return score;
   }
 
   // ── Job offer CRUD ─────────────────────────────────────────────────────────
@@ -685,7 +824,19 @@ export default function JobsPage() {
     if (selectedSeekerAd?.id === id) { setSelectedSeekerAd(null); setView('list'); }
   }
 
-  // ── Filtered data ──────────────────────────────────────────────────────────
+  function openJob(job: Job) {
+    setSelectedJob(job);
+    setView('detail');
+    if (user) trackInteraction('view_job', { category: job.category, location: job.location, jobId: job.id });
+  }
+
+  function openSeekerAd(ad: JobSeekerAd) {
+    setSelectedSeekerAd(ad);
+    setView('seeker-detail');
+    if (user) trackInteraction('view_seeker', { category: ad.category, location: ad.location, seekerAdId: ad.id });
+  }
+
+  // ── Filtered & scored data ────────────────────────────────────────────────
 
   // Category of the current user's own active job seeker ad (for prioritizing job offers)
   const mySeekingCategory = user
@@ -697,6 +848,12 @@ export default function JobsPage() {
     ? jobs.find((j) => j.poster_id === user.id)?.category ?? null
     : null;
 
+  const hasPersonalization = user && (
+    Object.keys(userInteractions.categories).length > 0 ||
+    mySeekingCategory !== null ||
+    myPostingCategory !== null
+  );
+
   const filteredJobs = jobs
     .filter((j) => {
       if (search && !j.title.toLowerCase().includes(search.toLowerCase()) &&
@@ -707,10 +864,9 @@ export default function JobsPage() {
       return true;
     })
     .sort((a, b) => {
-      if (mySeekingCategory && category === 'Összes') {
-        const aMatch = a.category === mySeekingCategory ? 0 : 1;
-        const bMatch = b.category === mySeekingCategory ? 0 : 1;
-        if (aMatch !== bMatch) return aMatch - bMatch;
+      // When no active filter: sort by personalized score descending
+      if (category === 'Összes' && !search && !typeFilter && !remoteOnly) {
+        return scoreJob(b) - scoreJob(a);
       }
       return 0;
     });
@@ -724,10 +880,8 @@ export default function JobsPage() {
       return true;
     })
     .sort((a, b) => {
-      if (myPostingCategory && seekerCategory === 'Összes') {
-        const aMatch = a.category === myPostingCategory ? 0 : 1;
-        const bMatch = b.category === myPostingCategory ? 0 : 1;
-        if (aMatch !== bMatch) return aMatch - bMatch;
+      if (seekerCategory === 'Összes' && !seekerSearch && !seekerRemoteOnly) {
+        return scoreSeekerAd(b) - scoreSeekerAd(a);
       }
       return 0;
     });
@@ -991,7 +1145,7 @@ export default function JobsPage() {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => { setSelectedSeekerAd(s); setView('seeker-detail'); }}
+                          onClick={() => openSeekerAd(s)}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2 glass-pill text-zinc-400 hover:text-zinc-200 rounded-xl text-xs transition-colors"
                         >
                           <ChevronRight className="w-3.5 h-3.5" />Profil megtekintése
@@ -1183,7 +1337,7 @@ export default function JobsPage() {
                         )}
                       </div>
                       <button
-                        onClick={() => { setSelectedJob(j); setView('detail'); }}
+                        onClick={() => openJob(j)}
                         className="w-full flex items-center justify-center gap-1.5 py-2 glass-pill text-zinc-400 hover:text-zinc-200 rounded-xl text-xs transition-colors"
                       >
                         <ChevronRight className="w-3.5 h-3.5" />Hirdetés megtekintése
@@ -1331,7 +1485,7 @@ export default function JobsPage() {
                   <div key={job.id} className="flex items-center gap-3 glass-pill px-3 py-2.5 rounded-xl">
                     <CompanyLogo src={job.logo_url} name={job.company} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <button onClick={() => { setSelectedJob(job); setView('detail'); }}
+                      <button onClick={() => openJob(job)}
                         className="text-sm font-medium text-zinc-200 hover:text-emerald-300 transition-colors truncate block text-left">
                         {job.title}
                       </button>
@@ -1431,12 +1585,16 @@ export default function JobsPage() {
 
           {/* Results header */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-zinc-500">
-              <span className="text-zinc-200 font-semibold">{filteredJobs.length}</span> állás ajánlat
-              {mySeekingCategory && category === 'Összes' && (
-                <span className="ml-2 text-xs text-sky-400">· <span className="text-zinc-300 font-medium">{mySeekingCategory}</span> kategória elöl</span>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-zinc-500">
+                <span className="text-zinc-200 font-semibold">{filteredJobs.length}</span> állás ajánlat
+              </p>
+              {hasPersonalization && category === 'Összes' && !search && !typeFilter && !remoteOnly && (
+                <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <Sparkles className="w-3 h-3" />Személyre szabva
+                </span>
               )}
-            </p>
+            </div>
             {(category !== 'Összes' || typeFilter || remoteOnly || search) && (
               <button onClick={() => { setCategory('Összes'); setTypeFilter(''); setRemoteOnly(false); setSearch(''); }}
                 className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors">
@@ -1465,22 +1623,31 @@ export default function JobsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredJobs.map((job) => {
+              {filteredJobs.map((job, idx) => {
                 const typeInfo = JOB_TYPES[job.type] ?? JOB_TYPES.teljes;
                 const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
                 const isOwn = user?.id === job.poster_id;
+                const jobScore = scoreJob(job);
+                const isRecommended = hasPersonalization && category === 'Összes' && !search && !typeFilter && !remoteOnly && idx < 3 && jobScore > 0;
                 return (
                   <button
                     key={job.id}
-                    onClick={() => { setSelectedJob(job); setView('detail'); }}
-                    className="w-full text-left glass rounded-2xl p-5 group hover:bg-white/[0.03] hover:border-emerald-500/15 border border-transparent transition-all"
+                    onClick={() => openJob(job)}
+                    className={`w-full text-left glass rounded-2xl p-5 group hover:bg-white/[0.03] border transition-all ${isRecommended ? 'border-emerald-500/20 hover:border-emerald-500/30' : 'border-transparent hover:border-emerald-500/15'}`}
                   >
                     <div className="flex items-start gap-4">
                       <CompanyLogo src={job.logo_url} name={job.company} size="md" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="font-semibold text-zinc-100 leading-snug group-hover:text-emerald-300 transition-colors">{job.title}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-zinc-100 leading-snug group-hover:text-emerald-300 transition-colors">{job.title}</p>
+                              {isRecommended && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 flex-shrink-0">
+                                  <TrendingUp className="w-2.5 h-2.5" />AJÁNLOTT
+                                </span>
+                              )}
+                            </div>
                             <p className="text-zinc-400 text-sm mt-0.5">{job.company}</p>
                           </div>
                           {isOwn && (
@@ -1540,7 +1707,7 @@ export default function JobsPage() {
                       <User className="w-4 h-4 text-sky-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <button onClick={() => { setSelectedSeekerAd(ad); setView('seeker-detail'); }}
+                      <button onClick={() => openSeekerAd(ad)}
                         className="text-sm font-medium text-zinc-200 hover:text-sky-300 transition-colors truncate block text-left">
                         {ad.title}
                       </button>
@@ -1604,12 +1771,16 @@ export default function JobsPage() {
 
           {/* Results header */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-zinc-500">
-              <span className="text-zinc-200 font-semibold">{filteredSeekers.length}</span> álláskeresési hirdetés
-              {myPostingCategory && seekerCategory === 'Összes' && (
-                <span className="ml-2 text-xs text-emerald-400">· <span className="text-zinc-300 font-medium">{myPostingCategory}</span> kategória elöl</span>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-zinc-500">
+                <span className="text-zinc-200 font-semibold">{filteredSeekers.length}</span> álláskeresési hirdetés
+              </p>
+              {hasPersonalization && seekerCategory === 'Összes' && !seekerSearch && !seekerRemoteOnly && (
+                <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                  <Sparkles className="w-3 h-3" />Személyre szabva
+                </span>
               )}
-            </p>
+            </div>
           </div>
 
           {/* Seeker ads grid */}
@@ -1632,20 +1803,29 @@ export default function JobsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredSeekers.map((ad) => {
+              {filteredSeekers.map((ad, idx) => {
                 const typeInfo = JOB_TYPES[ad.type] ?? JOB_TYPES.teljes;
                 const salary = formatSalary(ad.expected_salary_min, ad.expected_salary_max, ad.salary_currency);
                 const expLabel = EXPERIENCE_LIST.find((e) => e.value === ad.experience)?.label;
                 const isOwn = user?.id === ad.user_id;
+                const adScore = scoreSeekerAd(ad);
+                const isRecommended = hasPersonalization && seekerCategory === 'Összes' && !seekerSearch && !seekerRemoteOnly && idx < 2 && adScore > 0;
                 return (
-                  <div key={ad.id} className="glass rounded-2xl p-5 flex flex-col gap-4 group hover:bg-white/[0.03] hover:border-sky-500/15 border border-transparent transition-all">
+                  <div key={ad.id} className={`glass rounded-2xl p-5 flex flex-col gap-4 group hover:bg-white/[0.03] border transition-all ${isRecommended ? 'border-sky-500/20 hover:border-sky-500/30' : 'border-transparent hover:border-sky-500/15'}`}>
                     {/* Header */}
                     <div className="flex items-start gap-3">
                       <div className="w-11 h-11 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <User className="w-5 h-5 text-sky-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-zinc-100 leading-snug group-hover:text-sky-300 transition-colors line-clamp-1">{ad.title}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-zinc-100 leading-snug group-hover:text-sky-300 transition-colors line-clamp-1">{ad.title}</p>
+                          {isRecommended && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/25 text-sky-400 flex-shrink-0">
+                              <TrendingUp className="w-2.5 h-2.5" />AJÁNLOTT
+                            </span>
+                          )}
+                        </div>
                         <p className="text-zinc-500 text-xs mt-0.5 truncate">
                           {ad.user?.full_name || ad.user?.username || 'Felhasználó'}
                         </p>
@@ -1681,7 +1861,7 @@ export default function JobsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-1 border-t border-white/5">
-                      <button onClick={() => { setSelectedSeekerAd(ad); setView('seeker-detail'); }}
+                      <button onClick={() => openSeekerAd(ad)}
                         className="flex-1 text-xs text-zinc-400 hover:text-sky-300 flex items-center justify-center gap-1.5 py-2 glass-pill rounded-xl transition-colors font-medium">
                         Profil megtekintése <ChevronRight className="w-3.5 h-3.5" />
                       </button>

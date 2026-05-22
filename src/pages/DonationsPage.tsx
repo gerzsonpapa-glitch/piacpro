@@ -129,10 +129,14 @@ export default function DonationsPage() {
 
   async function handleContactOffer(targetUserId: string) {
     if (!user) { navigate('/login'); return; }
-    if (targetUserId === user.id) { showToast('Saját felajánlásodra nem tudsz üzenni', 'error'); return; }
+    if (!targetUserId) { showToast('error', 'A felajánló nem azonosítható'); return; }
+    if (targetUserId === user.id) { showToast('error', 'Saját felajánlásodra nem tudsz üzenni'); return; }
+    // keresés mindkét irányban
     const { data: existing } = await supabase
       .from('conversations').select('id')
-      .eq('buyer_id', user.id).eq('seller_id', targetUserId).is('listing_id', null).maybeSingle();
+      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${targetUserId}),and(buyer_id.eq.${targetUserId},seller_id.eq.${user.id})`)
+      .is('listing_id', null)
+      .maybeSingle();
     let convId = existing?.id ?? null;
     if (!convId) {
       const { data: newConv } = await supabase
@@ -141,6 +145,7 @@ export default function DonationsPage() {
       convId = newConv?.id ?? null;
     }
     if (convId) navigate(`/messages?conv=${convId}`);
+    else showToast('error', 'Nem sikerült megnyitni a beszélgetést');
   }
 
   async function fetchRecentOffers() {
@@ -148,9 +153,8 @@ export default function DonationsPage() {
       supabase.from('support_offers')
         .select('*, user:profiles(username, full_name)')
         .eq('status', 'active')
-        .is('donation_id', null)
         .order('created_at', { ascending: false })
-        .limit(4),
+        .limit(6),
       supabase.from('support_offers').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     ]);
     setRecentOffers(data || []);
@@ -318,7 +322,7 @@ export default function DonationsPage() {
               const isItem = o.type === 'item';
               const isOwn = user?.id === o.user_id;
               return (
-                <div key={o.id} className="glass-bubble rounded-2xl p-3.5 flex items-start gap-3 group">
+                <div key={o.id} onClick={() => navigate(`/offers/${o.id}`)} className="glass-bubble rounded-2xl p-3.5 flex items-start gap-3 group cursor-pointer hover:bg-white/3 transition-colors">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isItem ? 'bg-teal-500/10' : 'bg-blue-500/10'}`}>
                     {o.images?.[0]
                       ? <img src={o.images[0]} alt="" className="w-full h-full object-cover rounded-xl" />
@@ -341,7 +345,7 @@ export default function DonationsPage() {
                   <div className="flex flex-col gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     {o.donation_id && (
                       <button
-                        onClick={() => navigate(`/donations/${o.donation_id}`)}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/donations/${o.donation_id}`); }}
                         title="Kampány megtekintése"
                         className="p-1.5 rounded-lg glass-bubble hover:bg-white/10 text-zinc-500 hover:text-zinc-200 transition-all"
                       >
@@ -350,7 +354,7 @@ export default function DonationsPage() {
                     )}
                     {!isOwn && (
                       <button
-                        onClick={() => handleContactOffer(o.user_id)}
+                        onClick={(e) => { e.stopPropagation(); handleContactOffer(o.user_id); }}
                         title="Üzenet a felajánlónak"
                         className="p-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-500 hover:text-teal-400 transition-all"
                       >

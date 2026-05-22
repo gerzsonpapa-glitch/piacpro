@@ -4,7 +4,7 @@ import {
   ShoppingBag, ScrollText, Shield, Mail, Heart, Phone, Users,
   ChevronDown, ChevronUp, Gavel, Briefcase, Store, Leaf,
   Star, Award, Zap, MessageCircle, Search, PlusCircle,
-  TrendingUp, Lock, CheckCircle, Sparkles, Package
+  TrendingUp, Lock, CheckCircle, Sparkles, Package, HandHeart
 } from 'lucide-react';
 
 const RANK_LEVELS = [
@@ -99,13 +99,37 @@ const FEATURES = [
     ],
   },
   {
+    icon: Heart,
+    title: 'Adománygyűjtés',
+    color: 'text-rose-400',
+    points: [
+      'Adománygyűjtő kampány indítása ingyenesen, bejelentkezés után',
+      'Cél összeg, képek, helyszín és leírás megadható',
+      'A kampányhoz felajánlások kapcsolhatók (tárgy, szolgáltatás)',
+      'Kampány lezárása, szerkesztése, törlése a szervező által',
+      'Hitelesített (zöld pipa) kampányok admin által ellenőrzöttek',
+    ],
+  },
+  {
+    icon: HandHeart,
+    title: 'Ingyenes felajánlások',
+    color: 'text-teal-400',
+    points: [
+      'Tárgy vagy szolgáltatás felajánlása teljesen ingyenesen',
+      'Felajánlás opcionálisan kapcsolható adománygyűjtő kampányhoz',
+      'Képek feltöltése (max 3), helyszín és leírás megadható',
+      'Bárki igényelheti az "Igénylés" gombbal',
+      'A felajánló kezelheti: teljesítettnek jelöl, töröl, újraaktivál',
+    ],
+  },
+  {
     icon: MessageCircle,
     title: 'Üzenetküldés',
     color: 'text-blue-400',
     points: [
       'Valós idejű chat eladóval/vevővel',
       'Automatikus értesítés új üzenetnél',
-      'Hirdetéshez vagy termelőhöz kötött beszélgetések',
+      'Hirdetéshez, bolthoz, felajánláshoz, adománygyűjtőhöz kötött chat',
       'Olvasott visszaigazolás (kék pipa)',
     ],
   },
@@ -135,6 +159,14 @@ const GUIDE_SECTIONS = [
   {
     title: 'Hogyan nyithatok boltot?',
     content: 'Boltnyitáshoz admin engedély szükséges. Vedd fel a kapcsolatot az adminisztrátorral. Engedély után a "Saját boltom" menüponton keresztül hozhatod létre a boltot: add meg a nevet, leírást, logót és nyitvatartást.',
+  },
+  {
+    title: 'Hogyan indíthatok adománygyűjtő kampányt?',
+    content: 'Az "Adományok" oldalon kattints a "+ Kampány indítása" gombra. Add meg a kampány nevét, leírást, célösszeget és képeket. Alap szintű fióknál az admin jóváhagyása szükséges. Magasabb rangú (3+) felhasználók kampánya azonnal megjelenik. A kampányhoz felajánlásokat is lehet csatolni.',
+  },
+  {
+    title: 'Hogyan ajánlhatok fel valamit ingyen?',
+    content: 'Az "Adományok" oldalon kattints a "+ Felajánlok valamit" gombra. Válaszd ki, hogy tárgyat vagy szolgáltatást ajánlasz. Add meg a leírást, helyszínt, feltöltj képet (opcionális). A felajánlást bárki igényelheti, te pedig a saját felajánlásod oldalán kezelheted: teljesítettnek jelölheted, törölheted vagy visszaállíthatod aktívra.',
   },
 ];
 
@@ -305,6 +337,7 @@ export default function Footer() {
               {[
                 { label: 'Hirdetések', path: '/search', icon: Search },
                 { label: 'Licitek', path: '/auctions', icon: Gavel },
+                { label: 'Adományok', path: '/donations', icon: Heart },
                 { label: 'Állások', path: '/jobs', icon: Briefcase },
                 { label: 'Boltok', path: '/shops', icon: Store },
                 { label: 'Termelők', path: '/producers', icon: Leaf },

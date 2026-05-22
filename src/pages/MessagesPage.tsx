@@ -378,7 +378,7 @@ function CloseSaleModal({
 export default function MessagesPage() {
   const { user, refreshUnread } = useAuth();
   const { showToast } = useNotification();
-  const { params, navigate } = useRouter();
+  const { params, search, navigate } = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -394,7 +394,7 @@ export default function MessagesPage() {
   const [myProducerId, setMyProducerId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeConvRef = useRef<Conversation | null>(null);
-  const chatId = params.id;
+  const chatId = params.id || new URLSearchParams(search).get('conv') || undefined;
 
   activeConvRef.current = activeConversation;
 

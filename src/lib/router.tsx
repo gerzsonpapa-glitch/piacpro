@@ -29,6 +29,8 @@ const ROUTE_PATTERNS = [
   '/shops/:slug',
   '/producers/:id',
   '/donations/:id',
+  '/offers/:id',
+  '/helyi-vallalkozasok/:id',
 ];
 
 export function useRouterProvider(): RouterContextType {

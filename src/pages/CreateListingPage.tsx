@@ -129,7 +129,7 @@ export default function CreateListingPage() {
       const { error } = await supabase.storage.from('listing-images').upload(fileName, file);
       if (!error) {
         const { data: urlData } = supabase.storage.from('listing-images').getPublicUrl(fileName);
-        newUrls.push(`${urlData.publicUrl}?t=${Date.now()}`);
+        newUrls.push(urlData.publicUrl);
       }
     }
     setImageUrls((prev) => [...prev, ...newUrls]);
@@ -149,7 +149,7 @@ export default function CreateListingPage() {
     const { error } = await supabase.storage.from('listing-videos').upload(fileName, file);
     if (!error) {
       const { data: urlData } = supabase.storage.from('listing-videos').getPublicUrl(fileName);
-      setVideoUrl(`${urlData.publicUrl}?t=${Date.now()}`);
+      setVideoUrl(urlData.publicUrl);
     }
     setUploadingVideo(false);
   }

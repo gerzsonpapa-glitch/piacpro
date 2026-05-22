@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
@@ -24,8 +24,13 @@ const MIN_TRUST_FOR_DONATION = 2;
 
 export default function CreateDonationPage() {
   const { user, profile } = useAuth();
-  const { navigate } = useRouter();
+  const { navigate, path } = useRouter();
   const { showToast } = useNotification();
+
+  // Detect edit mode: /donations/edit/:id
+  const editMatch = path.match(/^\/donations\/edit\/([^/]+)$/);
+  const editId = editMatch ? editMatch[1] : null;
+  const isEdit = !!editId;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -35,6 +40,22 @@ export default function CreateDonationPage() {
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(isEdit);
+
+  useEffect(() => {
+    if (!editId) return;
+    supabase.from('donations').select('*').eq('id', editId).maybeSingle().then(({ data }) => {
+      if (data) {
+        setTitle(data.title || '');
+        setDescription(data.description || '');
+        setCategory(data.category || 'egyeb');
+        setGoalAmount(data.goal_amount ? String(data.goal_amount) : '');
+        setLocation(data.location || '');
+        setImages(data.images || []);
+      }
+      setLoadingData(false);
+    });
+  }, [editId]);
 
   if (!user) {
     navigate('/login');
@@ -44,7 +65,7 @@ export default function CreateDonationPage() {
   const userTrust = (profile?.trust_level ?? 1) as number;
   const canCreate = userTrust >= MIN_TRUST_FOR_DONATION || profile?.is_admin || profile?.is_super_admin;
 
-  if (!canCreate) {
+  if (!isEdit && !canCreate) {
     return (
       <div className="max-w-lg mx-auto mt-16 text-center space-y-6">
         <div className="w-16 h-16 bg-amber-500/15 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto">
@@ -81,11 +102,11 @@ export default function CreateDonationPage() {
     const uploaded: string[] = [];
     for (const file of files.slice(0, 4)) {
       const ext = file.name.split('.').pop();
-      const path = `donations/${user!.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const path = `${user!.id}/donations/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from('listing-images').upload(path, file);
       if (!error) {
         const { data } = supabase.storage.from('listing-images').getPublicUrl(path);
-        uploaded.push(`${data.publicUrl}?t=${Date.now()}`);
+        uploaded.push(data.publicUrl);
       }
     }
     setImages((prev) => [...prev, ...uploaded].slice(0, 4));
@@ -95,38 +116,66 @@ export default function CreateDonationPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
-      showToast('Töltsd ki a kötelező mezőket', 'error');
+      showToast('error', 'Töltsd ki a kötelező mezőket');
       return;
     }
     setLoading(true);
-    const isHighTrust = userTrust >= 3 || profile?.is_admin || profile?.is_super_admin;
-    const { data, error } = await supabase.from('donations').insert({
-      creator_id: user!.id,
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      goal_amount: goalAmount ? parseInt(goalAmount) : 0,
-      images,
-      location,
-      moderation_status: isHighTrust ? 'active' : 'pending',
-      status: 'active',
-    }).select().maybeSingle();
 
-    if (error) {
-      showToast('Hiba történt', 'error');
-    } else if (isHighTrust) {
-      showToast('Kampány sikeresen létrehozva!', 'success');
-      navigate(`/donations/${data!.id}`);
+    if (isEdit) {
+      const { error } = await supabase.from('donations').update({
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        goal_amount: goalAmount ? parseInt(goalAmount) : 0,
+        images,
+        location,
+      }).eq('id', editId!);
+
+      if (error) {
+        showToast('error', 'Hiba történt a mentés során');
+      } else {
+        showToast('success', 'Kampány frissítve!');
+        navigate(`/donations/${editId}`);
+      }
     } else {
-      showToast('Kampányod beküldve! Admin jóváhagyás után jelenik meg nyilvánosan.', 'success');
-      navigate('/donations');
+      const isHighTrust = userTrust >= 3 || profile?.is_admin || profile?.is_super_admin;
+      const { data, error } = await supabase.from('donations').insert({
+        creator_id: user!.id,
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        goal_amount: goalAmount ? parseInt(goalAmount) : 0,
+        images,
+        location,
+        moderation_status: isHighTrust ? 'active' : 'pending',
+        status: 'active',
+      }).select().maybeSingle();
+
+      if (error) {
+        showToast('error', 'Hiba történt');
+      } else if (isHighTrust) {
+        showToast('success', 'Kampány sikeresen létrehozva!');
+        navigate(`/donations/${data!.id}`);
+      } else {
+        showToast('success', 'Kampányod beküldve!', 'Admin jóváhagyás után jelenik meg nyilvánosan.');
+        navigate('/donations');
+      }
     }
     setLoading(false);
   }
 
+  if (loadingData) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-4 animate-pulse">
+        <div className="h-8 glass rounded-xl w-1/3" />
+        <div className="h-64 glass rounded-3xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <button onClick={() => navigate('/donations')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm">
+      <button onClick={() => navigate(isEdit ? `/donations/${editId}` : '/donations')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm">
         <ArrowLeft className="w-4 h-4" />
         Vissza
       </button>
@@ -135,8 +184,8 @@ export default function CreateDonationPage() {
         <div className="w-14 h-14 bg-rose-500/15 border border-rose-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <Heart className="w-7 h-7 text-rose-400" />
         </div>
-        <h1 className="text-2xl font-bold">Kampány indítása</h1>
-        <p className="text-zinc-400 text-sm mt-1">Hozz létre egy adománygyűjtési kampányt</p>
+        <h1 className="text-2xl font-bold">{isEdit ? 'Kampány szerkesztése' : 'Kampány indítása'}</h1>
+        <p className="text-zinc-400 text-sm mt-1">{isEdit ? 'Módosítsd a kampány adatait' : 'Hozz létre egy adománygyűjtési kampányt'}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="glass rounded-3xl p-6 space-y-5">
@@ -243,8 +292,8 @@ export default function CreateDonationPage() {
           )}
         </div>
 
-        {/* Trust info banner */}
-        {userTrust < 3 && !profile?.is_admin && (
+        {/* Trust info banner - only for new campaigns */}
+        {!isEdit && userTrust < 3 && !profile?.is_admin && (
           <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <Clock className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
@@ -261,7 +310,7 @@ export default function CreateDonationPage() {
           disabled={loading}
           className="w-full py-3.5 bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold rounded-2xl hover:bg-rose-500/30 transition-all hover:scale-[1.01] disabled:opacity-50"
         >
-          {loading ? 'Létrehozás...' : 'Kampány indítása'}
+          {loading ? (isEdit ? 'Mentés...' : 'Létrehozás...') : (isEdit ? 'Változtatások mentése' : 'Kampány indítása')}
         </button>
       </form>
     </div>

@@ -33,6 +33,7 @@ export interface Profile {
   is_admin: boolean;
   is_super_admin: boolean;
   is_shop_owner: boolean;
+  is_business_owner: boolean;
   response_speed: 'fast' | 'medium' | 'slow' | 'unknown';
   listings_today: number;
   listings_today_reset: string | null;
@@ -429,6 +430,89 @@ export interface SupportOffer {
   claimer?: Profile;
 }
 
+// ── Local Businesses (unified producers + shops) ──────────────────────────────
+
+export type BusinessType = 'producer' | 'craftsman' | 'shop' | 'service' | 'family' | 'specialist';
+
+export const BUSINESS_TYPE_LABELS: Record<BusinessType, string> = {
+  producer: 'Kistermelő',
+  craftsman: 'Kézműves',
+  shop: 'Helyi bolt',
+  service: 'Szolgáltató',
+  family: 'Családi vállalkozás',
+  specialist: 'Helyi szakember',
+};
+
+export const BUSINESS_TYPE_ICONS: Record<BusinessType, string> = {
+  producer: 'sprout',
+  craftsman: 'scissors',
+  shop: 'store',
+  service: 'briefcase',
+  family: 'home',
+  specialist: 'user-check',
+};
+
+export interface LocalBusiness {
+  id: string;
+  owner_id: string;
+  name: string;
+  slug: string | null;
+  tagline: string;
+  description: string;
+  business_type: BusinessType;
+  logo_url: string | null;
+  cover_url: string | null;
+  location: string;
+  lat: number | null;
+  lng: number | null;
+  categories: string[];
+  contact_phone: string;
+  contact_email: string;
+  website: string;
+  is_active: boolean;
+  is_verified: boolean;
+  is_local_favorite: boolean;
+  is_available_today: boolean;
+  avg_rating: number;
+  review_count: number;
+  created_at: string;
+  updated_at: string;
+  owner?: Profile;
+  items?: LocalBusinessItem[];
+}
+
+export interface LocalBusinessItem {
+  id: string;
+  business_id: string;
+  name: string;
+  description: string;
+  images: string[];
+  price: number | null;
+  compare_at_price: number | null;
+  unit: string;
+  category_tag: string;
+  is_available: boolean;
+  is_featured: boolean;
+  is_seasonal: boolean;
+  is_fresh: boolean;
+  stock_quantity: number | null;
+  stock_note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LocalBusinessApplication {
+  id: string;
+  user_id: string;
+  business_type: BusinessType;
+  message: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  applicant?: Profile;
+}
+
 export interface Report {
   id: string;
   reporter_id: string;
@@ -443,4 +527,85 @@ export interface Report {
   reporter?: Profile;
   reported_user?: Profile;
   reported_listing?: Listing;
+}
+
+// ── Community Forum ────────────────────────────────────────────────────────────
+
+export type ReactionType = 'like' | 'heart' | 'laugh' | 'helpful';
+export type BugReportType = 'bug' | 'suggestion' | 'improvement' | 'question';
+export type BugReportStatus = 'open' | 'in_progress' | 'resolved' | 'closed' | 'duplicate';
+export type BugReportPriority = 'low' | 'medium' | 'high' | 'critical';
+
+export interface ForumCategory {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  sort_order: number;
+  is_bug_tracker: boolean;
+  thread_count: number;
+  created_at: string;
+}
+
+export interface ForumThread {
+  id: string;
+  category_id: string;
+  author_id: string;
+  title: string;
+  slug: string;
+  content: string;
+  is_pinned: boolean;
+  is_locked: boolean;
+  is_solved: boolean;
+  view_count: number;
+  reply_count: number;
+  reaction_count: number;
+  last_reply_at: string | null;
+  last_reply_by: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  author?: Profile;
+  category?: ForumCategory;
+}
+
+export interface ForumReply {
+  id: string;
+  thread_id: string;
+  author_id: string;
+  parent_reply_id: string | null;
+  content: string;
+  is_edited: boolean;
+  is_solution: boolean;
+  reaction_count: number;
+  created_at: string;
+  updated_at: string;
+  author?: Profile;
+  reactions?: ForumReaction[];
+}
+
+export interface ForumReaction {
+  id: string;
+  user_id: string;
+  thread_id: string | null;
+  reply_id: string | null;
+  reaction_type: ReactionType;
+  created_at: string;
+}
+
+export interface BugReport {
+  id: string;
+  reporter_id: string;
+  type: BugReportType;
+  title: string;
+  description: string;
+  steps_to_reproduce: string;
+  status: BugReportStatus;
+  priority: BugReportPriority;
+  admin_note: string;
+  created_at: string;
+  updated_at: string;
+  reporter?: Profile;
 }

@@ -12,7 +12,7 @@ import {
   Zap, Star, Clock, ChevronRight,
   Home, Leaf, CheckCircle2,
   Palette, Scissors, Sprout, Monitor, Music, Shirt,
-  Apple, BookOpen, Lightbulb, Gift, Heart, Target
+  Apple, BookOpen, Lightbulb, Gift, Heart, Target, MessageCircle
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -234,8 +234,8 @@ export default function HomePage() {
   }
 
   async function fetchCategories() {
-    const { data } = await supabase.from('categories').select('*').order('sort_order').limit(15);
-    setCategories((data || []).filter((c) => !c.parent_id));
+    const { data } = await supabase.from('categories').select('*').is('parent_id', null).order('sort_order').limit(15);
+    setCategories(data || []);
   }
 
   async function fetchProducers() {
@@ -457,7 +457,7 @@ export default function HomePage() {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
             {categories.map((cat) => {
               const Icon = getIcon(cat.slug);
-              const destination = cat.slug === 'termelok' ? '/producers' : `/search?category=${cat.slug}`;
+              const destination = cat.slug === 'termelok' ? '/helyi-vallalkozasok' : `/search?category=${cat.slug}`;
               return (
                 <button key={cat.id} onClick={() => navigate(destination)}
                   className="group flex flex-col items-center gap-2.5 p-4 glass-bubble rounded-2xl transition-all duration-300 hover:scale-[1.04] hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/15">
@@ -692,57 +692,41 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── KISTERMELŐK ─────────────────────────────────────────────────── */}
-      {(loading || featuredProducers.length > 0) && (
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Leaf className="w-5 h-5 text-emerald-400" /> Kistermelők a közeledben
-            </h2>
-            <button onClick={() => navigate('/producers')}
-              className="text-emerald-400 text-sm font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
-              Összes <ArrowRight className="w-4 h-4" />
-            </button>
+      {/* ── HELYI VÁLLALKOZÁSOK CTA ─────────────────────────────────────── */}
+      <section className="glass rounded-3xl p-6 relative overflow-hidden border border-emerald-500/10">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <MapPin className="w-6 h-6 text-emerald-400" />
           </div>
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-32 animate-pulse" />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {featuredProducers.map((p) => (
-                <button key={p.id} onClick={() => navigate(`/producers/${p.id}`)}
-                  className="glass-bubble rounded-2xl p-4 text-left hover:bg-white/5 transition-all group flex flex-col gap-2">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
-                      <Leaf className="w-5 h-5 text-emerald-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-zinc-200 text-sm leading-snug truncate group-hover:text-emerald-400 transition-colors">{p.name}</p>
-                      <p className="text-xs text-zinc-500 flex items-center gap-0.5 mt-0.5">
-                        <MapPin className="w-2.5 h-2.5" /> {p.location || '—'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {p.is_verified && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex items-center gap-0.5">
-                        <CheckCircle2 className="w-2.5 h-2.5" /> Hitelesített
-                      </span>
-                    )}
-                    {p.is_available_today && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-green-500/15 text-green-400 border border-green-500/20">Ma elérhető</span>
-                    )}
-                  </div>
-                  {(p.products?.length ?? 0) > 0 && (
-                    <p className="text-xs text-zinc-600 truncate">{p.products!.slice(0, 2).map((x) => x.name).join(', ')}</p>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-zinc-100 text-lg">Helyi vállalkozások</h2>
+            <p className="text-zinc-500 text-sm mt-0.5">Kistermelők, kézművesek, kisboltok és szakemberek a közösségből</p>
+          </div>
+          <button onClick={() => navigate('/helyi-vallalkozasok')}
+            className="glass-pill-active text-emerald-300 px-4 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all flex items-center gap-2 flex-shrink-0">
+            Felfedezés <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* ── FÓRUM CTA ───────────────────────────────────────────────────── */}
+      <section className="glass rounded-3xl p-6 relative overflow-hidden border border-sky-500/10">
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 via-transparent to-teal-500/5 pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-12 h-12 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <MessageCircle className="w-6 h-6 text-sky-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-zinc-100 text-lg">Közösségi Fórum</h2>
+            <p className="text-zinc-500 text-sm mt-0.5">Kérdezz, segíts másoknak, oszd meg tapasztalataidat</p>
+          </div>
+          <button onClick={() => navigate('/forum')}
+            className="text-sky-300 border border-sky-500/25 bg-sky-500/10 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-sky-500/15 hover:scale-[1.02] transition-all flex items-center gap-2 flex-shrink-0">
+            Csatlakozás <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
 
       {/* ── CTA ─────────────────────────────────────────────────────────── */}
       {!user && (

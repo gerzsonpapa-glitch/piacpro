@@ -6,12 +6,12 @@ import { useNotification } from '../contexts/NotificationContext';
 import type { Donation, DonationContribution, SupportOffer } from '../lib/types';
 import {
   Heart, CheckCircle2, MapPin, Clock, Target, Users,
-  ArrowLeft, Share2, ChevronDown, ChevronUp, Send, Baby,
+  ArrowLeft, Share2, ChevronDown, ChevronUp, Baby,
   PawPrint, Lightbulb, Package, Activity, Zap,
   GraduationCap, Trophy, Church, Leaf, HandHeart,
   Wrench, Shirt, UtensilsCrossed, Armchair, Gamepad2,
   Car, CalendarDays, Scissors, Plus, MessageCircle,
-  Settings, Pencil, XCircle, CheckSquare, Trash2, AlertTriangle
+  Settings, Pencil, XCircle, CheckSquare, Trash2, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
 
@@ -59,11 +59,20 @@ function ProgressBar({ current, goal }: { current: number; goal: number }) {
   );
 }
 
-function OfferCard({ offer, onClaim, onContact, currentUserId }: { offer: SupportOffer; onClaim: (id: string) => void; onContact: (userId: string) => void; currentUserId?: string }) {
+function OfferCard({ offer, onClaim, onContact, onRepost, currentUserId, navigate }: {
+  offer: SupportOffer;
+  onClaim: (id: string) => void;
+  onContact: (userId: string) => void;
+  onRepost: (id: string) => void;
+  currentUserId?: string;
+  navigate: (path: string) => void;
+}) {
   const catInfo = CATEGORY_LABELS[offer.category] ?? CATEGORY_LABELS.egyeb;
   const CatIcon = catInfo.icon;
   const isItem = offer.type === 'item';
   const isOwn = !!currentUserId && currentUserId === offer.user_id;
+  const isClaimer = !!currentUserId && currentUserId === offer.claimed_by;
+  const convId = (offer as any).conversation_id as string | null;
 
   const statusColors: Record<string, string> = {
     active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -77,7 +86,6 @@ function OfferCard({ offer, onClaim, onContact, currentUserId }: { offer: Suppor
 
   return (
     <div className="glass-bubble rounded-2xl p-4 flex items-start gap-3 group transition-all">
-      {/* Icon / image */}
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isItem ? 'bg-teal-500/10' : 'bg-blue-500/10'}`}>
         {offer.images?.[0]
           ? <img src={offer.images[0]} alt="" className="w-full h-full object-cover rounded-xl" />
@@ -105,9 +113,7 @@ function OfferCard({ offer, onClaim, onContact, currentUserId }: { offer: Suppor
         <div className="flex items-center gap-3 text-[11px] text-zinc-600 flex-wrap">
           {offer.location && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{offer.location}</span>}
           {offer.quantity && <span>{offer.quantity} db</span>}
-          {(offer.item_type || offer.service_type) && (
-            <span className="text-zinc-500">{offer.item_type || offer.service_type}</span>
-          )}
+          {(offer.item_type || offer.service_type) && <span className="text-zinc-500">{offer.item_type || offer.service_type}</span>}
           <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" />{formatRelativeTime(offer.created_at)}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-zinc-600">
@@ -121,23 +127,35 @@ function OfferCard({ offer, onClaim, onContact, currentUserId }: { offer: Suppor
       </div>
 
       <div className="flex flex-col gap-1.5 flex-shrink-0">
+        {/* Active: claim or contact */}
         {offer.status === 'active' && !isOwn && (
-          <button
-            onClick={() => onClaim(offer.id)}
-            className="px-3 py-1.5 rounded-xl bg-teal-500/15 border border-teal-500/25 text-teal-400 text-xs font-semibold hover:bg-teal-500/25 transition-all whitespace-nowrap"
-          >
+          <button onClick={() => onClaim(offer.id)}
+            className="px-3 py-1.5 rounded-xl bg-teal-500/15 border border-teal-500/25 text-teal-400 text-xs font-semibold hover:bg-teal-500/25 transition-all whitespace-nowrap">
             Igénylés
           </button>
         )}
-        {!isOwn && (
-          <button
-            onClick={() => onContact(offer.user_id)}
-            className="px-3 py-1.5 rounded-xl bg-zinc-700/50 border border-white/8 text-zinc-400 text-xs font-semibold hover:bg-zinc-700 hover:text-zinc-200 transition-all whitespace-nowrap flex items-center gap-1.5"
-          >
+        {/* Claimer: open chat */}
+        {isClaimer && offer.status === 'claimed' && convId && (
+          <button onClick={() => navigate(`/messages?conv=${convId}`)}
+            className="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-xs font-semibold hover:bg-amber-500/25 transition-all whitespace-nowrap flex items-center gap-1.5">
+            <MessageCircle className="w-3 h-3" />Chat
+          </button>
+        )}
+        {/* Contact offer creator */}
+        {!isOwn && offer.status === 'active' && (
+          <button onClick={() => onContact(offer.user_id)}
+            className="px-3 py-1.5 rounded-xl bg-zinc-700/50 border border-white/8 text-zinc-400 text-xs font-semibold hover:bg-zinc-700 hover:text-zinc-200 transition-all whitespace-nowrap flex items-center gap-1.5">
             <MessageCircle className="w-3 h-3" />Üzenet
           </button>
         )}
-        {isOwn && (
+        {/* Owner repost from claimed/fulfilled */}
+        {isOwn && (offer.status === 'claimed' || offer.status === 'fulfilled') && (
+          <button onClick={() => onRepost(offer.id)}
+            className="px-3 py-1.5 rounded-xl bg-zinc-500/15 border border-zinc-500/25 text-zinc-400 text-xs font-semibold hover:bg-zinc-500/25 transition-all whitespace-nowrap flex items-center gap-1.5">
+            <RefreshCw className="w-3 h-3" />Újraposzt
+          </button>
+        )}
+        {isOwn && offer.status === 'active' && (
           <span className="px-3 py-1.5 rounded-xl bg-white/4 border border-white/8 text-zinc-600 text-xs whitespace-nowrap text-center">
             Saját
           </span>
@@ -179,14 +197,25 @@ export default function DonationDetailPage() {
         .select('*, donor:profiles(username, avatar_url)')
         .eq('donation_id', id).order('created_at', { ascending: false }).limit(50),
       supabase.from('support_offers')
-        .select('*, user:profiles(username, full_name, avatar_url)')
+        .select('*, claimer:profiles!support_offers_claimed_by_fkey(username, full_name, avatar_url)')
         .eq('donation_id', id)
         .in('status', ['active', 'claimed', 'fulfilled'])
         .order('created_at', { ascending: false }),
     ]);
     setDonation(don as Donation);
     setContributions((contribs || []) as DonationContribution[]);
-    setOffers((offerData || []) as SupportOffer[]);
+
+    // Enrich offers with user profiles (user_id FK points to auth.users, not profiles)
+    const rawOffers = offerData || [];
+    if (rawOffers.length > 0) {
+      const userIds = [...new Set(rawOffers.map((o: any) => o.user_id).filter(Boolean))];
+      const { data: userProfiles } = await supabase
+        .from('profiles').select('id, username, full_name, avatar_url').in('id', userIds);
+      const profileMap = Object.fromEntries((userProfiles || []).map((p: any) => [p.id, p]));
+      setOffers(rawOffers.map((o: any) => ({ ...o, user: profileMap[o.user_id] ?? null })) as SupportOffer[]);
+    } else {
+      setOffers([]);
+    }
     setLoading(false);
   }
 
@@ -205,7 +234,7 @@ export default function DonationDetailPage() {
     if (!user) { navigate('/login'); return; }
     const finalAmount = customAmount ? parseInt(customAmount) : amount;
     if (!finalAmount || finalAmount < 100) {
-      showToast('Minimum 100 Ft az adományozható összeg', 'error'); return;
+      showToast('error', 'Minimum 100 Ft az adományozható összeg'); return;
     }
     setDonating(true);
     const { error } = await supabase.from('donation_contributions').insert({
@@ -216,9 +245,9 @@ export default function DonationDetailPage() {
       is_anonymous: isAnonymous,
     });
     if (error) {
-      showToast('Hiba történt az adományozás során', 'error');
+      showToast('error', 'Hiba történt az adományozás során');
     } else {
-      showToast(`Köszönjük a ${finalAmount.toLocaleString('hu-HU')} Ft-os adományát!`, 'success');
+      showToast('success', `Köszönjük a ${finalAmount.toLocaleString('hu-HU')} Ft-os adományát!`);
       setMessage(''); setCustomAmount('');
       if (params.id) refreshAfterDonate(params.id);
     }
@@ -227,12 +256,12 @@ export default function DonationDetailPage() {
 
   async function handleContact(targetUserId: string) {
     if (!user) { navigate('/login'); return; }
-    if (targetUserId === user.id) { showToast('Saját felajánlásodra nem tudsz üzenni', 'error'); return; }
+    if (!targetUserId) { showToast('error', 'A felhasználó nem azonosítható'); return; }
+    if (targetUserId === user.id) { showToast('error', 'Saját felajánlásodra nem tudsz üzenni'); return; }
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
-      .eq('buyer_id', user.id)
-      .eq('seller_id', targetUserId)
+      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${targetUserId}),and(buyer_id.eq.${targetUserId},seller_id.eq.${user.id})`)
       .is('listing_id', null)
       .maybeSingle();
     let convId = existing?.id ?? null;
@@ -245,26 +274,39 @@ export default function DonationDetailPage() {
       convId = newConv?.id ?? null;
     }
     if (convId) navigate(`/messages?conv=${convId}`);
+    else showToast('error', 'Nem sikerült megnyitni a beszélgetést');
   }
 
   async function handleClaim(offerId: string) {
     if (!user) { navigate('/login'); return; }
-    const { error } = await supabase.rpc('claim_support_offer', { offer_id: offerId });
+    const { data: convId, error } = await supabase.rpc('claim_support_offer', { offer_id: offerId });
     if (error) {
-      showToast(error.message || 'Hiba történt', 'error');
+      showToast('error', 'Hiba', error.message);
     } else {
-      showToast('Felajánlást sikeresen igényelted!', 'success');
-      setOffers((prev) => prev.map((o) => o.id === offerId ? { ...o, status: 'claimed' } : o));
+      showToast('success', 'Sikeresen igényelted a felajánlást!');
+      setOffers((prev) => prev.map((o) => o.id === offerId ? { ...o, status: 'claimed', claimed_by: user.id } : o));
+      if (convId) setTimeout(() => navigate(`/messages?conv=${convId}`), 800);
     }
+  }
+
+  async function handleRepostOffer(offerId: string) {
+    setActionLoading('repost-' + offerId);
+    const { error } = await supabase.rpc('repost_support_offer', { offer_id: offerId });
+    if (error) showToast('error', 'Hiba', error.message);
+    else {
+      showToast('success', 'Felajánlás visszaposztolva — újra aktív!');
+      setOffers((prev) => prev.map((o) => o.id === offerId ? { ...o, status: 'active', claimed_by: null, claimed_at: null } : o));
+    }
+    setActionLoading(null);
   }
 
   async function handleFulfillOffer(offerId: string) {
     setActionLoading(offerId);
     const { error } = await supabase.rpc('fulfill_support_offer', { offer_id: offerId });
     if (error) {
-      showToast(error.message || 'Hiba történt', 'error');
+      showToast('error', 'Hiba', error.message);
     } else {
-      showToast('Felajánlás teljesítettnek jelölve', 'success');
+      showToast('success', 'Felajánlás teljesítettnek jelölve');
       setOffers((prev) => prev.map((o) => o.id === offerId ? { ...o, status: 'fulfilled' } : o));
     }
     setActionLoading(null);
@@ -274,9 +316,9 @@ export default function DonationDetailPage() {
     setActionLoading('del-' + offerId);
     const { error } = await supabase.from('support_offers').delete().eq('id', offerId);
     if (error) {
-      showToast('Nem sikerült törölni', 'error');
+      showToast('error', 'Nem sikerült törölni');
     } else {
-      showToast('Felajánlás törölve', 'success');
+      showToast('success', 'Felajánlás törölve');
       setOffers((prev) => prev.filter((o) => o.id !== offerId));
     }
     setActionLoading(null);
@@ -287,9 +329,9 @@ export default function DonationDetailPage() {
     setActionLoading('close');
     const { error } = await supabase.from('donations').update({ status: 'ended' }).eq('id', donation.id);
     if (error) {
-      showToast('Hiba történt a kampány lezárásakor', 'error');
+      showToast('error', 'Hiba történt a kampány lezárásakor');
     } else {
-      showToast('Kampány lezárva', 'success');
+      showToast('success', 'Kampány lezárva');
       setDonation((prev) => prev ? { ...prev, status: 'ended' } : prev);
       setConfirmClose(false);
     }
@@ -301,9 +343,9 @@ export default function DonationDetailPage() {
     setActionLoading('delcamp');
     const { error } = await supabase.from('donations').delete().eq('id', donation.id);
     if (error) {
-      showToast('Nem sikerült törölni a kampányt', 'error');
+      showToast('error', 'Nem sikerült törölni a kampányt');
     } else {
-      showToast('Kampány törölve', 'success');
+      showToast('success', 'Kampány törölve');
       navigate('/donations');
     }
     setActionLoading(null);
@@ -311,11 +353,12 @@ export default function DonationDetailPage() {
 
   async function handleContactDonor(donorId: string) {
     if (!user) { navigate('/login'); return; }
+    if (!donorId) { showToast('error', 'A felhasználó nem azonosítható'); return; }
+    if (donorId === user.id) { showToast('error', 'Saját magadnak nem tudsz üzenni'); return; }
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
-      .eq('buyer_id', user.id)
-      .eq('seller_id', donorId)
+      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${donorId}),and(buyer_id.eq.${donorId},seller_id.eq.${user.id})`)
       .is('listing_id', null)
       .maybeSingle();
     let convId = existing?.id ?? null;
@@ -328,6 +371,7 @@ export default function DonationDetailPage() {
       convId = newConv?.id ?? null;
     }
     if (convId) navigate(`/messages?conv=${convId}`);
+    else showToast('error', 'Nem sikerült megnyitni a beszélgetést');
   }
 
   if (loading) {
@@ -427,6 +471,16 @@ export default function DonationDetailPage() {
                             <MessageCircle className="w-3.5 h-3.5" />
                           </button>
                         )}
+                        {/* Chat with claimer if claimed */}
+                        {o.status === 'claimed' && (o as any).conversation_id && (
+                          <button
+                            onClick={() => navigate(`/messages?conv=${(o as any).conversation_id}`)}
+                            title="Chat az igénylővel"
+                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 transition-all"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         {o.status !== 'fulfilled' && (
                           <button
                             onClick={() => handleFulfillOffer(o.id)}
@@ -435,6 +489,17 @@ export default function DonationDetailPage() {
                             className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 hover:text-emerald-400 transition-all disabled:opacity-50"
                           >
                             <CheckSquare className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {/* Repost button for claimed or fulfilled */}
+                        {(o.status === 'claimed' || o.status === 'fulfilled') && o.user_id === user?.id && (
+                          <button
+                            onClick={() => handleRepostOffer(o.id)}
+                            disabled={actionLoading === 'repost-' + o.id}
+                            title="Visszaposztolás — újra aktív"
+                            className="p-1.5 rounded-lg bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-400 hover:text-zinc-300 transition-all disabled:opacity-50"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
                           </button>
                         )}
                         <button
@@ -678,7 +743,7 @@ export default function DonationDetailPage() {
                     <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
                       <Package className="w-3 h-3" />Tárgyak ({itemOffers.length})
                     </p>
-                    {itemOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} onContact={handleContact} currentUserId={user?.id} />)}
+                    {itemOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} onContact={handleContact} onRepost={handleRepostOffer} currentUserId={user?.id} navigate={navigate} />)}
                   </div>
                 )}
 
@@ -688,7 +753,7 @@ export default function DonationDetailPage() {
                     <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
                       <Wrench className="w-3 h-3" />Szolgáltatások ({serviceOffers.length})
                     </p>
-                    {serviceOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} onContact={handleContact} currentUserId={user?.id} />)}
+                    {serviceOffers.map((o) => <OfferCard key={o.id} offer={o} onClaim={handleClaim} onContact={handleContact} onRepost={handleRepostOffer} currentUserId={user?.id} navigate={navigate} />)}
                   </div>
                 )}
               </div>
@@ -780,7 +845,7 @@ export default function DonationDetailPage() {
                 </p>
               )}
 
-              <button onClick={() => { navigator.clipboard.writeText(window.location.href); showToast('Link másolva!', 'success'); }}
+              <button onClick={() => { navigator.clipboard.writeText(window.location.href); showToast('success', 'Link másolva!'); }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 glass-pill rounded-xl text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
                 <Share2 className="w-4 h-4" />Kampány megosztása
               </button>

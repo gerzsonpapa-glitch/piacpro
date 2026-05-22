@@ -52,7 +52,7 @@ export default function CreateAuctionPage() {
       const { error } = await supabase.storage.from('listing-images').upload(path, file);
       if (!error) {
         const { data: u } = supabase.storage.from('listing-images').getPublicUrl(path);
-        newUrls.push(`${u.publicUrl}?t=${Date.now()}`);
+        newUrls.push(u.publicUrl);
       }
     }
     setImageUrls((prev) => [...prev, ...newUrls]);
