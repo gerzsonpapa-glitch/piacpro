@@ -327,7 +327,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden glass-strong border-t border-white/[0.05]">
+          <div className="md:hidden glass-strong border-t border-white/[0.05] max-h-[calc(100vh-60px)] overflow-y-auto">
             <nav className="p-4 space-y-1.5">
               {navItems.map((item) => (
                 <button

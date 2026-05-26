@@ -52,6 +52,7 @@ export function useRouterProvider(): RouterContextType {
     const [pathname, qs] = newPath.split('?');
     setPath(pathname);
     setSearch(qs ? `?${qs}` : '');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
   useEffect(() => {
