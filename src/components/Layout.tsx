@@ -400,7 +400,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 pb-28 md:pb-10">
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-6 md:py-8 pb-24 md:pb-10">
         {children}
       </main>
 
@@ -408,37 +408,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-bottom">
-        <div className="flex items-center justify-around h-[68px] px-1 pb-1">
-          {navItems.slice(0, 4).map((item) => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-200 ${
-                isActive(item.path) ? 'glass-pill-active text-emerald-300' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="text-[9px] font-medium">{item.label}</span>
-            </button>
-          ))}
-          {user && (
-            <button
-              onClick={() => navigate('/messages')}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-200 relative ${
-                isActive('/messages') || isActive('/chat') ? 'glass-pill-active text-emerald-300' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <span className="relative">
-                <MessageCircle className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </span>
-              <span className="text-[9px] font-medium">Üzenetek</span>
-            </button>
-          )}
+        <div className="flex items-center h-[64px] px-1 pb-safe overflow-x-auto scrollbar-none">
+          <div className="flex items-center justify-around w-full min-w-max px-1">
+            {navItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-xl transition-all duration-200 flex-shrink-0 min-w-[52px] ${
+                  isActive(item.path) ? 'glass-pill-active text-emerald-300' : 'text-zinc-500'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="text-[9px] font-medium leading-tight">{item.label}</span>
+              </button>
+            ))}
+            {user && (
+              <button
+                onClick={() => navigate('/messages')}
+                className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-xl transition-all duration-200 flex-shrink-0 min-w-[52px] relative ${
+                  isActive('/messages') || isActive('/chat') ? 'glass-pill-active text-emerald-300' : 'text-zinc-500'
+                }`}
+              >
+                <span className="relative">
+                  <MessageCircle className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[9px] font-medium leading-tight">Üzenetek</span>
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 

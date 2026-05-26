@@ -265,7 +265,7 @@ export default function VedelemPage() {
           </div>
 
           {/* ── RIGHT: text + contact ── */}
-          <div className="flex-1 px-8 py-10 flex flex-col justify-center gap-7">
+          <div className="flex-1 px-5 sm:px-8 py-7 sm:py-10 flex flex-col justify-center gap-5 sm:gap-7">
 
             {/* Badge */}
             <div>
@@ -276,7 +276,7 @@ export default function VedelemPage() {
               </div>
 
               {/* Hero headline */}
-              <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-2" style={{ color: '#f1f5f9' }}>
+              <h1 className="text-2xl sm:text-4xl font-bold leading-tight mb-2" style={{ color: '#f1f5f9' }}>
                 Védd meg azt,<br />
                 <span style={{ color: '#34d399' }}>ami igazán fontos</span>
               </h1>
@@ -361,7 +361,7 @@ export default function VedelemPage() {
           <p className="text-sm mt-1" style={{ color: '#64748b' }}>Minden kategóriában személyes, szakértői segítség vár</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             return (

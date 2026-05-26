@@ -218,8 +218,13 @@ function GuideAccordion({ title, content }: { title: string; content: string }) 
 }
 
 export default function Footer() {
-  const { navigate } = useRouter();
+  const { navigate: routerNavigate } = useRouter();
   const [showGuide, setShowGuide] = useState(false);
+
+  function navigate(path: string) {
+    setShowGuide(false);
+    routerNavigate(path);
+  }
 
   return (
     <footer className="relative z-10 border-t border-white/5 mt-16">
@@ -252,7 +257,7 @@ export default function Footer() {
                 <Zap className="w-5 h-5 text-emerald-400" />
                 Platform funkciók
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {FEATURES.map((f) => (
                   <div key={f.title} className="glass rounded-2xl p-4 space-y-3">
                     <div className="flex items-center gap-2">
@@ -281,7 +286,7 @@ export default function Footer() {
                 Rang rendszer
               </h2>
               <p className="text-zinc-500 text-xs mb-5">A rangod tükrözi a megbízhatóságodat a közösségben. Minél több sikeres tranzakciód és jó értékelésed van, annál magasabb szintre jutsz.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {RANK_LEVELS.map((r) => (
                   <div key={r.level} className={`rounded-2xl p-4 border ${r.bg} space-y-2`}>
                     <div className="flex items-center gap-2">
@@ -331,10 +336,10 @@ export default function Footer() {
       )}
 
       {/* Main footer */}
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-8 sm:py-10">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8">
           {/* Brand */}
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <button onClick={() => navigate('/')} className="flex items-center gap-2.5 mb-3 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 glass-bubble rounded-xl flex items-center justify-center">
                 <ShoppingBag className="w-4 h-4 text-emerald-400" />

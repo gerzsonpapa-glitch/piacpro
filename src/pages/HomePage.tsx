@@ -366,10 +366,10 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-14">
+    <div className="space-y-8 md:space-y-14">
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-3xl p-8 md:p-14 min-h-[360px] flex items-center"
+      <section className="relative overflow-hidden rounded-2xl md:rounded-3xl p-5 sm:p-8 md:p-14 min-h-[320px] md:min-h-[360px] flex items-center"
         style={{
           background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.04) 100%)',
           border: '1px solid rgba(255,255,255,0.09)',
@@ -389,7 +389,7 @@ export default function HomePage() {
             <span className="text-emerald-400 text-[11px] font-semibold tracking-widest uppercase">Magyarország legjobb piactere</span>
           </div>
 
-          <h1 className="text-4xl md:text-[3.5rem] font-bold tracking-tight leading-[1.08] text-zinc-50">
+          <h1 className="text-3xl sm:text-4xl md:text-[3.5rem] font-bold tracking-tight leading-[1.08] text-zinc-50">
             Vásárolj, add el,
             <br />
             <span style={{
@@ -461,70 +461,76 @@ export default function HomePage() {
       </section>
 
       {/* ── 3 HUB CARDS ─────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 
         <button onClick={() => navigate('/search')}
-          className="group glass rounded-3xl p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-emerald-500/25 relative overflow-hidden"
+          className="group glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-emerald-500/25 relative overflow-hidden"
           style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}>
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-emerald-500/16 transition-all duration-500" />
-          <div className="relative">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+          <div className="relative flex sm:block items-center gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center sm:mb-6 flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
               style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.22)' }}>
-              <ShoppingBag className="w-7 h-7 text-emerald-400" />
+              <ShoppingBag className="w-5 h-5 sm:w-7 sm:h-7 text-emerald-400" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors mb-2">Piactér</h2>
-            <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-              Add el felesleges dolgaidat vagy vegyél olcsón másoktól.
-            </p>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-600 font-medium">{listingCount.toLocaleString('hu-HU')} aktív hirdetés</span>
-              <span className="flex items-center gap-1 text-emerald-400 text-xs font-semibold group-hover:gap-2 transition-all">
-                Böngészés <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base sm:text-xl font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors sm:mb-2">Piactér</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm leading-relaxed hidden sm:block sm:mb-6">
+                Add el felesleges dolgaidat vagy vegyél olcsón másoktól.
+              </p>
+              <div className="flex items-center justify-between mt-1 sm:mt-0">
+                <span className="text-xs text-zinc-600 font-medium">{listingCount.toLocaleString('hu-HU')} hirdetés</span>
+                <span className="flex items-center gap-1 text-emerald-400 text-xs font-semibold group-hover:gap-2 transition-all">
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
             </div>
           </div>
         </button>
 
         <button onClick={() => navigate('/auctions')}
-          className="group glass rounded-3xl p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-amber-500/25 relative overflow-hidden"
+          className="group glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-amber-500/25 relative overflow-hidden"
           style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}>
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-amber-500/16 transition-all duration-500" />
-          <div className="relative">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+          <div className="relative flex sm:block items-center gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center sm:mb-6 flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
               style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.22)' }}>
-              <Gavel className="w-7 h-7 text-amber-400" />
+              <Gavel className="w-5 h-5 sm:w-7 sm:h-7 text-amber-400" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-amber-300 transition-colors mb-2">Licitek</h2>
-            <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-              Licitálj valós időben. Az nyeri, aki a legtöbbet kínálja.
-            </p>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-600 font-medium">{auctionCount} aktív licit</span>
-              <span className="flex items-center gap-1 text-amber-400 text-xs font-semibold group-hover:gap-2 transition-all">
-                Licitek <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base sm:text-xl font-bold text-zinc-100 group-hover:text-amber-300 transition-colors sm:mb-2">Licitek</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm leading-relaxed hidden sm:block sm:mb-6">
+                Licitálj valós időben. Az nyeri, aki a legtöbbet kínálja.
+              </p>
+              <div className="flex items-center justify-between mt-1 sm:mt-0">
+                <span className="text-xs text-zinc-600 font-medium">{auctionCount} aktív licit</span>
+                <span className="flex items-center gap-1 text-amber-400 text-xs font-semibold group-hover:gap-2 transition-all">
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
             </div>
           </div>
         </button>
 
         <button onClick={() => navigate('/jobs')}
-          className="group glass rounded-3xl p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-sky-500/25 relative overflow-hidden"
+          className="group glass rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-sky-500/25 relative overflow-hidden"
           style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}>
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-sky-500/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-sky-500/16 transition-all duration-500" />
-          <div className="relative">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+          <div className="relative flex sm:block items-center gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center sm:mb-6 flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
               style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}>
-              <Briefcase className="w-7 h-7 text-sky-400" />
+              <Briefcase className="w-5 h-5 sm:w-7 sm:h-7 text-sky-400" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-sky-300 transition-colors mb-2">Állások</h2>
-            <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-              Találd meg az álmaid állását, vagy keress munkatársat.
-            </p>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-600 font-medium">{jobCount} nyitott pozíció</span>
-              <span className="flex items-center gap-1 text-sky-400 text-xs font-semibold group-hover:gap-2 transition-all">
-                Állások <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base sm:text-xl font-bold text-zinc-100 group-hover:text-sky-300 transition-colors sm:mb-2">Állások</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm leading-relaxed hidden sm:block sm:mb-6">
+                Találd meg az álmaid állását, vagy keress munkatársat.
+              </p>
+              <div className="flex items-center justify-between mt-1 sm:mt-0">
+                <span className="text-xs text-zinc-600 font-medium">{jobCount} pozíció</span>
+                <span className="flex items-center gap-1 text-sky-400 text-xs font-semibold group-hover:gap-2 transition-all">
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
             </div>
           </div>
         </button>
