@@ -35,6 +35,7 @@ import DiscoverPage from './pages/DiscoverPage';
 import CreateOfferPage from './pages/CreateOfferPage';
 import OfferDetailPage from './pages/OfferDetailPage';
 import ForumPage from './pages/ForumPage';
+import VedelemPage from './pages/VedelemPage';
 
 function App() {
   const router = useRouterProvider();
@@ -81,6 +82,7 @@ function App() {
     if (path === '/forum') return <ForumPage />;
     if (path === '/forum/hibak') return <ForumPage />;
     if (path.startsWith('/forum/')) return <ForumPage />;
+    if (path === '/vedelem') return <VedelemPage />;
 
     return (
       <div className="text-center py-20">

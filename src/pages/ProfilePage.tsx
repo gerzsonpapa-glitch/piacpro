@@ -6,7 +6,7 @@ import { useRouter } from '../lib/router';
 import type { Profile, Listing, SellerBadge, ListingRating } from '../lib/types';
 import ListingCard from '../components/ListingCard';
 import { formatRelativeTime, HUNGARIAN_COUNTIES, getOnlineStatus, getOnlineLabel, RANK_CONFIG } from '../lib/utils';
-import { User, MapPin, Calendar, Save, X, Phone, Mail, Star, ShieldCheck, Award, MessageCircle, TrendingUp, Package, CheckCircle, AlertTriangle, UserX, Camera, CreditCard as Edit3, FileText, Gavel, Settings, ThumbsUp } from 'lucide-react';
+import { User, MapPin, Calendar, Save, X, Phone, Mail, Star, Shield, ShieldCheck, Award, MessageCircle, TrendingUp, Package, CheckCircle, AlertTriangle, UserX, Camera, CreditCard as Edit3, FileText, Gavel, Settings, ThumbsUp, Heart } from 'lucide-react';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -92,16 +92,17 @@ function AvatarImage({ src, size = 'lg', name }: { src?: string | null; size?: '
   );
 }
 
-type ListingTab = 'active' | 'sold' | 'auctions' | 'all';
+type ListingTab = 'active' | 'sold' | 'auctions' | 'all' | 'favorites';
 
 // ─── main component ──────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, profile: authProfile } = useAuth();
   const { showToast } = useNotification();
   const { params, navigate } = useRouter();
   const profileId = params.id;
   const isOwnProfile = user?.id === profileId;
+  const viewerIsInsuranceAgent = authProfile?.is_insurance_agent === true || authProfile?.is_admin === true;
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -110,6 +111,26 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [listingTab, setListingTab] = useState<ListingTab>('active');
+  const [favorites, setFavorites] = useState<Listing[]>([]);
+
+  const [ovbLoading, setOvbLoading] = useState(false);
+
+  async function toggleOvbClient(grant: boolean) {
+    if (!user || !profileId) return;
+    setOvbLoading(true);
+    const { error } = await supabase.from('profiles').update({
+      is_ovb_client: grant,
+      ovb_client_added_by: grant ? user.id : null,
+      ovb_client_added_at: grant ? new Date().toISOString() : null,
+    }).eq('id', profileId);
+    if (error) {
+      showToast('error', 'Hiba', error.message);
+    } else {
+      setProfile((prev) => prev ? { ...prev, is_ovb_client: grant, ovb_client_added_by: grant ? user.id : null } : prev);
+      showToast('success', grant ? 'OVB ügyfél jelvény hozzáadva' : 'OVB ügyfél jelvény eltávolítva');
+    }
+    setOvbLoading(false);
+  }
 
   // edit state
   const [editing, setEditing] = useState(false);
@@ -155,6 +176,21 @@ export default function ProfilePage() {
     }
     setListings(listingsRes.data || []);
     setBadge(badgeRes.data);
+
+    // Fetch favorites only for own profile
+    if (user?.id === profileId) {
+      const { data: favData } = await supabase
+        .from('favorites')
+        .select('listing_id, listings(*)')
+        .eq('user_id', profileId)
+        .order('created_at', { ascending: false });
+      const favListings = favData
+        ?.map((d: any) => d.listings)
+        .filter(Boolean)
+        .map((l: any) => ({ ...l, is_favorited: true })) || [];
+      setFavorites(favListings);
+    }
+
     // Merge both rating sources, deduplicate by id, sort by date
     const legacyRatings = (ratingsRes.data || []).map((r: ListingRating) => ({ ...r, _source: 'legacy' as const }));
     const newReviews = (reviewsRes.data || []).map((r: import('../lib/types').ListingReview) => ({
@@ -312,9 +348,10 @@ export default function ProfilePage() {
   const auctionListings  = listings.filter((l) => l.listing_type === 'auction');
   const soldListings     = listings.filter((l) => l.status === 'sold');
   const displayedListings =
-    listingTab === 'active'   ? activeListings :
-    listingTab === 'sold'     ? soldListings :
-    listingTab === 'auctions' ? auctionListings :
+    listingTab === 'active'    ? activeListings :
+    listingTab === 'sold'      ? soldListings :
+    listingTab === 'auctions'  ? auctionListings :
+    listingTab === 'favorites' ? favorites :
     listings;
 
   const level = profile.level ?? 1;
@@ -380,7 +417,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 pb-1">
+            <div className="flex flex-wrap gap-2 pb-1">
               {isOwnProfile ? (
                 editing ? (
                   <>
@@ -404,6 +441,19 @@ export default function ProfilePage() {
                   className="flex items-center gap-1.5 px-4 py-2 glass-pill text-zinc-300 text-sm font-medium rounded-xl hover:bg-white/10 transition-colors">
                   <MessageCircle className="w-4 h-4 text-emerald-400" />Üzenet küldése
                 </button>
+              )}
+              {viewerIsInsuranceAgent && user && (
+                profile?.is_ovb_client
+                  ? <button onClick={() => toggleOvbClient(false)} disabled={ovbLoading}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 hover:scale-[1.02]"
+                      style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: '#93c5fd' }}>
+                      <ShieldCheck className="w-4 h-4" />OVB ügyfél
+                    </button>
+                  : <button onClick={() => toggleOvbClient(true)} disabled={ovbLoading}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 hover:scale-[1.02]"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>
+                      <Shield className="w-4 h-4" />OVB jelvény adása
+                    </button>
               )}
             </div>
           </div>
@@ -493,12 +543,49 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* OVB Insurance Agent banner */}
+                {profile.is_insurance_agent && (
+                  <div className="mb-3 flex items-center gap-3 px-4 py-3 rounded-2xl"
+                    style={{ background: 'linear-gradient(135deg, #0f1e2e 0%, #0a1520 100%)', border: '1px solid rgba(59,130,246,0.3)' }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                      <ShieldCheck className="w-5 h-5" style={{ color: '#60a5fa' }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#60a5fa' }}>
+                          Hitelesített biztosítási tanácsadó
+                        </span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
+                          style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)', color: '#93c5fd' }}>
+                          OVB
+                        </span>
+                      </div>
+                      <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>
+                        {profile.insurance_agent_title || 'Pénzügyi tanácsadó'} · {profile.insurance_company || 'OVB'} · Ellenőrzött és hitelesített profil
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Badges row */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   <LevelBadge level={level} title={profile.level_title} />
                   {profile.verified && (
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
                       <ShieldCheck className="w-3.5 h-3.5" />Ellenőrzött
+                    </div>
+                  )}
+                  {profile.is_insurance_agent && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold"
+                      style={{ background: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.25)', color: '#60a5fa' }}>
+                      <ShieldCheck className="w-3.5 h-3.5" />OVB Biztosítói tanácsadó
+                    </div>
+                  )}
+                  {profile.is_ovb_client && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold"
+                      style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.25)', color: '#34d399' }}>
+                      <ShieldCheck className="w-3.5 h-3.5" />OVB ügyfél
                     </div>
                   )}
                   {/* Online status */}
@@ -614,19 +701,23 @@ export default function ProfilePage() {
 
       {/* ── LISTINGS ───────────────────────────────────────────────── */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <h2 className="text-lg font-bold">Hirdetések</h2>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {([
-              { key: 'active',   label: 'Aktív',    count: activeListings.length },
-              { key: 'auctions', label: 'Aukciók',  count: auctionListings.length, icon: Gavel },
-              { key: 'sold',     label: 'Eladott',  count: soldListings.length },
-              { key: 'all',      label: 'Mind',     count: listings.length },
-            ] as const).map(({ key, label, count }) => (
+              { key: 'active',   label: 'Aktív',      count: activeListings.length },
+              { key: 'auctions', label: 'Aukciók',    count: auctionListings.length },
+              { key: 'sold',     label: 'Eladott',    count: soldListings.length },
+              { key: 'all',      label: 'Mind',       count: listings.length },
+              ...(isOwnProfile ? [{ key: 'favorites', label: 'Kedvencek', count: favorites.length }] : []),
+            ] as { key: ListingTab; label: string; count: number }[]).map(({ key, label, count }) => (
               <button key={key} onClick={() => setListingTab(key)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${listingTab === key ? 'glass-pill-active text-emerald-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'}`}>
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                  listingTab === key ? 'glass-pill-active text-emerald-300' : 'glass-pill text-zinc-400 hover:text-zinc-200'
+                }`}>
+                {key === 'favorites' && <Heart className="w-3 h-3" />}
                 {label}
-                {count > 0 && <span className="ml-1 opacity-60">({count})</span>}
+                {count > 0 && <span className="opacity-60 ml-0.5">({count})</span>}
               </button>
             ))}
           </div>
@@ -642,9 +733,10 @@ export default function ProfilePage() {
           <div className="text-center py-14 glass rounded-3xl">
             <Package className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
             <p className="text-zinc-500 text-sm">
-              {listingTab === 'active' ? 'Nincs aktív hirdetés' :
-               listingTab === 'sold'   ? 'Nincs eladott hirdetés' :
-               listingTab === 'auctions' ? 'Nincs aukció' :
+              {listingTab === 'active'    ? 'Nincs aktív hirdetés' :
+               listingTab === 'sold'      ? 'Nincs eladott hirdetés' :
+               listingTab === 'auctions'  ? 'Nincs aukció' :
+               listingTab === 'favorites' ? 'Még nincs kedvenc hirdetés' :
                'Nincs hirdetés'}
             </p>
             {isOwnProfile && listingTab === 'active' && (

@@ -39,7 +39,11 @@ const LEVEL_OPTIONS = [1, 2, 3, 4, 5].map((v) => ({ value: v, label: `Szint ${v}
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-3">{children}</h3>
+    <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-3 flex items-center gap-2">
+      <span className="flex-1 h-px bg-white/5" />
+      {children}
+      <span className="flex-1 h-px bg-white/5" />
+    </h3>
   );
 }
 
@@ -47,14 +51,14 @@ function StatCard({ icon: Icon, label, value, color = 'text-emerald-400' }: {
   icon: React.ElementType; label: string; value: number | string; color?: string;
 }) {
   return (
-    <div className="glass-bubble rounded-2xl p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 glass rounded-xl flex items-center justify-center">
-          <Icon className={`w-4 h-4 ${color}`} />
+    <div className="glass rounded-2xl p-4 hover:bg-white/[0.03] transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-zinc-500 font-medium">{label}</p>
+        <div className={`w-7 h-7 rounded-xl bg-white/5 flex items-center justify-center`}>
+          <Icon className={`w-3.5 h-3.5 ${color}`} />
         </div>
-        <p className="text-xs text-zinc-500">{label}</p>
       </div>
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      <p className={`text-2xl font-bold tracking-tight ${color}`}>{value}</p>
     </div>
   );
 }
@@ -551,6 +555,17 @@ export default function AdminPage() {
     await loadUsers();
     setActionLoading(null);
   }
+  async function toggleInsuranceAgent(userId: string, grant: boolean) {
+    if (!isSuperAdmin) return;
+    setActionLoading(userId + '-ins');
+    await supabase.from('profiles').update({
+      is_insurance_agent: grant,
+      insurance_company: grant ? 'OVB' : '',
+      insurance_agent_title: grant ? 'Fiókvezető' : '',
+    }).eq('id', userId);
+    await loadUsers();
+    setActionLoading(null);
+  }
   async function deleteListing(listingId: string) {
     setActionLoading(listingId);
     const { error } = await supabase.from('listings').update({ status: 'deleted' }).eq('id', listingId);
@@ -629,65 +644,85 @@ export default function AdminPage() {
   const activeTab = tabs.find((t) => t.id === tab);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-6xl mx-auto space-y-5">
       {editingUser && (
         <LevelEditor user={editingUser} onSave={saveUserLevel} onClose={() => setEditingUser(null)} />
       )}
 
-      {/* Header */}
-      <div className="mb-5 flex items-center justify-between">
+      {/* ── Header ──────────────────────────────────────────────────── */}
+      <div className="glass rounded-2xl p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${isSuperAdmin ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSuperAdmin ? 'bg-amber-500/15 border border-amber-500/25' : 'bg-red-500/15 border border-red-500/25'}`}>
             <Shield className={`w-5 h-5 ${isSuperAdmin ? 'text-amber-400' : 'text-red-400'}`} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight">Admin Panel</h1>
+              <h1 className="text-base font-bold tracking-tight text-zinc-100">Admin Panel</h1>
               {isSuperAdmin && (
-                <span className="text-[10px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-2 py-0.5 rounded-lg tracking-wider">SUPER</span>
+                <span className="text-[9px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-1.5 py-0.5 rounded-md tracking-wider">SUPER</span>
               )}
             </div>
-            <p className="text-zinc-500 text-xs mt-0.5">Moderáció és platformkezelés</p>
+            <p className="text-zinc-500 text-[11px]">Moderáció és platformkezelés</p>
           </div>
         </div>
-        <button onClick={loadAll} className="glass-pill px-3.5 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 text-xs border border-white/5 hover:border-white/10">
-          <RefreshCw className="w-3.5 h-3.5" />Frissítés
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Quick badges for pending items */}
+          {pendingReports.length > 0 && (
+            <button onClick={() => { setTab('reports'); setSearch(''); }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/15 transition-colors">
+              <Flag className="w-3.5 h-3.5" />{pendingReports.length}
+            </button>
+          )}
+          {pendingProducerApps.length > 0 && (
+            <button onClick={() => { setTab('producers'); setSearch(''); }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold hover:bg-amber-500/15 transition-colors">
+              <Leaf className="w-3.5 h-3.5" />{pendingProducerApps.length}
+            </button>
+          )}
+          <button onClick={loadAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl glass-bubble border border-white/8 text-zinc-400 hover:text-zinc-200 transition-colors text-xs">
+            <RefreshCw className="w-3.5 h-3.5" />Frissítés
+          </button>
+        </div>
       </div>
 
-      <div className="flex gap-5 items-start">
-        {/* Sidebar nav */}
-        <div className="w-52 flex-shrink-0 glass rounded-2xl p-2 space-y-0.5 sticky top-20">
+      {/* ── Tab navigation (scrollable pill row) ────────────────────── */}
+      <div className="glass rounded-2xl p-1.5 overflow-x-auto">
+        <div className="flex items-center gap-1 min-w-max">
           {tabs.map((t) => (
-            <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-left ${
+            <button
+              key={t.id}
+              onClick={() => { setTab(t.id); setSearch(''); }}
+              className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
                 tab === t.id
-                  ? 'bg-white/8 text-zinc-100'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/4'
-              }`}>
-              <t.icon className={`w-4 h-4 flex-shrink-0 ${tab === t.id ? 'text-emerald-400' : ''}`} />
-              <span className="flex-1 truncate">{t.label}</span>
+                  ? 'bg-white/10 text-zinc-100 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              }`}
+            >
+              <t.icon className={`w-3.5 h-3.5 flex-shrink-0 ${tab === t.id ? 'text-emerald-400' : ''}`} />
+              {t.label}
               {t.badge ? (
-                <span className="bg-red-500 text-white text-[10px] w-5 h-5 rounded-full font-bold flex items-center justify-center flex-shrink-0">
+                <span className="ml-0.5 bg-red-500 text-white text-[9px] min-w-[16px] h-4 px-1 rounded-full font-bold flex items-center justify-center flex-shrink-0">
                   {t.badge > 9 ? '9+' : t.badge}
                 </span>
               ) : null}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Section title */}
-          <div className="mb-4 flex items-center gap-2">
-            {activeTab && <activeTab.icon className="w-5 h-5 text-emerald-400" />}
-            <h2 className="font-bold text-zinc-100 text-base">{activeTab?.label}</h2>
-            {activeTab?.badge ? (
-              <span className="bg-red-500/20 border border-red-500/30 text-red-400 text-xs px-2 py-0.5 rounded-full font-bold">
-                {activeTab.badge}
-              </span>
-            ) : null}
-          </div>
+      {/* ── Content ─────────────────────────────────────────────────── */}
+      <div>
+        {/* Active section label */}
+        <div className="flex items-center gap-2 mb-4">
+          {activeTab && <activeTab.icon className="w-4 h-4 text-emerald-400" />}
+          <h2 className="font-semibold text-zinc-300 text-sm">{activeTab?.label}</h2>
+          {activeTab?.badge ? (
+            <span className="bg-red-500/20 border border-red-500/30 text-red-400 text-[11px] px-2 py-0.5 rounded-full font-bold">
+              {activeTab.badge}
+            </span>
+          ) : null}
+          <div className="ml-auto h-px flex-1 bg-white/5" />
+        </div>
 
       {loading ? (
         <div className="grid grid-cols-2 gap-3 animate-pulse">
@@ -863,7 +898,7 @@ export default function AdminPage() {
                   <div className="divide-y divide-white/3">
                     {filteredUsers.filter((u) => u.is_banned).map((u) => (
                       <UserRow key={u.id} u={u} currentUserId={user!.id} isSuperAdmin={isSuperAdmin} actionLoading={actionLoading}
-                        onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} onAiAccess={toggleAiAccess} />
+                        onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} onAiAccess={toggleAiAccess} onInsuranceAgent={toggleInsuranceAgent} navigate={navigate} />
                     ))}
                   </div>
                 </div>
@@ -878,7 +913,7 @@ export default function AdminPage() {
                 <div className="divide-y divide-white/3">
                   {filteredUsers.filter((u) => !u.is_banned).map((u) => (
                     <UserRow key={u.id} u={u} currentUserId={user!.id} isSuperAdmin={isSuperAdmin} actionLoading={actionLoading}
-                      onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} onAiAccess={toggleAiAccess} />
+                      onBan={banUser} onVerify={setVerified} onAdmin={toggleAdmin} onShopOwner={toggleShopOwner} onLevel={setEditingUser} onAiAccess={toggleAiAccess} onInsuranceAgent={toggleInsuranceAgent} navigate={navigate} />
                   ))}
                 </div>
               </div>
@@ -1623,14 +1658,13 @@ export default function AdminPage() {
           )}
         </>
       )}
-        </div>
       </div>
     </div>
   );
 }
 
 // ── User Row ──────────────────────────────────────────────────────────────────
-function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerify, onAdmin, onShopOwner, onLevel, onAiAccess }: {
+function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerify, onAdmin, onShopOwner, onLevel, onAiAccess, onInsuranceAgent, navigate }: {
   u: Profile;
   currentUserId: string;
   isSuperAdmin: boolean;
@@ -1641,36 +1675,48 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
   onShopOwner: (id: string, v: boolean) => void;
   onLevel: (u: Profile) => void;
   onAiAccess: (id: string, v: boolean) => void;
+  onInsuranceAgent: (id: string, v: boolean) => void;
+  navigate: (path: string) => void;
 }) {
   const isCurrentUser = u.id === currentUserId;
   const canModify = !isCurrentUser && !u.is_super_admin;
   const lvl = u.level ?? 1;
 
   return (
-    <div className="px-4 py-3 flex items-center gap-3 flex-wrap hover:bg-white/2 transition-colors">
-      {/* Identity */}
-      <div className="flex-1 min-w-[140px]">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="font-medium text-zinc-200 text-sm">{u.full_name || u.username || 'Névtelen'}</p>
-          {u.is_super_admin && <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">SUPER</span>}
-          {u.is_admin && !u.is_super_admin && <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">ADMIN</span>}
-          {u.is_shop_owner && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5"><Store className="w-2.5 h-2.5" />BOLT</span>}
-          {u.ai_access && <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">AI</span>}
-          {u.is_banned && <span className="text-[9px] font-bold text-zinc-500 bg-zinc-500/10 px-1.5 py-0.5 rounded">TILTOTT</span>}
-          {u.verified && <span className="text-[9px] font-bold text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded">VER.</span>}
+    <div className={`px-4 py-3 flex items-center gap-3 flex-wrap transition-colors ${u.is_banned ? 'bg-red-500/3' : 'hover:bg-white/[0.015]'}`}>
+      {/* Identity — clickable to profile */}
+      <div className="flex-1 min-w-[160px]">
+        <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+          <button
+            onClick={() => navigate(`/profile/${u.id}`)}
+            className="font-semibold text-zinc-200 text-sm hover:text-emerald-300 transition-colors text-left"
+          >
+            {u.full_name || u.username || 'Névtelen'}
+          </button>
+          {u.is_super_admin && <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md">SUPER</span>}
+          {u.is_admin && !u.is_super_admin && <span className="text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded-md">ADMIN</span>}
+          {u.is_shop_owner && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><Store className="w-2.5 h-2.5" />BOLT</span>}
+          {u.ai_access && <span className="text-[9px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5" />AI</span>}
+          {u.is_insurance_agent && <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><Shield className="w-2.5 h-2.5" />OVB</span>}
+          {u.is_banned && <span className="text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><Ban className="w-2.5 h-2.5" />TILTOTT</span>}
+          {u.verified && <span className="text-[9px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><CheckCircle className="w-2.5 h-2.5" />VER.</span>}
+          {isCurrentUser && <span className="text-[9px] text-zinc-600 px-1.5 py-0.5 rounded-md bg-white/5">te</span>}
         </div>
-        {u.username && <p className="text-[11px] text-zinc-600">@{u.username}</p>}
-        <p className="text-[10px] text-zinc-700">{formatRelativeTime(u.created_at)}</p>
+        <div className="flex items-center gap-2">
+          {u.username && <p className="text-[11px] text-zinc-600">@{u.username}</p>}
+          <p className="text-[10px] text-zinc-700">{formatRelativeTime(u.created_at)}</p>
+        </div>
       </div>
 
       {/* Level badge */}
       <button
         onClick={() => canModify && onLevel(u)}
         disabled={!canModify}
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold transition-all ${LEVEL_COLORS[lvl]} ${canModify ? 'hover:scale-105 cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+        title="Szint szerkesztése"
+        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold transition-all ${LEVEL_COLORS[lvl]} ${canModify ? 'hover:scale-105 cursor-pointer' : 'opacity-50 cursor-default'}`}
       >
-        {lvl} · {u.level_title || LEVEL_TITLES[lvl]}
-        {canModify && <ChevronDown className="w-3 h-3 opacity-60" />}
+        Szint {lvl} · {u.level_title || LEVEL_TITLES[lvl]}
+        {canModify && <ChevronDown className="w-2.5 h-2.5 opacity-60" />}
       </button>
 
       {/* Actions */}
@@ -1679,50 +1725,77 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
           {isSuperAdmin && (
             u.is_admin
               ? <button onClick={() => onAdmin(u.id, false)} disabled={actionLoading === u.id}
-                  className="text-[10px] text-zinc-400 hover:text-zinc-200 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                  <ShieldOff className="w-3 h-3" />Admin le
+                  title="Admin jog elvétele"
+                  className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 transition-colors disabled:opacity-40">
+                  <ShieldOff className="w-3.5 h-3.5" />
                 </button>
               : <button onClick={() => onAdmin(u.id, true)} disabled={actionLoading === u.id}
-                  className="text-[10px] text-amber-400 hover:text-amber-300 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                  <ShieldCheck className="w-3 h-3" />Admin
+                  title="Admin joggá tétel"
+                  className="p-1.5 rounded-lg bg-zinc-500/10 hover:bg-amber-500/10 text-zinc-500 hover:text-amber-400 transition-colors disabled:opacity-40">
+                  <ShieldCheck className="w-3.5 h-3.5" />
                 </button>
           )}
           {isSuperAdmin && (
             u.is_shop_owner
               ? <button onClick={() => onShopOwner(u.id, false)} disabled={actionLoading === u.id + '-shop'}
-                  className="text-[10px] text-zinc-400 hover:text-zinc-200 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                  <Store className="w-3 h-3" />Bolt le
+                  title="Bolt jog elvétele"
+                  className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-zinc-500/10 text-emerald-400 hover:text-zinc-400 transition-colors disabled:opacity-40">
+                  <Store className="w-3.5 h-3.5" />
                 </button>
               : <button onClick={() => onShopOwner(u.id, true)} disabled={actionLoading === u.id + '-shop'}
-                  className="text-[10px] text-emerald-400 hover:text-emerald-300 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                  <Store className="w-3 h-3" />Bolt jog
+                  title="Bolt jog adása"
+                  className="p-1.5 rounded-lg bg-zinc-500/10 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40">
+                  <Store className="w-3.5 h-3.5" />
                 </button>
           )}
           {isSuperAdmin && (
             u.ai_access
               ? <button onClick={() => onAiAccess(u.id, false)} disabled={actionLoading === u.id + '-ai'}
-                  className="text-[10px] text-zinc-400 hover:text-zinc-200 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                  <Wifi className="w-3 h-3" />AI le
+                  title="AI jog elvétele"
+                  className="p-1.5 rounded-lg bg-sky-500/10 hover:bg-zinc-500/10 text-sky-400 hover:text-zinc-400 transition-colors disabled:opacity-40">
+                  <Wifi className="w-3.5 h-3.5" />
                 </button>
               : <button onClick={() => onAiAccess(u.id, true)} disabled={actionLoading === u.id + '-ai'}
-                  className="text-[10px] text-sky-400 hover:text-sky-300 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                  <Wifi className="w-3 h-3" />AI jog
+                  title="AI jog adása"
+                  className="p-1.5 rounded-lg bg-zinc-500/10 hover:bg-sky-500/10 text-zinc-500 hover:text-sky-400 transition-colors disabled:opacity-40">
+                  <Wifi className="w-3.5 h-3.5" />
                 </button>
           )}
           {u.verified
             ? <button onClick={() => onVerify(u.id, false)} disabled={actionLoading === u.id}
-                className="text-[10px] text-zinc-400 hover:text-zinc-200 glass-pill px-2 py-1 rounded-lg transition-colors">Verif. le</button>
+                title="Verifikáció elvétele"
+                className="p-1.5 rounded-lg bg-teal-500/10 hover:bg-zinc-500/10 text-teal-400 hover:text-zinc-400 transition-colors disabled:opacity-40">
+                <CheckCircle className="w-3.5 h-3.5" />
+              </button>
             : <button onClick={() => onVerify(u.id, true)} disabled={actionLoading === u.id}
-                className="text-[10px] text-teal-400 hover:text-teal-300 glass-pill px-2 py-1 rounded-lg transition-colors">Verifikál</button>
+                title="Verifikálás"
+                className="p-1.5 rounded-lg bg-zinc-500/10 hover:bg-teal-500/10 text-zinc-500 hover:text-teal-400 transition-colors disabled:opacity-40">
+                <CheckCircle className="w-3.5 h-3.5" />
+              </button>
           }
+          {isSuperAdmin && (
+            u.is_insurance_agent
+              ? <button onClick={() => onInsuranceAgent(u.id, false)} disabled={actionLoading === u.id + '-ins'}
+                  title="OVB Biztosítói jelvény elvétele"
+                  className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-zinc-500/10 text-blue-400 hover:text-zinc-400 transition-colors disabled:opacity-40">
+                  <Shield className="w-3.5 h-3.5" />
+                </button>
+              : <button onClick={() => onInsuranceAgent(u.id, true)} disabled={actionLoading === u.id + '-ins'}
+                  title="OVB Biztosítói jelvény adása"
+                  className="p-1.5 rounded-lg bg-zinc-500/10 hover:bg-blue-500/10 text-zinc-500 hover:text-blue-400 transition-colors disabled:opacity-40">
+                  <Shield className="w-3.5 h-3.5" />
+                </button>
+          )}
           {u.is_banned
             ? <button onClick={() => onBan(u.id, false)} disabled={actionLoading === u.id}
-                className="text-[10px] text-emerald-400 hover:text-emerald-300 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                <CheckCircle className="w-3 h-3" />Felold
+                title="Tiltás feloldása"
+                className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors disabled:opacity-40">
+                <CheckCircle className="w-3.5 h-3.5" />
               </button>
             : <button onClick={() => onBan(u.id, true)} disabled={actionLoading === u.id}
-                className="text-[10px] text-red-400 hover:text-red-300 glass-pill px-2 py-1 rounded-lg transition-colors flex items-center gap-0.5">
-                <Ban className="w-3 h-3" />Tilt
+                title="Felhasználó tiltása"
+                className="p-1.5 rounded-lg bg-zinc-500/10 hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors disabled:opacity-40">
+                <Ban className="w-3.5 h-3.5" />
               </button>
           }
         </div>

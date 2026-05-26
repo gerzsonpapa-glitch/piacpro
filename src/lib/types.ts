@@ -50,6 +50,12 @@ export interface Profile {
   is_producer_approved: boolean;
   ai_access: boolean;
   trust_level: TrustLevel;
+  is_insurance_agent: boolean;
+  insurance_company: string | null;
+  insurance_agent_title: string | null;
+  is_ovb_client: boolean;
+  ovb_client_added_by: string | null;
+  ovb_client_added_at: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -1,18 +1,139 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import {
-  Home, Search, Heart, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase, Store, Leaf, Gift, MapPin, Users
+  Home, Search, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase,
+  Gift, MapPin, Users, ChevronDown, TrendingUp, Baby, Percent, Building2, Lock, Heart, ArrowRight, Car, Globe,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import ChatWidget from './ChatWidget';
 import Footer from './Footer';
+import { DEFENSE_LINKS } from '../pages/VedelemPage';
+
+const DEFENSE_ITEMS = [
+  { key: 'nyugdij' as const,              icon: TrendingUp, label: 'Nyugdíj-előtakarékosság',           desc: 'Hosszú távú megtakarítás, adókedvezmény' },
+  { key: 'gyermek' as const,              icon: Baby,       label: 'Gyermekjövő',                       desc: 'Gyermek megtakarítás, tanulmány, indulás' },
+  { key: 'vagyon' as const,               icon: TrendingUp, label: 'Vagyon felépítése',                 desc: 'Megtakarítás, hosszú távú vagyonépítés' },
+  { key: 'hitel' as const,                icon: Home,       label: 'Hiteltermékek & állami támogatások', desc: 'CSOK, lakáshitel, hitelkiváltás' },
+  { key: 'ado' as const,                  icon: Percent,    label: 'Adókedvezmények & visszatérítések', desc: 'Adóvisszatérítés, pénzügyi optimalizálás' },
+  { key: 'kkv' as const,                  icon: Building2,  label: 'KKV megoldások',                    desc: 'Vállalkozásvédelem, cégbiztosítás' },
+  { key: 'vagyonvedelem' as const,        icon: Lock,       label: 'Vagyonvédelem',                     desc: 'Lakásbiztosítás, ingatlanvédelem' },
+  { key: 'elethelyzet' as const,          icon: Heart,      label: 'Biztonság bármely élethelyzetben',  desc: 'Életbiztosítás, családi védelem' },
+  { key: 'gepjarmu_kgfb' as const,        icon: Car,        label: 'Online gépjármű biztosítás',        desc: 'KGFB kötés, gyors online ügyintézés' },
+  { key: 'gepjarmu_asszisztencia' as const, icon: Car,      label: 'Online gépjármű asszisztencia',     desc: 'Út közbeni segítség, műszaki asszisztencia' },
+  { key: 'utasbiztositas' as const,       icon: Globe,      label: 'Online utasbiztosítás',             desc: 'Utazási védelem, külföldi biztosítás' },
+  { key: 'csatlakozas' as const,          icon: Users,      label: 'Csatlakozzon tanácsadóként',        desc: 'Pénzügyi karrier, csatlakozási lehetőség' },
+];
+
+// ── Védelem dropdown panel ────────────────────────────────────────────────────
+function DefenseDropdown({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="absolute top-full left-1/2 -translate-x-1/2 w-[860px] max-w-[calc(100vw-2rem)] z-50"
+      style={{ paddingTop: '6px' }}
+    >
+      <div className="rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 24px 60px rgba(0,0,0,0.8)' }}>
+
+        {/* Top accent */}
+        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, transparent, #34d399 40%, #10b981 60%, transparent)' }} />
+
+        <div className="p-4 grid grid-cols-3 gap-1">
+          {DEFENSE_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a
+                key={item.key}
+                href={DEFENSE_LINKS[item.key]}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onClose}
+                className="flex items-start gap-3 p-3 rounded-xl transition-all group"
+                style={{ borderRadius: '10px' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.2)' }}>
+                  <Icon className="w-4 h-4" style={{ color: '#34d399' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold leading-tight" style={{ color: '#e2e8f0' }}>{item.label}</p>
+                  <p className="text-[11px] mt-0.5 leading-tight" style={{ color: '#64748b' }}>{item.desc}</p>
+                </div>
+                <ArrowRight className="w-3 h-3 flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#34d399' }} />
+              </a>
+            );
+          })}
+        </div>
+
+        <div className="px-4 py-3 flex items-center justify-between"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.2)' }}>
+          <p className="text-[11px]" style={{ color: '#475569' }}>
+            Minden út <span style={{ color: '#94a3b8', fontWeight: 600 }}>Akom László Zsolt OVB fiókvezető</span>höz vezet
+          </p>
+          <a href={DEFENSE_LINKS.default} target="_blank" rel="noopener noreferrer" onClick={onClose}
+            className="text-[11px] font-semibold flex items-center gap-1 transition-opacity hover:opacity-70"
+            style={{ color: '#34d399' }}>
+            Profil megtekintése <ArrowRight className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Mobile Védelem accordion ─────────────────────────────────────────────────
+function MobileDefenseAccordion({ onNavigate, isActive }: { onNavigate: (p: string) => void; isActive: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
+          isActive ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
+        }`}
+      >
+        <Shield className="w-5 h-5" />
+        Védelem
+        <ChevronDown className={`w-4 h-4 ml-auto transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="mt-1 ml-4 space-y-0.5 border-l-2 border-emerald-500/20 pl-3">
+          {DEFENSE_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a
+                key={item.key}
+                href={DEFENSE_LINKS[item.key]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-all"
+              >
+                <Icon className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                {item.label}
+              </a>
+            );
+          })}
+          <button
+            onClick={() => onNavigate('/vedelem')}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+          >
+            Összes kategória <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut, unreadCount } = useAuth();
   const { navigate, path } = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingProducerApps, setPendingProducerApps] = useState(0);
+  const [defenseOpen, setDefenseOpen] = useState(false);
+  const defenseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!profile?.is_admin && !profile?.is_super_admin) return;
@@ -45,7 +166,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { icon: Briefcase, label: 'Állások', path: '/jobs' },
         { icon: Users, label: 'Fórum', path: '/forum' },
         { icon: Gift, label: 'Adományozás', path: '/donations' },
-        { icon: Heart, label: 'Kedvencek', path: '/favorites' },
         { icon: User, label: 'Profil', path: `/profile/${user.id}` },
       ]
     : [
@@ -105,6 +225,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {item.label}
               </button>
             ))}
+
+            {/* Védelem dropdown */}
+            <div ref={defenseRef} className="relative" onMouseLeave={() => setDefenseOpen(false)}>
+              <button
+                onMouseEnter={() => setDefenseOpen(true)}
+                onClick={() => navigate('/vedelem')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-200 ${
+                  isActive('/vedelem') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                Védelem
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${defenseOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {defenseOpen && <DefenseDropdown onClose={() => setDefenseOpen(false)} />}
+            </div>
 
             {/* Admin link */}
             {user && profile?.is_admin && (
@@ -182,6 +318,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {item.label}
                 </button>
               ))}
+
+              {/* Mobile Védelem accordion */}
+              <MobileDefenseAccordion onNavigate={(path) => { navigate(path); setMobileMenuOpen(false); }} isActive={isActive('/vedelem')} />
+
               {user && (
                 <>
                   {profile?.is_admin && (
