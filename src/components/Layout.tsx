@@ -14,31 +14,34 @@ const DEFENSE_ITEMS = [
   { key: 'nyugdij' as const,              icon: TrendingUp, label: 'Nyugdíj-előtakarékosság',           desc: 'Hosszú távú megtakarítás, adókedvezmény' },
   { key: 'gyermek' as const,              icon: Baby,       label: 'Gyermekjövő',                       desc: 'Gyermek megtakarítás, tanulmány, indulás' },
   { key: 'vagyon' as const,               icon: TrendingUp, label: 'Vagyon felépítése',                 desc: 'Megtakarítás, hosszú távú vagyonépítés' },
-  { key: 'hitel' as const,                icon: Home,       label: 'Hiteltermékek & állami támogatások', desc: 'CSOK, lakáshitel, hitelkiváltás' },
-  { key: 'ado' as const,                  icon: Percent,    label: 'Adókedvezmények & visszatérítések', desc: 'Adóvisszatérítés, pénzügyi optimalizálás' },
-  { key: 'kkv' as const,                  icon: Building2,  label: 'KKV megoldások',                    desc: 'Vállalkozásvédelem, cégbiztosítás' },
-  { key: 'vagyonvedelem' as const,        icon: Lock,       label: 'Vagyonvédelem',                     desc: 'Lakásbiztosítás, ingatlanvédelem' },
-  { key: 'elethelyzet' as const,          icon: Heart,      label: 'Biztonság bármely élethelyzetben',  desc: 'Életbiztosítás, családi védelem' },
-  { key: 'gepjarmu_kgfb' as const,        icon: Car,        label: 'Online gépjármű biztosítás',        desc: 'KGFB kötés, gyors online ügyintézés' },
-  { key: 'gepjarmu_asszisztencia' as const, icon: Car,      label: 'Online gépjármű asszisztencia',     desc: 'Út közbeni segítség, műszaki asszisztencia' },
-  { key: 'utasbiztositas' as const,       icon: Globe,      label: 'Online utasbiztosítás',             desc: 'Utazási védelem, külföldi biztosítás' },
-  { key: 'csatlakozas' as const,          icon: Users,      label: 'Csatlakozzon tanácsadóként',        desc: 'Pénzügyi karrier, csatlakozási lehetőség' },
+  { key: 'hitel' as const,               icon: Home,       label: 'Hiteltermékek & állami támogatások', desc: 'CSOK, lakáshitel, hitelkiváltás' },
+  { key: 'ado' as const,                 icon: Percent,    label: 'Adókedvezmények & visszatérítések', desc: 'Adóvisszatérítés, pénzügyi optimalizálás' },
+  { key: 'kkv' as const,                 icon: Building2,  label: 'KKV megoldások',                    desc: 'Vállalkozásvédelem, cégbiztosítás' },
+  { key: 'vagyonvedelem' as const,       icon: Lock,       label: 'Vagyonvédelem',                     desc: 'Lakásbiztosítás, ingatlanvédelem' },
+  { key: 'elethelyzet' as const,         icon: Heart,      label: 'Biztonság bármely élethelyzetben',  desc: 'Életbiztosítás, családi védelem' },
+  { key: 'gepjarmu_kgfb' as const,       icon: Car,        label: 'Online gépjármű biztosítás',        desc: 'KGFB kötés, gyors online ügyintézés' },
+  { key: 'gepjarmu_asszisztencia' as const, icon: Car,     label: 'Online gépjármű asszisztencia',     desc: 'Út közbeni segítség, műszaki asszisztencia' },
+  { key: 'utasbiztositas' as const,      icon: Globe,      label: 'Online utasbiztosítás',             desc: 'Utazási védelem, külföldi biztosítás' },
+  { key: 'csatlakozas' as const,         icon: Users,      label: 'Csatlakozzon tanácsadóként',        desc: 'Pénzügyi karrier, csatlakozási lehetőség' },
 ];
 
-// ── Védelem dropdown panel ────────────────────────────────────────────────────
 function DefenseDropdown({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="absolute top-full left-1/2 -translate-x-1/2 w-[860px] max-w-[calc(100vw-2rem)] z-50"
-      style={{ paddingTop: '6px' }}
+      className="absolute top-full left-1/2 -translate-x-1/2 w-[880px] max-w-[calc(100vw-2rem)] z-50"
+      style={{ paddingTop: '8px' }}
     >
-      <div className="rounded-2xl overflow-hidden shadow-2xl"
-        style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 24px 60px rgba(0,0,0,0.8)' }}>
+      <div className="rounded-2xl overflow-hidden"
+        style={{
+          background: 'linear-gradient(145deg, #0d1520 0%, #0a1018 100%)',
+          border: '1px solid rgba(255,255,255,0.11)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)',
+        }}>
 
-        {/* Top accent */}
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, transparent, #34d399 40%, #10b981 60%, transparent)' }} />
+        {/* Top accent line */}
+        <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(52,211,153,0.6) 30%, rgba(16,185,129,0.8) 50%, rgba(52,211,153,0.6) 70%, transparent 100%)' }} />
 
-        <div className="p-4 grid grid-cols-3 gap-1">
+        <div className="p-5 grid grid-cols-3 gap-0.5">
           {DEFENSE_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
@@ -48,32 +51,38 @@ function DefenseDropdown({ onClose }: { onClose: () => void }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={onClose}
-                className="flex items-start gap-3 p-3 rounded-xl transition-all group"
-                style={{ borderRadius: '10px' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                className="flex items-start gap-3 p-3.5 rounded-xl transition-all duration-200 group"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(52,211,153,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(52,211,153,0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
+                style={{ border: '1px solid transparent' }}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                  style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.2)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-200 group-hover:scale-110"
+                  style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.18)' }}>
                   <Icon className="w-4 h-4" style={{ color: '#34d399' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold leading-tight" style={{ color: '#e2e8f0' }}>{item.label}</p>
-                  <p className="text-[11px] mt-0.5 leading-tight" style={{ color: '#64748b' }}>{item.desc}</p>
+                  <p className="text-xs font-semibold leading-tight transition-colors group-hover:text-emerald-300" style={{ color: '#e2e8f0' }}>{item.label}</p>
+                  <p className="text-[11px] mt-0.5 leading-snug" style={{ color: '#4b6280' }}>{item.desc}</p>
                 </div>
-                <ArrowRight className="w-3 h-3 flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#34d399' }} />
+                <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:translate-x-0.5" style={{ color: '#34d399' }} />
               </a>
             );
           })}
         </div>
 
-        <div className="px-4 py-3 flex items-center justify-between"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.2)' }}>
-          <p className="text-[11px]" style={{ color: '#475569' }}>
-            Minden út <span style={{ color: '#94a3b8', fontWeight: 600 }}>Akom László Zsolt OVB fiókvezető</span>höz vezet
+        <div className="px-5 py-3.5 flex items-center justify-between"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.055)', background: 'rgba(0,0,0,0.25)' }}>
+          <p className="text-[11px]" style={{ color: '#3d5068' }}>
+            Minden út <span style={{ color: '#94a3b8', fontWeight: 600 }}>Ákom László Zsolt OVB fiókvezető</span>höz vezet
           </p>
           <a href={DEFENSE_LINKS.default} target="_blank" rel="noopener noreferrer" onClick={onClose}
-            className="text-[11px] font-semibold flex items-center gap-1 transition-opacity hover:opacity-70"
+            className="text-[11px] font-semibold flex items-center gap-1.5 transition-all hover:gap-2 duration-200"
             style={{ color: '#34d399' }}>
             Profil megtekintése <ArrowRight className="w-3 h-3" />
           </a>
@@ -83,7 +92,6 @@ function DefenseDropdown({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Mobile Védelem accordion ─────────────────────────────────────────────────
 function MobileDefenseAccordion({ onNavigate, isActive }: { onNavigate: (p: string) => void; isActive: boolean }) {
   const [open, setOpen] = useState(false);
   return (
@@ -96,7 +104,7 @@ function MobileDefenseAccordion({ onNavigate, isActive }: { onNavigate: (p: stri
       >
         <Shield className="w-5 h-5" />
         Védelem
-        <ChevronDown className={`w-4 h-4 ml-auto transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 ml-auto transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
         <div className="mt-1 ml-4 space-y-0.5 border-l-2 border-emerald-500/20 pl-3">
@@ -133,7 +141,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingProducerApps, setPendingProducerApps] = useState(0);
   const [defenseOpen, setDefenseOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const defenseRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (!profile?.is_admin && !profile?.is_super_admin) return;
@@ -194,34 +209,40 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[#050507] text-zinc-100">
       {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/[0.03] rounded-full blur-[120px]" />
-        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-teal-500/[0.02] rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/[0.02] rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/[0.025] rounded-full blur-[130px]" />
+        <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-teal-500/[0.018] rounded-full blur-[110px]" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-emerald-500/[0.015] rounded-full blur-[110px]" />
       </div>
 
       {/* Top Navigation */}
-      <header className="sticky top-0 z-50 glass-nav">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <div className="w-9 h-9 glass-bubble rounded-xl flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-emerald-400" />
+      <header
+        className="sticky top-0 z-50 glass-nav transition-all duration-300"
+        style={scrolled ? { borderBottomColor: 'rgba(255,255,255,0.08)' } : {}}
+      >
+        <div className="max-w-7xl mx-auto px-4 h-[60px] flex items-center justify-between gap-2">
+          {/* Logo */}
+          <button onClick={() => navigate('/')} className="flex items-center gap-2.5 hover:opacity-85 transition-opacity duration-200 flex-shrink-0">
+            <div className="w-8 h-8 glass-bubble rounded-xl flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4 text-emerald-400" />
             </div>
-            <span className="text-xl font-bold tracking-tight hidden sm:block">
+            <span className="text-lg font-bold tracking-tight hidden sm:block select-none">
               Piac<span className="text-emerald-400">Pro</span>
             </span>
           </button>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
             {navItems.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-200 ${
-                  isActive(item.path) ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                  isActive(item.path)
+                    ? 'glass-pill-active text-emerald-300'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]'
                 }`}
               >
-                <item.icon className="w-4 h-4" />
+                <item.icon className="w-3.5 h-3.5" />
                 {item.label}
               </button>
             ))}
@@ -231,13 +252,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <button
                 onMouseEnter={() => setDefenseOpen(true)}
                 onClick={() => navigate('/vedelem')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-200 ${
-                  isActive('/vedelem') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                  isActive('/vedelem')
+                    ? 'glass-pill-active text-emerald-300'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]'
                 }`}
               >
-                <Shield className="w-4 h-4" />
+                <Shield className="w-3.5 h-3.5" />
                 Védelem
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${defenseOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${defenseOpen ? 'rotate-180' : ''}`} />
               </button>
               {defenseOpen && <DefenseDropdown onClose={() => setDefenseOpen(false)} />}
             </div>
@@ -246,14 +269,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {user && profile?.is_admin && (
               <button
                 onClick={() => navigate('/admin')}
-                className={`relative flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-200 ${
-                  isActive('/admin') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
+                className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                  isActive('/admin') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]'
                 }`}
               >
                 <span className="relative">
-                  <Shield className="w-4 h-4" />
+                  <Shield className="w-3.5 h-3.5" />
                   {pendingProducerApps > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                       {pendingProducerApps > 9 ? '9+' : pendingProducerApps}
                     </span>
                   )}
@@ -262,18 +285,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </button>
             )}
 
-            {/* Messages button with badge */}
+            {/* Messages */}
             {user && (
               <button
                 onClick={() => navigate('/messages')}
-                className={`relative flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-200 ${
-                  isActive('/messages') || isActive('/chat') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 glass-pill'
+                className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                  isActive('/messages') || isActive('/chat') ? 'glass-pill-active text-emerald-300' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]'
                 }`}
               >
                 <span className="relative">
-                  <MessageCircle className="w-4 h-4" />
+                  <MessageCircle className="w-3.5 h-3.5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -283,13 +306,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             )}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {user && (
               <button
                 onClick={signOut}
-                className="hidden md:flex items-center gap-2 glass-pill px-4 py-2 rounded-2xl text-zinc-400 hover:text-zinc-200 text-sm transition-colors"
+                className="hidden md:flex items-center gap-1.5 glass-pill px-3 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 text-[13px] transition-colors"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
                 Kilépés
               </button>
             )}
@@ -304,7 +327,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden glass-strong border-t border-white/5">
+          <div className="md:hidden glass-strong border-t border-white/[0.05]">
             <nav className="p-4 space-y-1.5">
               {navItems.map((item) => (
                 <button
@@ -319,8 +342,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               ))}
 
-              {/* Mobile Védelem accordion */}
-              <MobileDefenseAccordion onNavigate={(path) => { navigate(path); setMobileMenuOpen(false); }} isActive={isActive('/vedelem')} />
+              <MobileDefenseAccordion onNavigate={(p) => { navigate(p); setMobileMenuOpen(false); }} isActive={isActive('/vedelem')} />
 
               {user && (
                 <>
@@ -378,7 +400,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 py-6 pb-28 md:pb-6">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 pb-28 md:pb-10">
         {children}
       </main>
 
@@ -386,13 +408,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-bottom">
-        <div className="flex items-center justify-around h-20 px-1 pb-2 pt-1">
+        <div className="flex items-center justify-around h-[68px] px-1 pb-1">
           {navItems.slice(0, 4).map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-2xl transition-all duration-200 ${
-                isActive(item.path) ? 'glass-pill-active text-emerald-300' : 'text-zinc-500'
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-200 ${
+                isActive(item.path) ? 'glass-pill-active text-emerald-300' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -402,8 +424,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {user && (
             <button
               onClick={() => navigate('/messages')}
-              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-2xl transition-all duration-200 relative ${
-                isActive('/messages') || isActive('/chat') ? 'glass-pill-active text-emerald-300' : 'text-zinc-500'
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-200 relative ${
+                isActive('/messages') || isActive('/chat') ? 'glass-pill-active text-emerald-300' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               <span className="relative">
@@ -420,7 +442,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Global Chat Widget (popup) */}
       <ChatWidget />
     </div>
   );

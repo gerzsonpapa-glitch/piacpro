@@ -14,6 +14,7 @@ import {
   Settings, Pencil, XCircle, CheckSquare, Trash2, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
+import { useSEO } from '../lib/seo';
 
 const CATEGORY_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
   gyerek:       { label: 'Gyerekek',           icon: Baby },
@@ -170,6 +171,16 @@ export default function DonationDetailPage() {
   const { user } = useAuth();
   const { showToast } = useNotification();
   const [donation, setDonation] = useState<Donation | null>(null);
+
+  useSEO({
+    title: donation ? donation.title : 'Adománygyűjtő kampány',
+    description: donation
+      ? `${donation.title}${donation.description ? ' – ' + donation.description.slice(0, 120) : ''} | Segíts te is! PiacPro Adományok`
+      : undefined,
+    image: donation?.images?.[0] ?? undefined,
+    path: `/donations/${params.id}`,
+    type: 'article',
+  });
   const [contributions, setContributions] = useState<DonationContribution[]>([]);
   const [offers, setOffers] = useState<SupportOffer[]>([]);
   const [loading, setLoading] = useState(true);

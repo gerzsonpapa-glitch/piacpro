@@ -9,6 +9,7 @@ import {
   Search, SlidersHorizontal, X, MapPin, ChevronDown, ShoppingBag, Plus,
   Tag, Package, Navigation
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 // ── Compact dropdown ──────────────────────────────────────────────────────────
 function CompactSelect({
@@ -175,6 +176,7 @@ function CategoryPicker({
 }
 
 export default function SearchPage() {
+  useSEO(SEO_PAGES.search);
   const { search } = useRouter();
   const { navigate } = useRouter();
   const { user } = useAuth();

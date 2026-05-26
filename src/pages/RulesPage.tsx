@@ -5,6 +5,7 @@ import {
   Wrench, Store, Tractor, Hammer, MessageCircle, Star, Trophy,
   BadgeCheck, Megaphone
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 const sections = [
   {
@@ -194,6 +195,7 @@ const sections = [
 ];
 
 export default function RulesPage() {
+  useSEO(SEO_PAGES.rules);
   const { navigate } = useRouter();
 
   return (

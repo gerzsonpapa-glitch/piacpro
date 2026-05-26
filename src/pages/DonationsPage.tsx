@@ -11,6 +11,7 @@ import {
   HandHeart, Wrench, MessageCircle, ExternalLink
 } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 const CATEGORIES: { value: string; label: string; icon: React.ElementType }[] = [
   { value: '', label: 'Összes', icon: Heart },
@@ -113,6 +114,7 @@ function DonationCard({ donation }: { donation: Donation }) {
 }
 
 export default function DonationsPage() {
+  useSEO(SEO_PAGES.donations);
   const { navigate } = useRouter();
   const { user } = useAuth();
   const { showToast } = useNotification();

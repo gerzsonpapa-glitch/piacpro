@@ -13,6 +13,7 @@ import {
   Gavel, Briefcase, UserSearch, MapPin, Wifi, Building2, Leaf,
   MessageCircle, Pin, Lock, Bug, Lightbulb, Zap, HelpCircle, ChevronUp
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops' | 'moderation' | 'forum' | 'bugreports';
 
@@ -238,6 +239,7 @@ type SeekerAdmin = JobSeekerAd & { user?: Pick<Profile, 'id' | 'username' | 'ful
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
+  useSEO(SEO_PAGES.admin);
   const { user, profile } = useAuth();
   const { navigate, search: routerSearch } = useRouter();
   const { showToast } = useNotification();

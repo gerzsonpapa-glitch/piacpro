@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield, TrendingUp, Baby, Briefcase, Home, Percent, Building2, Lock, Heart, ArrowRight, ExternalLink, PhoneCall, Mail, ChevronRight, Car, Globe, Users, SendHorizontal as SendHorizonal, CheckCircle2, MessageSquare } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 // ── config: per-category links ────────────────────────────────────────────────
 export const DEFENSE_LINKS = {
@@ -156,7 +157,7 @@ function ContactForm() {
         </div>
         <h3 className="text-xl font-bold mb-2" style={{ color: '#f1f5f9' }}>Köszönjük a kérdést!</h3>
         <p className="text-sm leading-relaxed max-w-sm mx-auto" style={{ color: '#64748b' }}>
-          Az üzenetküldő alkalmazásod megnyílt. Akom László Zsolt hamarosan felveszi Önnel a kapcsolatot.
+          Az üzenetküldő alkalmazásod megnyílt. Ákom László Zsolt hamarosan felveszi Önnel a kapcsolatot.
         </p>
         <button onClick={() => { setSent(false); setName(''); setEmail(''); setPhone(''); setMessage(''); }}
           className="mt-6 text-sm font-semibold transition-opacity hover:opacity-70"
@@ -220,7 +221,7 @@ function ContactForm() {
         </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-1">
           <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>
-            Az üzenet az Ön e-mail kliensén keresztül kerül elküldésre közvetlenül Akom László Zsolt OVB fiókvezető részére.
+            Az üzenet az Ön e-mail kliensén keresztül kerül elküldésre közvetlenül Ákom László Zsolt OVB fiókvezető részére.
           </p>
           <button
             type="submit" disabled={sending || !name.trim() || !message.trim()}
@@ -240,6 +241,7 @@ function ContactForm() {
 }
 
 export default function VedelemPage() {
+  useSEO(SEO_PAGES.vedelem);
   return (
     <div className="max-w-5xl mx-auto space-y-10">
 
@@ -256,7 +258,7 @@ export default function VedelemPage() {
             style={{ background: 'linear-gradient(160deg, rgba(52,211,153,0.06) 0%, transparent 70%)' }}>
             <img
               src="/profile_picture_720.webp"
-              alt="Akom László Zsolt"
+              alt="Ákom László Zsolt"
               className="w-52 lg:w-full max-w-[240px] lg:max-w-none object-contain object-bottom mt-6 lg:mt-0"
               style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}
             />
@@ -291,7 +293,7 @@ export default function VedelemPage() {
               <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: '#34d399' }}>
                 Hivatalos pénzügyi partner
               </p>
-              <h2 className="text-2xl font-bold mb-0.5" style={{ color: '#f1f5f9' }}>Akom László Zsolt</h2>
+              <h2 className="text-2xl font-bold mb-0.5" style={{ color: '#f1f5f9' }}>Ákom László Zsolt</h2>
               <p className="text-sm font-semibold mb-3" style={{ color: '#64d2b0' }}>Fiókvezető · OVB</p>
               <p className="text-sm leading-relaxed max-w-md" style={{ color: '#94a3b8' }}>
                 Személyes, élethelyzet-alapú pénzügyi és biztosítási tanácsadás.
@@ -405,7 +407,7 @@ export default function VedelemPage() {
             <MessageSquare className="w-3.5 h-3.5" />
             Kérdése van?
           </div>
-          <h2 className="text-xl font-bold" style={{ color: '#f1f5f9' }}>Írjon közvetlenül Akom László Zsoltnak</h2>
+          <h2 className="text-xl font-bold" style={{ color: '#f1f5f9' }}>Írjon közvetlenül Ákom László Zsoltnak</h2>
           <p className="text-sm mt-1 max-w-lg mx-auto" style={{ color: '#64748b' }}>
             Nincs kötelezettség, nincs nyomás — csak egy szakértői válasz az Ön helyzetére.
           </p>
@@ -416,7 +418,7 @@ export default function VedelemPage() {
       {/* ── DISCLAIMER ────────────────────────────────────────────────── */}
       <p className="text-center text-xs pb-4" style={{ color: '#374151' }}>
         A Védelem modul nem reklámfelület, nem biztosítói piactér és nem összehasonlító oldal.
-        Kizárólag egyetlen partnerre — Akom László Zsolt OVB fiókvezető — irányít, minden út egy helyre vezet.
+        Kizárólag egyetlen partnerre — Ákom László Zsolt OVB fiókvezető — irányít, minden út egy helyre vezet.
       </p>
     </div>
   );

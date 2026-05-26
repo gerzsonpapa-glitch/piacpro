@@ -15,6 +15,7 @@ import {
   CornerDownRight, AlertTriangle, Zap, CheckCheck
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -977,6 +978,7 @@ function BugReportForm({ onBack, onSubmitted }: { onBack: () => void; onSubmitte
 type ForumView = 'home' | 'category' | 'thread' | 'new-thread' | 'bug-report';
 
 export default function ForumPage() {
+  useSEO(SEO_PAGES.forum);
   const [categories, setCategories] = useState<ForumCategory[]>([]);
   const [threads, setThreads] = useState<ForumThread[]>([]);
   const [loading, setLoading] = useState(true);

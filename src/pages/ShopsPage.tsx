@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Shop } from '../lib/types';
 import { Store, Search, MapPin, ShieldCheck, Package, Tag, Plus } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 const CAT_LABELS: Record<string, string> = {
   electronics: 'Elektronika', fashion: 'Ruha / Divat', food: 'Élelmiszer',
@@ -85,6 +86,7 @@ function ShopCard({ shop }: { shop: Shop }) {
 }
 
 export default function ShopsPage() {
+  useSEO(SEO_PAGES.shops);
   const { navigate } = useRouter();
   const { user, profile } = useAuth();
   const [shops, setShops] = useState<Shop[]>([]);

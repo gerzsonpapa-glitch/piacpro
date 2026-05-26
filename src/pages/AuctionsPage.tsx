@@ -8,6 +8,7 @@ import {
   Gavel, Clock, TrendingUp, Plus, MapPin, Timer, Flame,
   Search, SlidersHorizontal, ChevronDown, Users, Trophy, Zap
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 function useCountdown(endsAt: string, timerStarted: boolean) {
   const calc = useCallback(() => {
@@ -184,6 +185,7 @@ function AuctionCard({ listing, featured }: { listing: Listing; featured?: boole
 }
 
 export default function AuctionsPage() {
+  useSEO(SEO_PAGES.auctions);
   const { navigate } = useRouter();
   const { user } = useAuth();
   const [activeAuctions, setActiveAuctions] = useState<Listing[]>([]);

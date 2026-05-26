@@ -8,6 +8,7 @@ import {
   Leaf, Gift, Store, Wrench, Filter, ChevronDown,
   Heart, Clock, Star, CheckCircle2, Target, Tag
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 // ── Unified result type ───────────────────────────────────────────────────────
 interface UnifiedResult {
@@ -107,6 +108,7 @@ function TypeFilterPill({ type, active, onClick }: { type: string; active: boole
 }
 
 export default function DiscoverPage() {
+  useSEO(SEO_PAGES.discover);
   const { search: qs } = useRouter();
   const [query, setQuery] = useState('');
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set());

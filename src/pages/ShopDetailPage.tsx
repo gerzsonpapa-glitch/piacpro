@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import type { Shop, ShopProduct, ShopPromotion } from '../lib/types';
 import { formatPrice } from '../lib/utils';
+import { useSEO } from '../lib/seo';
 import { Store, Search, MapPin, ShieldCheck, Mail, Phone, Globe, Tag, Package, Percent, Clock, ArrowLeft, ExternalLink, Star, Sparkles, Settings, X, ChevronLeft, ChevronRight, Save, Trash2, MessageCircle, Percent as PercentIcon } from 'lucide-react';
 
 const CAT_LABELS: Record<string, string> = {
@@ -364,6 +365,15 @@ export default function ShopDetailPage() {
   const slug = params.slug as string;
 
   const [shop, setShop] = useState<Shop | null>(null);
+
+  useSEO({
+    title: shop ? shop.name : 'Bolt',
+    description: shop
+      ? `${shop.name}${shop.description ? ' – ' + shop.description.slice(0, 120) : ''} | ${shop.location ?? ''} | PiacPro Boltok`
+      : undefined,
+    image: shop?.logo_url ?? undefined,
+    path: `/shops/${slug}`,
+  });
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [promotions, setPromotions] = useState<ShopPromotion[]>([]);
   const [loading, setLoading] = useState(true);

@@ -5,13 +5,73 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PiacPro - Magyar Közösségi Piactér</title>
+
+    <!-- Primary SEO -->
+    <title>PiacPro – Magyar Közösségi Piactér</title>
+    <meta name="description" content="PiacPro – Magyarország modern közösségi piactere. Adj el, vegyél, licitálj, keress munkát, találj helyi termelőt. Ingyenes hirdetésfeladás." />
+    <meta name="keywords" content="piactér, hirdetés, apróhirdetés, eladó, kereső, licit, aukció, állás, munkakeresés, helyi termelő, bolt, adománygyűjtés, magyarország" />
+    <meta name="robots" content="index,follow" />
+    <meta name="author" content="PiacPro" />
+    <link rel="canonical" href="https://piacpro.hu/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PiacPro" />
+    <meta property="og:locale" content="hu_HU" />
+    <meta property="og:title" content="PiacPro – Magyar Közösségi Piactér" />
+    <meta property="og:description" content="PiacPro – Magyarország modern közösségi piactere. Adj el, vegyél, licitálj, keress munkát, találj helyi termelőt." />
+    <meta property="og:url" content="https://piacpro.hu/" />
+    <meta property="og:image" content="https://piacpro.hu/kell.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PiacPro – Magyar Közösségi Piactér" />
+    <meta name="twitter:description" content="Magyarország modern közösségi piactere. Hirdetés, licit, állás, termelők." />
+    <meta name="twitter:image" content="https://piacpro.hu/kell.png" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <meta property="og:image" content="https://bolt.new/static/og_default.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png" />
+
+    <!-- Structured Data: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "PiacPro",
+      "url": "https://piacpro.hu",
+      "logo": "https://piacpro.hu/favicon.svg",
+      "description": "Magyarország modern közösségi piactere. Hirdetések, licitek, állások, helyi termelők.",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+36-30-172-5181",
+        "contactType": "customer service",
+        "availableLanguage": "Hungarian"
+      },
+      "sameAs": [
+        "https://www.facebook.com/groups/391889140975247"
+      ]
+    }
+    </script>
+
+    <!-- Structured Data: WebSite with Sitelinks Search -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "PiacPro",
+      "url": "https://piacpro.hu",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://piacpro.hu/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

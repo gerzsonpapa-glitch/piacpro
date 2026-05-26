@@ -4,8 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Listing } from '../lib/types';
 import ListingCard from '../components/ListingCard';
 import { Heart } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 export default function FavoritesPage() {
+  useSEO(SEO_PAGES.favorites);
   const { user } = useAuth();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);

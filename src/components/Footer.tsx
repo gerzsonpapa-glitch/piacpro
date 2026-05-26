@@ -4,7 +4,8 @@ import {
   ShoppingBag, ScrollText, Shield, Mail, Heart, Phone, Users,
   ChevronDown, ChevronUp, Gavel, Briefcase, Store, Leaf,
   Star, Award, Zap, MessageCircle, Search, PlusCircle,
-  TrendingUp, Lock, CheckCircle, Sparkles, Package, HandHeart
+  TrendingUp, Lock, CheckCircle, Sparkles, Package, HandHeart,
+  PhoneCall, ExternalLink
 } from 'lucide-react';
 
 const RANK_LEVELS = [
@@ -131,6 +132,34 @@ const FEATURES = [
       'Automatikus értesítés új üzenetnél',
       'Hirdetéshez, bolthoz, felajánláshoz, adománygyűjtőhöz kötött chat',
       'Olvasott visszaigazolás (kék pipa)',
+    ],
+  },
+  {
+    icon: MessageCircle,
+    title: 'Közösségi Fórum',
+    color: 'text-sky-400',
+    points: [
+      'Kategóriák: Általános, Kérdések, Piactér tippek, Ötletek, Hirdetések',
+      'Téma létrehozása, válaszolás, idézés (reply-to)',
+      'Reakciók: Tetszik, Szuper, Vicces, Hasznos',
+      'Megoldásnak jelölés — a legjobb válasz kiemelve',
+      'Szerkesztés és törlés saját hozzászólásoknál',
+      'Bug tracker & fejlesztési ötlet beküldés státuszkövetéssel',
+    ],
+  },
+  {
+    icon: Shield,
+    title: 'Védelem — Pénzügyi tervezés',
+    color: 'text-emerald-400',
+    points: [
+      'Nyugdíj-előtakarékosság és hosszú távú vagyonépítés',
+      'Gyermekjövő: megtakarítás, tanulmány, induló tőke',
+      'Hiteltermékek: lakáshitel, CSOK, hitelkiváltás',
+      'Életbiztosítás, vagyonvédelem, KKV megoldások',
+      'Online KGFB kötés, gépjármű asszisztencia, utasbiztosítás',
+      'Adókedvezmény és visszatérítés optimalizálás',
+      'Személyes tanácsadó: Ákom László Zsolt OVB fiókvezető',
+      'Közvetlen kapcsolatfelvétel: telefon, email, kontakt form',
     ],
   },
 ];

@@ -4,6 +4,7 @@ import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
 import type { Producer } from '../lib/types';
 import { MapPin, Star, CheckCircle2, Leaf, Search, Map, Grid2x2 as Grid, Sprout, Apple, Sun, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, MessageCircle, User, Clock, Award, Navigation, LocateFixed, AlertCircle, ChevronRight } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 type GeoState = 'idle' | 'loading' | 'granted' | 'denied' | 'unsupported';
 
@@ -114,6 +115,7 @@ function ProducerCard({ producer, onChat }: { producer: Producer; onChat: () => 
 }
 
 export default function ProducersPage() {
+  useSEO(SEO_PAGES.producers);
   const { navigate } = useRouter();
   const { user } = useAuth();
   const [producers, setProducers] = useState<Producer[]>([]);

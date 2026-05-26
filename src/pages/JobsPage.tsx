@@ -11,6 +11,7 @@ import {
   Trash2, Camera, Save, Phone, Mail, ArrowLeft, CheckCircle, AlertCircle,
   UserSearch, Send, User, GraduationCap, MessageCircle, Lock, Sparkles, TrendingUp
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -518,6 +519,7 @@ type MainTab = 'offers' | 'seekers';
 type View = 'list' | 'detail' | 'create' | 'edit' | 'seeker-create' | 'seeker-detail' | 'seeker-edit';
 
 export default function JobsPage() {
+  useSEO(SEO_PAGES.jobs);
   const { user } = useAuth();
   const { showToast } = useNotification();
   const { navigate } = useRouter();

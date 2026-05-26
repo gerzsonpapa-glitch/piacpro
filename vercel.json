@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://febwnuzjjlzwchphxzfg.supabase.co/functions/v1/sitemap",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

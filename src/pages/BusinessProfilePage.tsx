@@ -12,6 +12,7 @@ import {
   MessageCircle, Package, ChevronLeft, ChevronRight, X, Banknote,
   Pencil, Trash2, PlusCircle, AlertCircle, Tag, Leaf
 } from 'lucide-react';
+import { useSEO } from '../lib/seo';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -365,6 +366,15 @@ export default function BusinessProfilePage({ id }: { id: string }) {
   const { showToast } = useNotification();
 
   const [business, setBusiness] = useState<LocalBusiness | null>(null);
+
+  useSEO({
+    title: business ? business.name : 'Helyi vállalkozás',
+    description: business
+      ? `${business.name}${business.tagline ? ' – ' + business.tagline : ''}${business.location ? ' | ' + business.location : ''} | PiacPro Helyi vállalkozások`
+      : undefined,
+    image: business?.logo_url ?? undefined,
+    path: `/helyi-vallalkozasok/${id}`,
+  });
   const [items, setItems] = useState<LocalBusinessItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showContact, setShowContact] = useState(false);

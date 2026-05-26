@@ -14,6 +14,7 @@ import {
   Palette, Scissors, Sprout, Monitor, Music, Shirt,
   Apple, BookOpen, Lightbulb, Gift, Heart, Target, MessageCircle
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   alkotasok: Palette,
@@ -65,38 +66,47 @@ function AuctionCard({ listing, urgent }: { listing: Listing; urgent?: boolean }
 
   return (
     <button onClick={() => navigate(`/auction/${listing.id}`)}
-      className={`group text-left w-full rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] ${urgent ? 'ring-1 ring-red-500/30' : 'glass-bubble'}`}>
+      className={`group text-left w-full rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 ${
+        urgent
+          ? 'ring-1 ring-red-500/30 glow-pulse-red'
+          : 'glass-bubble hover:border-white/15'
+      }`}
+      style={urgent ? {
+        background: 'linear-gradient(145deg, rgba(239,68,68,0.08), rgba(255,255,255,0.04))',
+        border: '1px solid rgba(239,68,68,0.2)',
+        boxShadow: '0 2px 16px -4px rgba(0,0,0,0.45)',
+      } : {}}>
       <div className="relative aspect-[4/3] overflow-hidden">
         {image
           ? <img src={image} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           : <div className="w-full h-full bg-white/5 flex items-center justify-center"><Gavel className="w-10 h-10 text-zinc-600" /></div>
         }
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/75 to-transparent" />
         {isLastFiveMin && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500/90 px-2 py-1 rounded-lg text-white text-[10px] font-bold animate-pulse">
+          <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-white text-[10px] font-bold animate-pulse">
             <Flame className="w-3 h-3" />HOT
           </div>
         )}
         {urgent && !isLastFiveMin && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 bg-amber-500/90 px-2 py-1 rounded-lg text-white text-[10px] font-bold">
+          <div className="absolute top-2 left-2 flex items-center gap-1 bg-amber-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-white text-[10px] font-bold">
             <Timer className="w-3 h-3" />MA LÉJ
           </div>
         )}
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 glass-strong rounded-xl px-2 py-1">
+        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 glass-strong rounded-xl px-2 py-1.5">
           <Timer className={`w-3 h-3 ${isLastHour ? 'text-red-400' : 'text-amber-400'}`} />
           {countdown.waiting
             ? <span className="text-[10px] text-zinc-400">Első licit indítja</span>
             : countdown.done
             ? <span className="text-[10px] text-red-400">Lezárult</span>
-            : <span className={`text-[10px] font-mono font-bold ${isLastHour ? 'text-red-300' : 'text-amber-300'}`}>
+            : <span className={`text-[10px] font-mono font-bold tracking-wider ${isLastHour ? 'text-red-300' : 'text-amber-300'}`}>
                 {String(countdown.h).padStart(2,'0')}:{String(countdown.m).padStart(2,'0')}:{String(countdown.s).padStart(2,'0')}
               </span>
           }
         </div>
       </div>
-      <div className="p-3">
-        <p className="font-semibold text-zinc-100 truncate text-sm group-hover:text-amber-300 transition-colors">{listing.title}</p>
-        <div className="flex items-center justify-between mt-1.5">
+      <div className="p-3.5">
+        <p className="font-semibold text-zinc-100 truncate text-sm group-hover:text-amber-300 transition-colors leading-snug">{listing.title}</p>
+        <div className="flex items-center justify-between mt-2">
           <p className="text-amber-400 font-bold text-sm">{formatPrice(auction?.current_price || listing.price)}</p>
           {(auction?.bid_count ?? 0) > 0 && (
             <p className="text-[10px] text-zinc-600 flex items-center gap-0.5">
@@ -122,7 +132,7 @@ function JobMiniCard({ job }: { job: Job }) {
 
   return (
     <button onClick={() => navigate('/jobs')}
-      className="glass-bubble rounded-2xl p-4 text-left w-full hover:bg-white/5 transition-all group flex items-center gap-3">
+      className="glass-bubble rounded-2xl p-4 text-left w-full transition-all duration-250 group flex items-center gap-3.5 hover:-translate-y-0.5">
       <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 glass flex items-center justify-center">
         {job.logo_url
           ? <img src={job.logo_url} alt={job.company} className="w-full h-full object-cover" />
@@ -131,8 +141,8 @@ function JobMiniCard({ job }: { job: Job }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-zinc-100 text-sm truncate group-hover:text-emerald-300 transition-colors">{job.title}</p>
-        <p className="text-zinc-500 text-xs truncate">{job.company}</p>
-        <div className="flex items-center gap-2 mt-1">
+        <p className="text-zinc-500 text-xs truncate mt-0.5">{job.company}</p>
+        <div className="flex items-center gap-2 mt-1.5">
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-medium ${typeInfo.color}`}>
             {typeInfo.label}
           </span>
@@ -157,14 +167,76 @@ function JobMiniCard({ job }: { job: Job }) {
           <p className="text-[10px] text-zinc-600">HUF/hó</p>
         </div>
       )}
-      <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 group-hover:text-zinc-400 transition-colors" />
+      <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all duration-200" />
     </button>
+  );
+}
+
+/* ── Section heading ──────────────────────────────────────────────── */
+function SectionHead({
+  icon: Icon,
+  label,
+  iconColor = 'text-emerald-400',
+  count,
+  linkLabel = 'Összes',
+  linkColor = 'text-emerald-400 hover:text-emerald-300',
+  onLink,
+}: {
+  icon: React.ElementType;
+  label: string;
+  iconColor?: string;
+  count?: number;
+  linkLabel?: string;
+  linkColor?: string;
+  onLink?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center gap-2.5">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0`}
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Icon className={`w-4 h-4 ${iconColor}`} />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-zinc-100 leading-tight">{label}</h2>
+          {count !== undefined && count > 0 && (
+            <p className="text-[11px] text-zinc-600 mt-0.5">{count.toLocaleString('hu-HU')} db</p>
+          )}
+        </div>
+      </div>
+      {onLink && (
+        <button onClick={onLink}
+          className={`flex items-center gap-1.5 text-[13px] font-medium transition-all duration-200 hover:gap-2 ${linkColor}`}>
+          {linkLabel} <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="glass-bubble rounded-2xl overflow-hidden">
+      <div className="aspect-[4/3] skeleton" />
+      <div className="p-4 space-y-2.5">
+        <div className="h-3.5 skeleton rounded w-3/4" />
+        <div className="h-4 skeleton rounded w-1/2" />
+      </div>
+    </div>
   );
 }
 
 const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
 
+const COUNTIES = [
+  'Budapest', 'Baranya', 'Bács-Kiskun', 'Békés', 'Borsod-Abaúj-Zemplén',
+  'Csongrád-Csanád', 'Fejér', 'Győr-Moson-Sopron', 'Hajdú-Bihar', 'Heves',
+  'Jász-Nagykun-Szolnok', 'Komárom-Esztergom', 'Nógrád', 'Pest', 'Somogy',
+  'Szabolcs-Szatmár-Bereg', 'Tolna', 'Vas', 'Veszprém', 'Zala',
+];
+
 export default function HomePage() {
+  useSEO(SEO_PAGES.home);
   const { navigate } = useRouter();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -293,43 +365,77 @@ export default function HomePage() {
     navigate(`/search?${params.toString()}`);
   }
 
-  const COUNTIES = [
-    'Budapest', 'Baranya', 'Bács-Kiskun', 'Békés', 'Borsod-Abaúj-Zemplén',
-    'Csongrád-Csanád', 'Fejér', 'Győr-Moson-Sopron', 'Hajdú-Bihar', 'Heves',
-    'Jász-Nagykun-Szolnok', 'Komárom-Esztergom', 'Nógrád', 'Pest', 'Somogy',
-    'Szabolcs-Szatmár-Bereg', 'Tolna', 'Vas', 'Veszprém', 'Zala',
-  ];
-
   return (
-    <div className="space-y-12">
+    <div className="space-y-14">
 
-      {/* ── HERO BANNER ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-3xl glass p-8 md:p-14 min-h-[340px] flex items-center">
-        {/* decorative blobs */}
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-emerald-500/[0.06] rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-[300px] h-[300px] bg-teal-500/[0.04] rounded-full blur-[80px] pointer-events-none" />
-        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[200px] h-[200px] bg-sky-500/[0.03] rounded-full blur-[60px] pointer-events-none" />
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-3xl p-8 md:p-14 min-h-[360px] flex items-center"
+        style={{
+          background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.04) 100%)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), 0 8px 40px -8px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(24px)',
+        }}>
+        {/* Glow orbs */}
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-emerald-500/[0.07] rounded-full blur-[130px] pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[400px] h-[400px] bg-teal-500/[0.05] rounded-full blur-[90px] pointer-events-none" />
+        <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[180px] h-[180px] bg-sky-500/[0.04] rounded-full blur-[60px] pointer-events-none" />
 
         <div className="relative w-full max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-5">
-            <Star className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-emerald-400 text-xs font-semibold tracking-wide">Magyarország legjobb piactere</span>
+          {/* Label pill */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 mb-6 rounded-full"
+            style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.22)' }}>
+            <Star className="w-3 h-3 text-emerald-400" />
+            <span className="text-emerald-400 text-[11px] font-semibold tracking-widest uppercase">Magyarország legjobb piactere</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1]">
-            Vásárolj, add el,<br />
-            <span className="text-emerald-400">találj munkát.</span>
+
+          <h1 className="text-4xl md:text-[3.5rem] font-bold tracking-tight leading-[1.08] text-zinc-50">
+            Vásárolj, add el,
+            <br />
+            <span style={{
+              background: 'linear-gradient(135deg, #34d399 0%, #10b981 50%, #6ee7b7 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
+              találj munkát.
+            </span>
           </h1>
-          <p className="text-zinc-400 mt-4 text-base md:text-lg max-w-xl leading-relaxed">
+          <p className="text-zinc-400 mt-5 text-base md:text-[1.05rem] max-w-xl leading-relaxed">
             Minden egy helyen: termékhirdetések, élő licitek és állásajánlatok. Gyors, egyszerű, megbízható.
           </p>
 
-          <form onSubmit={handleSearch} className="mt-8 space-y-2.5 max-w-xl">
-            <div className="flex flex-col sm:flex-row gap-2.5">
+          {/* Stats row */}
+          {(listingCount > 0 || auctionCount > 0 || jobCount > 0) && (
+            <div className="flex items-center gap-5 mt-5 mb-6">
+              {listingCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span className="text-xs text-zinc-500">{listingCount.toLocaleString('hu-HU')} hirdetés</span>
+                </div>
+              )}
+              {auctionCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span className="text-xs text-zinc-500">{auctionCount} aktív licit</span>
+                </div>
+              )}
+              {jobCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                  <span className="text-xs text-zinc-500">{jobCount} állás</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handleSearch} className="space-y-2.5 max-w-xl">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
                 <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Mit keresel? Termék, állás, termelő..."
-                  className="w-full pl-11 pr-4 py-3.5 glass-input rounded-2xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm" />
+                  className="w-full pl-11 pr-4 py-3.5 glass-input rounded-2xl text-zinc-100 placeholder-zinc-600 focus:outline-none text-sm" />
               </div>
               <div className="relative sm:w-44">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
@@ -342,11 +448,11 @@ export default function HomePage() {
             </div>
             <div className="flex gap-2">
               <button type="submit"
-                className="flex-1 py-3 glass-pill-active text-emerald-300 font-semibold rounded-2xl transition-all hover:scale-[1.01] text-sm">
+                className="flex-1 py-3.5 glass-pill-active text-emerald-300 font-semibold rounded-2xl transition-all hover:scale-[1.01] text-sm">
                 Keresés mindenben
               </button>
               <button type="button" onClick={(e) => handleMarketSearch(e as unknown as React.FormEvent)}
-                className="px-4 py-3 glass-pill text-zinc-400 hover:text-zinc-200 rounded-2xl text-sm font-medium transition-colors">
+                className="px-5 py-3.5 glass-pill text-zinc-400 hover:text-zinc-200 rounded-2xl text-sm font-medium transition-colors">
                 Csak piactér
               </button>
             </div>
@@ -354,19 +460,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 3 SECTION HUB ───────────────────────────────────────────────── */}
+      {/* ── 3 HUB CARDS ─────────────────────────────────────────────────── */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        {/* Piactér */}
         <button onClick={() => navigate('/search')}
-          className="group glass rounded-3xl p-6 text-left hover:bg-white/[0.04] transition-all hover:scale-[1.01] border border-white/5 hover:border-emerald-500/25 relative overflow-hidden">
-          <div className="absolute -top-8 -right-8 w-32 h-32 bg-emerald-500/8 rounded-full blur-[40px]" />
+          className="group glass rounded-3xl p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-emerald-500/25 relative overflow-hidden"
+          style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}>
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-emerald-500/16 transition-all duration-500" />
           <div className="relative">
-            <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mb-5">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+              style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.22)' }}>
               <ShoppingBag className="w-7 h-7 text-emerald-400" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors mb-1">Piactér</h2>
-            <p className="text-zinc-500 text-sm leading-relaxed mb-5">
+            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors mb-2">Piactér</h2>
+            <p className="text-zinc-500 text-sm leading-relaxed mb-6">
               Add el felesleges dolgaidat vagy vegyél olcsón másoktól.
             </p>
             <div className="flex items-center justify-between">
@@ -378,16 +485,17 @@ export default function HomePage() {
           </div>
         </button>
 
-        {/* Licitek */}
         <button onClick={() => navigate('/auctions')}
-          className="group glass rounded-3xl p-6 text-left hover:bg-white/[0.04] transition-all hover:scale-[1.01] border border-white/5 hover:border-amber-500/25 relative overflow-hidden">
-          <div className="absolute -top-8 -right-8 w-32 h-32 bg-amber-500/8 rounded-full blur-[40px]" />
+          className="group glass rounded-3xl p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-amber-500/25 relative overflow-hidden"
+          style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}>
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-amber-500/16 transition-all duration-500" />
           <div className="relative">
-            <div className="w-14 h-14 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mb-5">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+              style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.22)' }}>
               <Gavel className="w-7 h-7 text-amber-400" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-amber-300 transition-colors mb-1">Licitek</h2>
-            <p className="text-zinc-500 text-sm leading-relaxed mb-5">
+            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-amber-300 transition-colors mb-2">Licitek</h2>
+            <p className="text-zinc-500 text-sm leading-relaxed mb-6">
               Licitálj valós időben. Az nyeri, aki a legtöbbet kínálja.
             </p>
             <div className="flex items-center justify-between">
@@ -399,16 +507,17 @@ export default function HomePage() {
           </div>
         </button>
 
-        {/* Állások */}
         <button onClick={() => navigate('/jobs')}
-          className="group glass rounded-3xl p-6 text-left hover:bg-white/[0.04] transition-all hover:scale-[1.01] border border-white/5 hover:border-sky-500/25 relative overflow-hidden">
-          <div className="absolute -top-8 -right-8 w-32 h-32 bg-sky-500/8 rounded-full blur-[40px]" />
+          className="group glass rounded-3xl p-7 text-left transition-all duration-280 hover:scale-[1.015] hover:-translate-y-1 border border-white/[0.07] hover:border-sky-500/25 relative overflow-hidden"
+          style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}>
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-sky-500/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-sky-500/16 transition-all duration-500" />
           <div className="relative">
-            <div className="w-14 h-14 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center mb-5">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+              style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}>
               <Briefcase className="w-7 h-7 text-sky-400" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-sky-300 transition-colors mb-1">Állások</h2>
-            <p className="text-zinc-500 text-sm leading-relaxed mb-5">
+            <h2 className="text-xl font-bold text-zinc-100 group-hover:text-sky-300 transition-colors mb-2">Állások</h2>
+            <p className="text-zinc-500 text-sm leading-relaxed mb-6">
               Találd meg az álmaid állását, vagy keress munkatársat.
             </p>
             <div className="flex items-center justify-between">
@@ -442,26 +551,21 @@ export default function HomePage() {
       {/* ── CATEGORIES ───────────────────────────────────────────────────── */}
       {categories.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-emerald-400" />Kategóriák
-              </h2>
-              <p className="text-zinc-500 text-sm mt-0.5">Alkotók, termelők, szolgáltatók — minden egy helyen</p>
-            </div>
-            <button onClick={() => navigate('/search')}
-              className="text-emerald-400 text-sm font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
-              Összes <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <SectionHead
+            icon={ShoppingBag}
+            label="Kategóriák"
+            iconColor="text-emerald-400"
+            onLink={() => navigate('/search')}
+          />
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
             {categories.map((cat) => {
               const Icon = getIcon(cat.slug);
               const destination = cat.slug === 'termelok' ? '/helyi-vallalkozasok' : `/search?category=${cat.slug}`;
               return (
                 <button key={cat.id} onClick={() => navigate(destination)}
-                  className="group flex flex-col items-center gap-2.5 p-4 glass-bubble rounded-2xl transition-all duration-300 hover:scale-[1.04] hover:bg-emerald-500/5 border border-transparent hover:border-emerald-500/15">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                  className="group flex flex-col items-center gap-2.5 p-4 glass-bubble rounded-2xl transition-all duration-250 hover:scale-[1.05] hover:-translate-y-0.5 hover:border-emerald-500/20">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-250 group-hover:scale-110"
+                    style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.14)' }}>
                     <Icon className="w-5 h-5 text-emerald-400" />
                   </div>
                   <span className="text-xs font-medium text-zinc-400 group-hover:text-emerald-300 transition-colors text-center leading-tight line-clamp-2">
@@ -477,29 +581,18 @@ export default function HomePage() {
       {/* ── MA LEJÁRÓ LICITEK ────────────────────────────────────────────── */}
       {(loading || expiringAuctions.length > 0) && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Flame className="w-5 h-5 text-red-400" />
-              <span>Ma lejáró licitek</span>
-              {expiringAuctions.length > 0 && (
-                <span className="px-2 py-0.5 bg-red-500/15 border border-red-500/25 rounded-full text-red-400 text-xs font-bold">
-                  {expiringAuctions.length} db
-                </span>
-              )}
-            </h2>
-            <button onClick={() => navigate('/auctions')}
-              className="text-amber-400 text-sm font-medium hover:text-amber-300 flex items-center gap-1 transition-colors">
-              Összes licit <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <SectionHead
+            icon={Flame}
+            label="Ma lejáró licitek"
+            iconColor="text-red-400"
+            count={expiringAuctions.length > 0 ? expiringAuctions.length : undefined}
+            linkLabel="Összes licit"
+            linkColor="text-amber-400 hover:text-amber-300"
+            onLink={() => navigate('/auctions')}
+          />
           {loading ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl aspect-[3/4] animate-pulse" />)}
-            </div>
-          ) : expiringAuctions.length === 0 ? (
-            <div className="glass rounded-2xl p-8 text-center">
-              <Clock className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-zinc-600 text-sm">Jelenleg nincs ma lejáró licit</p>
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -512,19 +605,17 @@ export default function HomePage() {
       {/* ── AKTÍV LICITEK ────────────────────────────────────────────────── */}
       {(loading || allAuctions.length > 0) && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Gavel className="w-5 h-5 text-amber-400" />Aktív licitek
-              {auctionCount > 0 && <span className="text-sm font-normal text-zinc-500">({auctionCount})</span>}
-            </h2>
-            <button onClick={() => navigate('/auctions')}
-              className="text-amber-400 text-sm font-medium hover:text-amber-300 flex items-center gap-1 transition-colors">
-              Összes <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <SectionHead
+            icon={Gavel}
+            label="Aktív licitek"
+            iconColor="text-amber-400"
+            count={auctionCount}
+            linkColor="text-amber-400 hover:text-amber-300"
+            onLink={() => navigate('/auctions')}
+          />
           {loading ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl aspect-[3/4] animate-pulse" />)}
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -534,21 +625,18 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── NÉPSZERŰ HIRDETÉSEK ──────────────────────────────────────────── */}
+      {/* ── NÉPSZERŰ ─────────────────────────────────────────────────────── */}
       {(loading || popularListings.length > 0) && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-amber-400" />Népszerű hirdetések
-            </h2>
-            <button onClick={() => navigate('/search?sort=popular')}
-              className="text-emerald-400 text-sm font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
-              Összes <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <SectionHead
+            icon={TrendingUp}
+            label="Népszerű hirdetések"
+            iconColor="text-amber-400"
+            onLink={() => navigate('/search?sort=popular')}
+          />
           {loading ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass-bubble rounded-3xl overflow-hidden animate-pulse"><div className="aspect-[4/3] bg-white/5" /><div className="p-4 space-y-2"><div className="h-4 bg-white/5 rounded w-3/4" /><div className="h-5 bg-white/5 rounded w-1/2" /></div></div>)}
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -561,40 +649,33 @@ export default function HomePage() {
       {/* ── NEMRÉG NÉZETT ────────────────────────────────────────────────── */}
       {recentlyViewed.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Clock className="w-5 h-5 text-zinc-400" />Nemrég nézett
-            </h2>
-          </div>
+          <SectionHead icon={Clock} label="Nemrég nézett" iconColor="text-zinc-400" />
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
             {recentlyViewed.map((l) => <ListingCard key={l.id} listing={l} />)}
           </div>
         </section>
       )}
 
-      {/* ── LEGFRISSEBB HIRDETÉSEK ────────────────────────────────────────── */}
+      {/* ── LEGFRISSEBB ──────────────────────────────────────────────────── */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Zap className="w-5 h-5 text-emerald-400" />Legfrissebb hirdetések
-            {listingCount > 0 && <span className="text-sm font-normal text-zinc-500">({listingCount.toLocaleString('hu-HU')})</span>}
-          </h2>
-          <button onClick={() => navigate('/search')}
-            className="text-emerald-400 text-sm font-medium hover:text-emerald-300 flex items-center gap-1 transition-colors">
-            Összes <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        <SectionHead
+          icon={Zap}
+          label="Legfrissebb hirdetések"
+          iconColor="text-emerald-400"
+          count={listingCount}
+          onLink={() => navigate('/search')}
+        />
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="glass-bubble rounded-3xl overflow-hidden animate-pulse"><div className="aspect-[4/3] bg-white/5" /><div className="p-4 space-y-2"><div className="h-4 bg-white/5 rounded w-3/4" /><div className="h-5 bg-white/5 rounded w-1/2" /></div></div>)}
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : latestListings.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center">
+          <div className="glass rounded-2xl p-14 text-center">
             <Package className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-            <p className="text-zinc-500">Még nincsenek hirdetések</p>
+            <p className="text-zinc-500 text-sm">Még nincsenek hirdetések</p>
             {user && (
               <button onClick={() => navigate('/create')}
-                className="mt-4 glass-pill-active text-emerald-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all">
+                className="mt-5 glass-pill-active text-emerald-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all">
                 Légy az első
               </button>
             )}
@@ -606,24 +687,22 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ── KIEMELT ÁLLÁSOK ──────────────────────────────────────────────── */}
+      {/* ── ÁLLÁSOK ──────────────────────────────────────────────────────── */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-sky-400" />Kiemelt állások
-            {jobCount > 0 && <span className="text-sm font-normal text-zinc-500">({jobCount})</span>}
-          </h2>
-          <button onClick={() => navigate('/jobs')}
-            className="text-sky-400 text-sm font-medium hover:text-sky-300 flex items-center gap-1 transition-colors">
-            Összes <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        <SectionHead
+          icon={Briefcase}
+          label="Kiemelt állások"
+          iconColor="text-sky-400"
+          count={jobCount}
+          linkColor="text-sky-400 hover:text-sky-300"
+          onLink={() => navigate('/jobs')}
+        />
         {loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-16 animate-pulse" />)}
+          <div className="space-y-2.5">
+            {Array.from({ length: 3 }).map((_, i) => <div key={i} className="glass-bubble rounded-2xl h-[72px] skeleton" />)}
           </div>
         ) : featuredJobs.length === 0 ? (
-          <div className="glass rounded-2xl p-8 text-center">
+          <div className="glass rounded-2xl p-10 text-center">
             <Briefcase className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
             <p className="text-zinc-500 text-sm">Még nincsenek álláshirdetések</p>
             {user && (
@@ -634,27 +713,34 @@ export default function HomePage() {
             )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {featuredJobs.map((job) => <JobMiniCard key={job.id} job={job} />)}
           </div>
         )}
       </section>
 
-      {/* ── ADOMÁNY KAMPÁNYOK ────────────────────────────────────────────── */}
+      {/* ── ADOMÁNYOK ────────────────────────────────────────────────────── */}
       {(loading || featuredDonations.length > 0) && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Heart className="w-5 h-5 text-rose-400" />Adomány kampányok
-            </h2>
-            <button onClick={() => navigate('/donations')}
-              className="text-rose-400 text-sm font-medium hover:text-rose-300 flex items-center gap-1 transition-colors">
-              Összes <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <SectionHead
+            icon={Heart}
+            label="Adomány kampányok"
+            iconColor="text-rose-400"
+            linkColor="text-rose-400 hover:text-rose-300"
+            onLink={() => navigate('/donations')}
+          />
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="glass-bubble rounded-3xl overflow-hidden animate-pulse"><div className="aspect-video bg-white/5" /><div className="p-4 space-y-2"><div className="h-4 bg-white/5 rounded w-3/4" /><div className="h-1.5 bg-white/5 rounded" /><div className="h-4 bg-white/5 rounded w-1/2" /></div></div>)}
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="glass-bubble rounded-3xl overflow-hidden">
+                  <div className="aspect-video skeleton" />
+                  <div className="p-4 space-y-2.5">
+                    <div className="h-3.5 skeleton rounded w-3/4" />
+                    <div className="h-1.5 skeleton rounded" />
+                    <div className="h-3.5 skeleton rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -662,22 +748,23 @@ export default function HomePage() {
                 const pct = d.goal_amount > 0 ? Math.min(Math.round((d.current_amount / d.goal_amount) * 100), 100) : 0;
                 return (
                   <button key={d.id} onClick={() => navigate(`/donations/${d.id}`)}
-                    className="group glass-bubble rounded-3xl overflow-hidden text-left hover:scale-[1.02] transition-all duration-300">
+                    className="group glass-bubble rounded-3xl overflow-hidden text-left transition-all duration-280 hover:scale-[1.02] hover:-translate-y-0.5"
+                    style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}>
                     <div className="aspect-video bg-zinc-900 relative overflow-hidden">
                       {d.images?.[0]
                         ? <img src={d.images[0]} alt={d.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         : <div className="w-full h-full flex items-center justify-center"><Heart className="w-10 h-10 text-zinc-700" /></div>
                       }
                       {d.is_verified && (
-                        <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-500/90 px-2 py-1 rounded-lg text-white text-[10px] font-bold">
+                        <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-white text-[10px] font-bold">
                           <CheckCircle2 className="w-3 h-3" />Hitelesített
                         </div>
                       )}
                     </div>
-                    <div className="p-4 space-y-2">
+                    <div className="p-4 space-y-2.5">
                       <p className="font-semibold text-zinc-100 line-clamp-1 group-hover:text-rose-300 transition-colors text-sm">{d.title}</p>
-                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full" style={{ width: `${pct}%` }} />
+                      <div className="w-full h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-rose-400 font-bold text-sm">{d.current_amount.toLocaleString('hu-HU')} Ft</span>
@@ -692,55 +779,70 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── HELYI VÁLLALKOZÁSOK CTA ─────────────────────────────────────── */}
-      <section className="glass rounded-3xl p-6 relative overflow-hidden border border-emerald-500/10">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+      {/* ── HELYI VÁLLALKOZÁSOK CTA ──────────────────────────────────────── */}
+      <section className="rounded-3xl p-7 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(145deg, rgba(52,211,153,0.06) 0%, rgba(255,255,255,0.03) 60%, rgba(20,184,166,0.04) 100%)',
+          border: '1px solid rgba(52,211,153,0.12)',
+          boxShadow: 'inset 0 1px 0 rgba(52,211,153,0.08)',
+        }}>
+        <div className="absolute -top-8 -right-8 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)' }}>
             <MapPin className="w-6 h-6 text-emerald-400" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-zinc-100 text-lg">Helyi vállalkozások</h2>
-            <p className="text-zinc-500 text-sm mt-0.5">Kistermelők, kézművesek, kisboltok és szakemberek a közösségből</p>
+            <p className="text-zinc-500 text-sm mt-1">Kistermelők, kézművesek, kisboltok és szakemberek a közösségből</p>
           </div>
           <button onClick={() => navigate('/helyi-vallalkozasok')}
-            className="glass-pill-active text-emerald-300 px-4 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all flex items-center gap-2 flex-shrink-0">
+            className="glass-pill-active text-emerald-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all flex items-center gap-2 flex-shrink-0">
             Felfedezés <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </section>
 
       {/* ── FÓRUM CTA ───────────────────────────────────────────────────── */}
-      <section className="glass rounded-3xl p-6 relative overflow-hidden border border-sky-500/10">
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 via-transparent to-teal-500/5 pointer-events-none" />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-12 h-12 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+      <section className="rounded-3xl p-7 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(145deg, rgba(14,165,233,0.06) 0%, rgba(255,255,255,0.03) 60%, rgba(20,184,166,0.04) 100%)',
+          border: '1px solid rgba(14,165,233,0.12)',
+          boxShadow: 'inset 0 1px 0 rgba(14,165,233,0.07)',
+        }}>
+        <div className="absolute -top-8 -right-8 w-32 h-32 bg-sky-500/10 rounded-full blur-[40px] pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.2)' }}>
             <MessageCircle className="w-6 h-6 text-sky-400" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-zinc-100 text-lg">Közösségi Fórum</h2>
-            <p className="text-zinc-500 text-sm mt-0.5">Kérdezz, segíts másoknak, oszd meg tapasztalataidat</p>
+            <p className="text-zinc-500 text-sm mt-1">Kérdezz, segíts másoknak, oszd meg tapasztalataidat</p>
           </div>
           <button onClick={() => navigate('/forum')}
-            className="text-sky-300 border border-sky-500/25 bg-sky-500/10 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-sky-500/15 hover:scale-[1.02] transition-all flex items-center gap-2 flex-shrink-0">
+            className="text-sky-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all flex items-center gap-2 flex-shrink-0"
+            style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}>
             Csatlakozás <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </section>
 
-      {/* ── CTA ─────────────────────────────────────────────────────────── */}
+      {/* ── REGISZTRÁCIÓ CTA ─────────────────────────────────────────────── */}
       {!user && (
-        <section className="rounded-3xl glass-strong p-10 md:p-14 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-emerald-500/6 rounded-full blur-[80px]" />
+        <section className="rounded-3xl glass-strong p-10 md:p-16 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] bg-emerald-500/[0.07] rounded-full blur-[90px] pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-[200px] h-[200px] bg-teal-500/[0.04] rounded-full blur-[60px] pointer-events-none" />
           <div className="relative">
-            <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6"
+              style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.22)' }}>
               <Zap className="w-7 h-7 text-emerald-400" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold">Csatlakozz ingyen!</h2>
-            <p className="text-zinc-400 mt-3 text-lg leading-relaxed max-w-lg mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Csatlakozz ingyen!</h2>
+            <p className="text-zinc-400 mt-4 text-lg leading-relaxed max-w-lg mx-auto">
               Regisztrálj és hirdesd termékeid, indíts liciteket, keress munkát — percek alatt.
             </p>
-            <div className="flex flex-wrap gap-3 justify-center mt-7">
+            <div className="flex flex-wrap gap-3 justify-center mt-8">
               <button onClick={() => navigate('/register')}
                 className="px-8 py-3.5 glass-pill-active text-emerald-300 font-semibold rounded-2xl hover:scale-[1.03] transition-all text-sm">
                 Regisztráció — ingyenes

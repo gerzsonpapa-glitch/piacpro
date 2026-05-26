@@ -12,6 +12,7 @@ import {
   ShoppingBag, Tag, Star, ThumbsUp, X, CheckCircle2, Package,
   BadgeCheck, Award, ShoppingCart, Minus, Plus, Leaf,
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 // ── Parsed order item ─────────────────────────────────────────────────────────
 interface OrderItem {
@@ -376,6 +377,7 @@ function CloseSaleModal({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function MessagesPage() {
+  useSEO(SEO_PAGES.messages);
   const { user, refreshUnread } = useAuth();
   const { showToast } = useNotification();
   const { params, search, navigate } = useRouter();

@@ -12,6 +12,7 @@ import {
   CheckCircle, XCircle, Zap, Flag, RefreshCw, Undo2, ShieldCheck
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import { useSEO } from '../lib/seo';
 
 
 function Countdown({ endsAt, timerStarted, extensionCount }: { endsAt: string; timerStarted: boolean; extensionCount: number }) {
@@ -104,6 +105,16 @@ export default function AuctionDetailPage() {
   const { showToast } = useNotification();
   const { params, navigate } = useRouter();
   const [listing, setListing] = useState<Listing | null>(null);
+
+  useSEO({
+    title: listing ? `Licit: ${listing.title}` : 'Licit',
+    description: listing
+      ? `Licitálj most! ${listing.title} – jelenlegi ár: ${listing.auction?.current_price ? new Intl.NumberFormat('hu-HU').format(listing.auction.current_price) + ' Ft' : 'még nincs ajánlat'} | PiacPro Licitek`
+      : undefined,
+    image: listing?.images?.[0] ?? undefined,
+    path: `/auction/${params.id}`,
+    type: 'product',
+  });
   const [bids, setBids] = useState<AuctionBid[]>([]);
   const [bidAmount, setBidAmount] = useState('');
   const [bidError, setBidError] = useState('');

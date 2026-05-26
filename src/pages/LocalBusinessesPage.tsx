@@ -10,6 +10,7 @@ import {
   Store, Briefcase, Home, UserCheck, PlusCircle, ArrowRight,
   SlidersHorizontal, X, Heart, Filter
 } from 'lucide-react';
+import { useSEO, SEO_PAGES } from '../lib/seo';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -148,6 +149,7 @@ function BusinessCard({ business, onClick }: { business: LocalBusiness; onClick:
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function LocalBusinessesPage() {
+  useSEO(SEO_PAGES.localBusinesses);
   const { user } = useAuth();
   const { navigate } = useRouter();
 

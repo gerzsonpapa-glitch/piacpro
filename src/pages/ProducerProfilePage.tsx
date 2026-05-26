@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import type { Producer, ProducerProduct } from '../lib/types';
 import { MapPin, Star, CheckCircle2, Leaf, MessageCircle, Phone, Mail, Award, Clock, Package, Plus, Trash2, X, Save, ToggleLeft, ToggleRight, ChevronLeft, Sprout, Sun, Apple, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, Tag, User, Camera, ImagePlus, CreditCard as Edit2, ChevronRight, ChevronLeft as ChevLeft, ShoppingCart, Minus, Send, Search, Loader2, Lock } from 'lucide-react';
+import { useSEO } from '../lib/seo';
 
 // ── Hungarian counties ─────────────────────────────────────────────────────────
 const HU_COUNTIES = [
@@ -893,8 +894,16 @@ export default function ProducerProfilePage() {
   const { user } = useAuth();
   const { showToast } = useNotification();
   const producerId = params?.id as string;
-
   const [producer, setProducer] = useState<Producer | null>(null);
+
+  useSEO({
+    title: producer ? producer.name : 'Termelő profil',
+    description: producer
+      ? `${producer.name} – helyi termelő${producer.location ? ', ' + producer.location : ''}${producer.bio ? ' | ' + producer.bio.slice(0, 100) : ''} | PiacPro Termelők`
+      : undefined,
+    image: producer?.avatar_url ?? undefined,
+    path: `/producers/${producerId}`,
+  });
   const [products, setProducts] = useState<ProducerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);

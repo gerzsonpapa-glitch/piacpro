@@ -12,6 +12,7 @@ import {
   Handshake, RefreshCw, Facebook, Copy, Check
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import { useSEO } from '../lib/seo';
 
 const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
 const MAX_RECENTLY_VIEWED = 10;
@@ -137,6 +138,16 @@ export default function ListingDetailPage() {
   const { params, navigate } = useRouter();
   const { showToast } = useNotification();
   const [listing, setListing] = useState<Listing | null>(null);
+
+  useSEO({
+    title: listing ? listing.title : 'Hirdetés',
+    description: listing
+      ? `${listing.title} – ${listing.price ? new Intl.NumberFormat('hu-HU').format(listing.price) + ' Ft' : 'Ár egyeztetés'} | ${listing.location ?? ''} | PiacPro`
+      : undefined,
+    image: listing?.images?.[0] ?? undefined,
+    path: `/listing/${params.id}`,
+    type: 'product',
+  });
   const [sellerBadge, setSellerBadge] = useState<SellerBadge | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
