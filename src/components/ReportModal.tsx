@@ -11,7 +11,7 @@ interface ReportModalProps {
 }
 
 const REASONS = [
-  { value: 'spam', label: 'Spam / Felesleges taralom' },
+  { value: 'spam', label: 'Kéretlen tartalom / spam' },
   { value: 'scam', label: 'Átverés / Csalás' },
   { value: 'inappropriate', label: 'Nem megfelelő tartalom' },
   { value: 'duplicate', label: 'Duplikált hirdetés' },

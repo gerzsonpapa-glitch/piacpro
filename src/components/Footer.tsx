@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from '../lib/router';
+import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import {
   ShoppingBag, ScrollText, Shield, Mail, Heart, Phone, Users,
   ChevronDown, ChevronUp, Gavel, Briefcase, Store, Leaf,
@@ -219,6 +220,7 @@ function GuideAccordion({ title, content }: { title: string; content: string }) 
 
 export default function Footer() {
   const { navigate: routerNavigate } = useRouter();
+  const { config } = useSiteCustomization();
   const [showGuide, setShowGuide] = useState(false);
 
   function navigate(path: string) {
@@ -349,7 +351,7 @@ export default function Footer() {
               </span>
             </button>
             <p className="text-zinc-500 text-sm leading-relaxed">
-              Magyarország modern közösségi piactere. Add el, vedd meg — egyszerűen, biztonságosan, gyorsan.
+              {config.footer.tagline}
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {[

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { CheckCircle, AlertCircle, Info, X, Crown, MessageCircle, Gavel, Leaf, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { translateMessage } from '../lib/hu';
 import { formatPrice } from '../lib/utils';
 
 export type ToastType = 'success' | 'error' | 'info' | 'outbid' | 'winner' | 'message' | 'auction_end' | 'producer_app';
@@ -91,7 +92,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((type: ToastType, title: string, message?: string, duration?: number, href?: string) => {
     const id = `toast-${++counterRef.current}`;
-    setToasts((prev) => [...prev.slice(-4), { id, type, title, message, duration, href }]);
+    const huMessage = message ? translateMessage(message) : undefined;
+    setToasts((prev) => [...prev.slice(-4), { id, type, title, message: huMessage, duration, href }]);
   }, []);
 
   const removeToast = useCallback((id: string) => {

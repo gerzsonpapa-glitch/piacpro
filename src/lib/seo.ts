@@ -83,7 +83,7 @@ export const SEO_PAGES = {
   },
   jobs: {
     title: 'Álláskeresés és álláshirdetések',
-    description: 'Keress munkát vagy hirdess meg állásokat Magyarországon. Teljes és részmunka, remote lehetőségek, fizikai és szellemi munkák – PiacPro Állások.',
+    description: 'Keress munkát vagy hirdess meg állásokat Magyarországon. Teljes és részmunka, távmunka lehetőségek, fizikai és szellemi munkák – PiacPro Állások.',
   },
   shops: {
     title: 'Online boltok',

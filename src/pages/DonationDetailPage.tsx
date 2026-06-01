@@ -103,7 +103,7 @@ function OfferCard({ offer, onClaim, onContact, onRepost, currentUserId, navigat
             {isItem ? 'Tárgy' : 'Szolgáltatás'}
           </span>
           <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg border ${statusColors[offer.status] ?? statusColors.active}`}>
-            {statusLabels[offer.status] ?? offer.status}
+            {statusLabels[offer.status] ?? (offer.status === 'pending' ? 'Jóváhagyás alatt' : offer.status.replace(/_/g, ' '))}
           </span>
           <span className="inline-flex items-center gap-1 text-[10px] text-zinc-600 px-1.5 py-0.5 rounded-lg glass-bubble">
             <CatIcon className="w-2.5 h-2.5" />{catInfo.label}
@@ -470,7 +470,7 @@ export default function DonationDetailPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-zinc-200 truncate">{o.title}</p>
-                        <p className="text-xs text-zinc-500">{offererName} · {o.status === 'active' ? 'Elérhető' : o.status === 'claimed' ? 'Lefoglalt' : o.status === 'fulfilled' ? 'Teljesített' : o.status}</p>
+                        <p className="text-xs text-zinc-500">{offererName} · {o.status === 'active' ? 'Elérhető' : o.status === 'claimed' ? 'Lefoglalt' : o.status === 'fulfilled' ? 'Teljesített' : o.status === 'pending' ? 'Jóváhagyás alatt' : o.status}</p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         {o.user_id !== user?.id && (

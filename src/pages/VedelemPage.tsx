@@ -185,7 +185,7 @@ function ContactForm() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>Email cím</label>
+            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#64748b' }}>E-mail cím</label>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="email@pelda.hu"

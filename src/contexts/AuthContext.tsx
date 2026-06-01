@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { translateMessage } from '../lib/hu';
 import type { Profile } from '../lib/types';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -136,12 +137,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     const needsConfirmation = !error && !data.session;
-    return { error: error?.message ?? null, needsConfirmation };
+    return { error: error?.message ? translateMessage(error.message) : null, needsConfirmation };
   }
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    return { error: error?.message ? translateMessage(error.message) : null };
   }
 
   async function signOut() {

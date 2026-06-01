@@ -25,11 +25,7 @@ export default function RegisterPage() {
     setLoading(true);
     const { error, needsConfirmation } = await signUp(email, password, username, fullName);
     if (error) {
-      setError(
-        error === 'User already registered'
-          ? 'Ez az email cím már regisztrálva van'
-          : error
-      );
+      setError(error);
       setLoading(false);
     } else if (needsConfirmation) {
       setConfirming(true);
@@ -114,7 +110,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">E-mail</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input

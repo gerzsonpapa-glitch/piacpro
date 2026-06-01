@@ -435,7 +435,7 @@ export default function EditListingPage() {
             </div>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Email cím"
+              <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="E-mail cím"
                 className="w-full pl-9 pr-3 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm transition-all" />
             </div>
           </div>

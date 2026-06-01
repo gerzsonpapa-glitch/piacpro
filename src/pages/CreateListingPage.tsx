@@ -542,7 +542,7 @@ export default function CreateListingPage() {
                 type="email"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="Email cím"
+                placeholder="E-mail cím"
                 className="w-full pl-9 pr-3 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm transition-all"
               />
             </div>

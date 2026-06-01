@@ -1,5 +1,6 @@
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { SiteCustomizationProvider } from './contexts/SiteCustomizationContext';
 import { RouterContext, useRouterProvider } from './lib/router';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
@@ -96,9 +97,11 @@ function App() {
   return (
     <RouterContext.Provider value={router}>
       <AuthProvider>
-        <NotificationProvider>
-          <Layout>{renderPage()}</Layout>
-        </NotificationProvider>
+        <SiteCustomizationProvider>
+          <NotificationProvider>
+            <Layout>{renderPage()}</Layout>
+          </NotificationProvider>
+        </SiteCustomizationProvider>
       </AuthProvider>
     </RouterContext.Provider>
   );

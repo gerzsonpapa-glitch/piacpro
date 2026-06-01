@@ -11,11 +11,13 @@ import {
   RefreshCw, BarChart3, ChevronDown, Save, X,
   AlertTriangle, ShieldAlert, Plus, ShieldCheck, ShieldOff, Store,
   Gavel, Briefcase, UserSearch, MapPin, Wifi, Building2, Leaf,
-  MessageCircle, Pin, Lock, Bug, Lightbulb, Zap, HelpCircle, ChevronUp
+  MessageCircle, Pin, Lock, Bug, Lightbulb, Zap, HelpCircle, ChevronUp, Code2
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import { isSiteDeveloper } from '../lib/developer';
+import DeveloperStudioTab from './DeveloperStudioTab';
 
-type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops' | 'moderation' | 'forum' | 'bugreports';
+type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops' | 'moderation' | 'forum' | 'bugreports' | 'developer';
 
 const DEFAULT_SCAM_KEYWORDS = [
   'előre utalás', 'előre fizet', 'előre pénz', 'crypto only', 'bitcoin only',
@@ -158,7 +160,7 @@ function ScamTab() {
           <ShieldAlert className="w-5 h-5 text-red-400" />
         </div>
         <div>
-          <h3 className="font-semibold text-zinc-100 text-sm mb-1">Scam figyelő rendszer</h3>
+          <h3 className="font-semibold text-zinc-100 text-sm mb-1">Csalásfigyelő rendszer</h3>
           <p className="text-zinc-500 text-xs leading-relaxed">Az alábbi kulcsszavak automatikusan szűrik a gyanús hirdetéseket.</p>
         </div>
       </div>
@@ -244,10 +246,13 @@ export default function AdminPage() {
   const { navigate, search: routerSearch } = useRouter();
   const { showToast } = useNotification();
 
+  const isDeveloper = isSiteDeveloper(user);
+
   const initialTab = (() => {
     const params = new URLSearchParams(routerSearch);
     const t = params.get('tab') as Tab | null;
-    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops', 'forum', 'bugreports'];
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops', 'moderation', 'forum', 'bugreports', 'developer'];
+    if (t === 'developer' && !isDeveloper) return 'stats';
     return t && valid.includes(t) ? t : 'stats';
   })();
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -255,9 +260,10 @@ export default function AdminPage() {
   useEffect(() => {
     const params = new URLSearchParams(routerSearch);
     const t = params.get('tab') as Tab | null;
-    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops', 'forum', 'bugreports'];
+    const valid: Tab[] = ['stats', 'users', 'listings', 'auctions', 'jobs', 'seekers', 'reports', 'scam', 'producers', 'shops', 'moderation', 'forum', 'bugreports', 'developer'];
+    if (t === 'developer' && !isDeveloper) return;
     if (t && valid.includes(t)) setTab(t);
-  }, [routerSearch]);
+  }, [routerSearch, isDeveloper]);
 
   const [stats, setStats] = useState({ users: 0, listings: 0, auctions: 0, jobs: 0, seekers: 0, reports: 0, shops: 0 });
   const [users, setUsers] = useState<Profile[]>([]);
@@ -635,12 +641,13 @@ export default function AdminPage() {
     { id: 'jobs', label: 'Állások', icon: Briefcase },
     { id: 'seekers', label: 'Munkakeresők', icon: UserSearch },
     { id: 'reports', label: 'Bejelentések', icon: Flag, badge: pendingReports.length || undefined },
-    { id: 'scam', label: 'Scam figyelő', icon: ShieldAlert },
+    { id: 'scam', label: 'Csalásfigyelő', icon: ShieldAlert },
     { id: 'producers', label: 'Termelők', icon: Leaf, badge: pendingProducerApps.length || undefined },
     { id: 'shops', label: 'Boltok', icon: Store },
     { id: 'moderation', label: 'Moderáció', icon: ShieldCheck, badge: (pendingDonations.length + pendingJobs.length) || undefined },
     { id: 'forum', label: 'Fórum', icon: MessageCircle },
     { id: 'bugreports', label: 'Hibajelentések', icon: Bug, badge: bugReports.filter((r) => r.status === 'open').length || undefined },
+    ...(isDeveloper ? [{ id: 'developer' as const, label: 'Weboldal szerkesztő', icon: Code2 }] : []),
   ];
 
   const activeTab = tabs.find((t) => t.id === tab);
@@ -659,9 +666,9 @@ export default function AdminPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold tracking-tight text-zinc-100">Admin Panel</h1>
+              <h1 className="text-base font-bold tracking-tight text-zinc-100">Adminisztráció</h1>
               {isSuperAdmin && (
-                <span className="text-[9px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-1.5 py-0.5 rounded-md tracking-wider">SUPER</span>
+                <span className="text-[9px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-1.5 py-0.5 rounded-md tracking-wider">SZUPER</span>
               )}
             </div>
             <p className="text-zinc-500 text-[11px]">Moderáció és platformkezelés</p>
@@ -1122,7 +1129,7 @@ export default function AdminPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1 text-zinc-500 text-xs">
                               {j.remote ? <Wifi className="w-3 h-3 text-sky-400" /> : <MapPin className="w-3 h-3" />}
-                              <span className="truncate max-w-[100px]">{j.remote ? 'Remote' : (j.location || '—')}</span>
+                              <span className="truncate max-w-[100px]">{j.remote ? 'Távmunka' : (j.location || '—')}</span>
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -1186,7 +1193,7 @@ export default function AdminPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1 text-zinc-500 text-xs">
                               {s.remote ? <Wifi className="w-3 h-3 text-sky-400" /> : <MapPin className="w-3 h-3" />}
-                              <span className="truncate max-w-[100px]">{s.remote ? 'Remote' : (s.location || '—')}</span>
+                              <span className="truncate max-w-[100px]">{s.remote ? 'Távmunka' : (s.location || '—')}</span>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-zinc-500 text-xs">{s.experience || '—'}</td>
@@ -1590,6 +1597,8 @@ export default function AdminPage() {
             </div>
           )}
 
+          {tab === 'developer' && isDeveloper && <DeveloperStudioTab />}
+
           {/* ── SHOPS TAB ─────────────────────────────────────────────────── */}
           {tab === 'shops' && (
             <div className="space-y-4">
@@ -1695,7 +1704,7 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
           >
             {u.full_name || u.username || 'Névtelen'}
           </button>
-          {u.is_super_admin && <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md">SUPER</span>}
+          {u.is_super_admin && <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md">SZUPER</span>}
           {u.is_admin && !u.is_super_admin && <span className="text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded-md">ADMIN</span>}
           {u.is_shop_owner && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><Store className="w-2.5 h-2.5" />BOLT</span>}
           {u.ai_access && <span className="text-[9px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5" />AI</span>}

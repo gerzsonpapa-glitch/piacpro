@@ -9,7 +9,10 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import ChatWidget from './ChatWidget';
 import Footer from './Footer';
+import DeveloperModeBar from './DeveloperModeBar';
 import { DEFENSE_LINKS } from '../pages/VedelemPage';
+import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
+import { isSiteDeveloper } from '../lib/developer';
 
 const DEFENSE_ITEMS = [
   { key: 'nyugdij' as const,                icon: TrendingUp, label: 'Nyugdíj-előtakarékosság',           desc: 'Hosszú távú megtakarítás, adókedvezmény' },
@@ -102,6 +105,8 @@ function MobileDefenseAccordion({ onNavigate, isActive }: { onNavigate: (p: stri
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut, unreadCount } = useAuth();
   const { navigate, path } = useRouter();
+  const { config, canEdit } = useSiteCustomization();
+  const showDevStudio = canEdit && isSiteDeveloper(user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingApps, setPendingApps] = useState(0);
   const [defenseOpen, setDefenseOpen] = useState(false);
@@ -243,6 +248,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {defenseOpen && <DefenseDropdown onClose={() => setDefenseOpen(false)} />}
             </div>
 
+            {showDevStudio && (
+              <button
+                onClick={() => navigate('/admin?tab=developer')}
+                className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
+                  isActive('/admin') ? 'glass-pill-active text-violet-300' : 'text-violet-400/80 hover:text-violet-300 hover:bg-violet-500/10'
+                }`}
+                title="Weboldal szerkesztő"
+              >
+                Szerkesztő
+              </button>
+            )}
             {profile?.is_admin && (
               <button onClick={() => navigate('/admin')}
                 className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
@@ -252,7 +268,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Shield className="w-3.5 h-3.5" />
                   {pendingApps > 0 && <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-amber-500 text-zinc-900 text-[9px] font-black rounded-full flex items-center justify-center">{pendingApps > 9 ? '9+' : pendingApps}</span>}
                 </span>
-                Admin
+                Adminisztráció
               </button>
             )}
           </nav>
@@ -354,8 +370,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
+      {config.announcement.enabled && config.announcement.text && (
+        <div
+          className="relative z-40 text-center text-sm font-medium px-4 py-2.5"
+          style={{
+            background: config.announcement.background,
+            color: config.announcement.textColor,
+            borderBottom: '1px solid rgba(0,208,132,0.15)',
+          }}
+        >
+          {config.announcement.link ? (
+            <a href={config.announcement.link} className="hover:underline">
+              {config.announcement.text}
+            </a>
+          ) : (
+            config.announcement.text
+          )}
+        </div>
+      )}
+
+      {config.maintenance.enabled && config.maintenance.message && (
+        <div className="relative z-40 bg-amber-500/10 border-b border-amber-500/25 px-4 py-2 text-center text-xs text-amber-200">
+          {config.maintenance.message}
+        </div>
+      )}
+
       {/* Main */}
-      <main className="relative z-10 py-0 pb-24 md:pb-10">{children}</main>
+      <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''}`}>{children}</main>
 
       <Footer />
 
@@ -392,6 +433,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <ChatWidget />
+      <DeveloperModeBar />
     </div>
   );
 }

@@ -107,7 +107,7 @@ export const JOB_CATEGORIES = [
   // Média / kreatív
   'Grafikus / Designer', 'Fotós / Videós', 'Marketing / Social media', 'Copywriter / Tartalom-előállító',
   // Diák / alkalmi
-  'Diákmunka / Nyári munka', 'Alkalmi munka / Részmunka', 'Otthoni / Home office', 'Azonnali kezdés',
+  'Diákmunka / Nyári munka', 'Alkalmi munka / Részmunka', 'Otthoni / távmunka', 'Azonnali kezdés',
   // Külföldi
   'Külföldi munka – EU', 'Külföldi munka – Egyéb',
   // Egyéb

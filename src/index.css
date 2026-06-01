@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --piac-accent: #00d084;
+  --piac-bg: #07111f;
+}
+
 @layer base {
   * {
     scrollbar-width: thin;
@@ -15,7 +20,7 @@
   }
 
   body {
-    background-color: #07111f;
+    background-color: var(--piac-bg, #07111f);
     color: #f4f4f5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

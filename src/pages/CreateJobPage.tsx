@@ -157,7 +157,7 @@ export default function CreateJobPage() {
             </div>
             <div>
               <p className="text-sm text-zinc-200 flex items-center gap-1.5">
-                <Wifi className="w-3.5 h-3.5 text-sky-400" />Remote / otthoni munkavégzés lehetséges
+                <Wifi className="w-3.5 h-3.5 text-sky-400" />Távmunka / otthoni munkavégzés lehetséges
               </p>
             </div>
           </label>

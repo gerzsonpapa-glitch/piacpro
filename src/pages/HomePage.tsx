@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,9 @@ import {
   PlusCircle, Activity, Search, Star, Sparkles,
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
+import { applyQuarterOverrides } from '../lib/siteCustomization';
+import type { QuarterId } from '../lib/siteCustomization';
 import ListingCard from '../components/ListingCard';
 
 /* ── Countdown ─────────────────────────────────────────────────── */
@@ -89,7 +92,7 @@ function JobCard({ job }: { job: Job }) {
         <p className="text-zinc-500 text-xs truncate mt-0.5">{job.company}</p>
         <div className="flex items-center gap-2 mt-1.5">
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-semibold ${JOB_COLORS[job.type] ?? JOB_COLORS.teljes}`}>{JOB_LABELS[job.type] ?? 'Teljes'}</span>
-          {job.remote && <span className="text-[10px] text-sky-400 flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5" />Remote</span>}
+          {job.remote && <span className="text-[10px] text-sky-400 flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5" />Távmunka</span>}
           {job.location && <span className="text-[10px] text-zinc-600 flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{job.location}</span>}
         </div>
       </div>
@@ -140,6 +143,7 @@ function SkeletonCard() {
 /* ── District data — each with its own Pexels image ─────────────── */
 const QUARTERS = [
   {
+    id: 'piac-ter' as QuarterId,
     label: 'PIAC TÉR',
     sublabel: 'Adok-veszek hirdetések',
     icon: ShoppingBag,
@@ -154,6 +158,7 @@ const QUARTERS = [
     pos: { top: '33%', left: '19%' },
   },
   {
+    id: 'munka-negyed' as QuarterId,
     label: 'MUNKA NEGYED',
     sublabel: 'Állások, munkalehetőségek',
     icon: Briefcase,
@@ -168,6 +173,7 @@ const QUARTERS = [
     pos: { top: '21%', left: '42%' },
   },
   {
+    id: 'boltok-utcaja' as QuarterId,
     label: 'BOLTOK UTCÁJA',
     sublabel: 'Üzletek, szolgáltatók',
     icon: Building2,
@@ -182,6 +188,7 @@ const QUARTERS = [
     pos: { top: '29%', left: '62%' },
   },
   {
+    id: 'licit-csarnok' as QuarterId,
     label: 'LICIT CSARNOK',
     sublabel: 'Licitálj és nyerj',
     icon: Gavel,
@@ -196,6 +203,7 @@ const QUARTERS = [
     pos: { top: '51%', left: '15%' },
   },
   {
+    id: 'kozossegi-ter' as QuarterId,
     label: 'KÖZÖSSÉGI TÉR',
     sublabel: 'Fórum, hírek, események',
     icon: Users,
@@ -210,6 +218,7 @@ const QUARTERS = [
     pos: { top: '49%', left: '62%' },
   },
   {
+    id: 'adomany-kozpont' as QuarterId,
     label: 'ADOMÁNY KÖZPONT',
     sublabel: 'Segíts és segítséget kapj',
     icon: Heart,
@@ -224,6 +233,7 @@ const QUARTERS = [
     pos: { top: '68%', left: '30%' },
   },
   {
+    id: 'termelok-piaca' as QuarterId,
     label: 'TERMELŐK PIACA',
     sublabel: 'Helyi termelők, friss termékek',
     icon: Leaf,
@@ -252,11 +262,19 @@ const POPULAR = ['iPhone', 'bicikli', 'kanapé', 'munkalehetőség', 'laptop', '
 const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
 
 /* ── District cards shown below hero in a grid ───────────────────── */
-function DistrictGrid({ onNav, counts }: { onNav: (p: string) => void; counts: { listing: number; auction: number; job: number } }) {
+function DistrictGrid({
+  quarters,
+  onNav,
+  counts,
+}: {
+  quarters: typeof QUARTERS;
+  onNav: (p: string) => void;
+  counts: { listing: number; auction: number; job: number };
+}) {
   const [hov, setHov] = useState<number | null>(null);
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-      {QUARTERS.map((q, i) => {
+      {quarters.map((q, i) => {
         const Icon = q.icon;
         const cnt = q.countKey === 'listing' ? counts.listing : q.countKey === 'auction' ? counts.auction : q.countKey === 'job' ? counts.job : 0;
         const isHov = hov === i;
@@ -319,6 +337,11 @@ export default function HomePage() {
   useSEO(SEO_PAGES.home);
   const { navigate } = useRouter();
   const { user } = useAuth();
+  const { config, devModeActive } = useSiteCustomization();
+  const quarters = useMemo(
+    () => applyQuarterOverrides(QUARTERS, config.quarters),
+    [config.quarters],
+  );
 
   const [latestListings, setLatestListings] = useState<Listing[]>([]);
   const [popularListings, setPopularListings] = useState<Listing[]>([]);
@@ -384,12 +407,15 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════
           HERO — városkép
       ═══════════════════════════════════════════════════════════ */}
-      <section className="relative w-full overflow-hidden" style={{ height: 'clamp(520px, 80vh, 820px)' }}>
+      <section
+        className={`relative w-full overflow-hidden ${devModeActive ? 'ring-2 ring-[#00d084]/50 ring-inset' : ''}`}
+        style={{ height: 'clamp(520px, 80vh, 820px)' }}
+      >
 
         {/* City background */}
-        <img src="/4958ed4e-94b0-44bb-9a73-d253229f7c40.jpg" alt="PiacPro városképe"
+        <img src={config.hero.imageUrl} alt="PiacPro városképe"
           className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{ filter: 'brightness(0.68) saturate(1.25)' }} fetchPriority="high" />
+          style={{ filter: `brightness(${config.hero.brightness}) saturate(1.25)` }} fetchPriority="high" />
 
         {/* Gradients */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.55) 0%, rgba(7,17,31,0.05) 22%, rgba(7,17,31,0.05) 52%, rgba(7,17,31,0.8) 82%, rgba(7,17,31,1) 100%)' }} />
@@ -404,10 +430,10 @@ export default function HomePage() {
         <div className={`absolute top-5 inset-x-0 flex flex-col items-center z-10 pointer-events-none transition-all duration-700 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
           <h1 className="text-xl sm:text-3xl md:text-4xl font-black tracking-[0.12em] uppercase text-center px-4"
             style={{ color: '#fff', textShadow: '0 2px 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,208,132,0.3)' }}>
-            ÜDV A PIACPRO VILÁGÁBAN!
+            {config.hero.title}
           </h1>
           <p className="mt-1.5 text-sm text-zinc-300 text-center px-4" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
-            Fedezd fel a lehetőségeket. Minden egy helyen.
+            {config.hero.subtitle}
           </p>
           {/* City center badge */}
           <div className="mt-4 w-14 h-14 rounded-full flex items-center justify-center float-anim pointer-events-auto cursor-pointer hover:scale-110 transition-transform"
@@ -422,7 +448,7 @@ export default function HomePage() {
 
         {/* ── 7 district pins over city image ── */}
         <div className="absolute inset-0 z-20">
-          {QUARTERS.map((q, i) => {
+          {quarters.map((q, i) => {
             const Icon = q.icon;
             const cnt = q.countKey === 'listing' ? listingCount : q.countKey === 'auction' ? auctionCount : q.countKey === 'job' ? jobCount : 0;
             const hov = hovQ === i;
@@ -570,6 +596,7 @@ export default function HomePage() {
         <section className="relative z-10 px-4 pt-8 pb-6 max-w-[1440px] mx-auto">
           <SectionHead icon={Building2} label="A PiacPro negyedei" iconColor="text-[#00d084]" />
           <DistrictGrid
+            quarters={quarters}
             onNav={navigate}
             counts={{ listing: listingCount, auction: auctionCount, job: jobCount }}
           />

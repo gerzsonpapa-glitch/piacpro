@@ -315,7 +315,7 @@ function JobOfferForm({ initial, onSave, onCancel }: {
             <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${d.remote ? 'left-5' : 'left-0.5'}`} />
           </div>
           <span className="text-sm text-zinc-300 flex items-center gap-1.5">
-            <Wifi className="w-3.5 h-3.5 text-sky-400" />Remote / otthoni munkavégzés
+            <Wifi className="w-3.5 h-3.5 text-sky-400" />Távmunka / otthoni munkavégzés
           </span>
         </label>
       </div>
@@ -454,7 +454,7 @@ function JobSeekerForm({ initial, onSave, onCancel }: {
             <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${d.remote ? 'left-5' : 'left-0.5'}`} />
           </div>
           <span className="text-sm text-zinc-300 flex items-center gap-1.5">
-            <Wifi className="w-3.5 h-3.5 text-sky-400" />Remote munkát is vállalok
+            <Wifi className="w-3.5 h-3.5 text-sky-400" />Távmunkát is vállalok
           </span>
         </label>
       </div>
@@ -1024,7 +1024,7 @@ export default function JobsPage() {
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium ${typeInfo.color}`}>{typeInfo.label}</span>
                 {selectedJob.remote && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium text-sky-400 bg-sky-500/10 border-sky-500/20">
-                    <Wifi className="w-3.5 h-3.5" />Remote
+                    <Wifi className="w-3.5 h-3.5" />Távmunka
                   </span>
                 )}
               </div>
@@ -1131,7 +1131,7 @@ export default function JobsPage() {
                         )}
                         {s.remote && (
                           <span className="flex items-center gap-1 text-sky-400">
-                            <Wifi className="w-3 h-3" />Remote
+                            <Wifi className="w-3 h-3" />Távmunka
                           </span>
                         )}
                         {expLabel && expLabel !== 'Nem megadott' && (
@@ -1216,7 +1216,7 @@ export default function JobsPage() {
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium ${typeInfo.color}`}>{typeInfo.label}</span>
                 {selectedSeekerAd.remote && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium text-sky-400 bg-sky-500/10 border-sky-500/20">
-                    <Wifi className="w-3.5 h-3.5" />Remote OK
+                    <Wifi className="w-3.5 h-3.5" />Távmunka OK
                   </span>
                 )}
               </div>
@@ -1329,7 +1329,7 @@ export default function JobsPage() {
                         )}
                         {j.remote && (
                           <span className="flex items-center gap-1 text-sky-400">
-                            <Wifi className="w-3 h-3" />Remote
+                            <Wifi className="w-3 h-3" />Távmunka
                           </span>
                         )}
                         {salary && (
@@ -1588,7 +1588,7 @@ export default function JobsPage() {
                   className={`w-10 h-5 rounded-full transition-all relative flex-shrink-0 ${remoteOnly ? 'bg-emerald-500' : 'bg-zinc-700'}`}>
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${remoteOnly ? 'left-5' : 'left-0.5'}`} />
                 </div>
-                <span className="text-sm text-zinc-300 flex items-center gap-1.5"><Wifi className="w-3.5 h-3.5 text-sky-400" />Csak remote állások</span>
+                <span className="text-sm text-zinc-300 flex items-center gap-1.5"><Wifi className="w-3.5 h-3.5 text-sky-400" />Csak távmunkás állások</span>
               </label>
             </div>
           )}
@@ -1682,7 +1682,7 @@ export default function JobsPage() {
                         <div className="flex flex-wrap items-center gap-2 mt-3">
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold ${typeInfo.color}`}>{typeInfo.label}</span>
                           {job.remote && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Remote</span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Távmunka</span>
                           )}
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium text-zinc-500 glass-pill">{job.category}</span>
                           {job.location && (
@@ -1771,7 +1771,7 @@ export default function JobsPage() {
                 className={`w-9 h-5 rounded-full transition-all relative flex-shrink-0 ${seekerRemoteOnly ? 'bg-sky-500' : 'bg-zinc-700'}`}>
                 <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${seekerRemoteOnly ? 'left-4' : 'left-0.5'}`} />
               </div>
-              <span className="text-xs text-zinc-400 whitespace-nowrap hidden sm:block">Remote</span>
+              <span className="text-xs text-zinc-400 whitespace-nowrap hidden sm:block">Távmunka</span>
             </label>
             {user && (
               <button onClick={() => setView('seeker-create')}
@@ -1864,7 +1864,7 @@ export default function JobsPage() {
                     <div className="flex flex-wrap gap-1.5">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold ${typeInfo.color}`}>{typeInfo.label}</span>
                       {ad.remote && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Remote OK</span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-sky-400 bg-sky-500/10 border-sky-500/20"><Wifi className="w-3 h-3" />Távmunka OK</span>
                       )}
                       {expLabel && expLabel !== 'Nem megadott' && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium text-zinc-500 glass-pill">{expLabel}</span>

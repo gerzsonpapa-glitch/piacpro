@@ -23,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     const { error } = await signIn(email, password);
     if (error) {
-      setError(error === 'Invalid login credentials' ? 'Hibás email vagy jelszó' : error);
+      setError(error);
       setLoading(false);
     } else {
       navigate('/');
@@ -53,7 +53,7 @@ export default function LoginPage() {
             <div className="w-14 h-14 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto">
               <CheckCircle className="w-7 h-7 text-emerald-400" />
             </div>
-            <h2 className="text-xl font-bold">Email elküldve!</h2>
+            <h2 className="text-xl font-bold">E-mail elküldve!</h2>
             <p className="text-zinc-400 text-sm leading-relaxed">
               Ha ez az email cím regisztrálva van, küldtünk egy jelszó-visszaállítási linket a következő címre:
             </p>
@@ -85,7 +85,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleForgotSubmit} className="space-y-4 glass rounded-3xl p-6">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email cím</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">E-mail cím</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
@@ -141,7 +141,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4 glass rounded-3xl p-6">
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">E-mail</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
