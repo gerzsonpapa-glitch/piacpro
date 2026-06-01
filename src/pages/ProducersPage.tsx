@@ -189,7 +189,36 @@ export default function ProducersPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Hero */}
+      {/* City Hero — Termelők Piaca */}
+      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
+        <img
+          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          alt="Termelők Piaca"
+          className="page-hero-bg"
+          style={{ objectPosition: 'left 55%', filter: 'brightness(0.28) saturate(1.6) hue-rotate(90deg)' }}
+        />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(74,222,128,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="absolute inset-0 grid-overlay opacity-40" />
+        <div className="scan-line" />
+        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#4ade80' }} />
+                <span className="text-xs font-black tracking-widest uppercase" style={{ color: '#4ade80' }}>Termelők Piaca</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
+                Kistermelők
+              </h1>
+              <p className="text-zinc-300 text-sm mt-1" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+                Friss termékek közvetlenül a forrásból
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Info + actions */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-950 via-zinc-900 to-zinc-900 border border-emerald-900/30 p-8">
         <div className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #10b981 0%, transparent 60%)' }} />

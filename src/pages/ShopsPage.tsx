@@ -132,30 +132,52 @@ export default function ShopsPage() {
   return (
     <div className="space-y-6">
 
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Boltok</h1>
-          <p className="text-zinc-500 text-sm mt-0.5">{shops.length} bolt a piactéren</p>
+      {/* City Hero — Boltok Utcája */}
+      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
+        <img
+          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          alt="Boltok Utcája"
+          className="page-hero-bg"
+          style={{ objectPosition: 'right 45%', filter: 'brightness(0.28) saturate(1.5) sepia(0.25)' }}
+        />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(245,158,11,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="absolute inset-0 grid-overlay opacity-40" />
+        <div className="scan-line" />
+        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#f59e0b' }} />
+                <span className="text-xs font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>Boltok Utcája</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
+                Boltok
+              </h1>
+              <p className="text-zinc-300 text-sm mt-1" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+                {shops.length} bolt a piactéren
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {canOpenShop && (
+                <button onClick={() => navigate('/my-shop')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03]"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#07111f' }}>
+                  <Store className="w-4 h-4" />Saját boltom
+                </button>
+              )}
+              {user && !canOpenShop && (
+                <button disabled
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm cursor-not-allowed opacity-50 text-zinc-400"
+                  style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Plus className="w-4 h-4" />Bolt nyitása
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        {canOpenShop && (
-          <button
-            onClick={() => navigate('/my-shop')}
-            className="flex items-center gap-2 glass-pill-active text-emerald-300 px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.03]"
-          >
-            <Store className="w-4 h-4" />Saját boltom
-          </button>
-        )}
-        {user && !canOpenShop && (
-          <button
-            onClick={() => navigate('/my-shop')}
-            disabled
-            className="flex items-center gap-2 glass-pill text-zinc-600 px-5 py-2.5 rounded-2xl font-semibold text-sm cursor-not-allowed opacity-50"
-          >
-            <Plus className="w-4 h-4" />Bolt nyitása
-          </button>
-        )}
-      </div>
+      </section>
+
+      {/* Old header replaced by hero above — spacing kept */}
 
       {/* Search */}
       <div className="relative">

@@ -186,50 +186,56 @@ export default function DonationsPage() {
   return (
     <div className="space-y-8">
 
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl glass p-8 md:p-12">
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-rose-500/[0.06] rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-pink-500/[0.04] rounded-full blur-[80px] pointer-events-none" />
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-rose-500/15 border border-rose-500/20 rounded-2xl flex items-center justify-center">
-                <Heart className="w-6 h-6 text-rose-400" />
+      {/* City Hero — Adomány Központ */}
+      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
+        <img
+          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          alt="Adomány Központ"
+          className="page-hero-bg"
+          style={{ objectPosition: 'right 60%', filter: 'brightness(0.28) saturate(1.5) sepia(0.4)' }}
+        />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(234,179,8,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="absolute inset-0 grid-overlay opacity-40" />
+        <div className="scan-line" />
+        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#eab308' }} />
+                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: '#eab308' }}>Adomány Központ</span>
               </div>
-              <div>
-                <p className="text-rose-400 text-xs font-semibold uppercase tracking-widest">Adományozás</p>
-                <h1 className="text-2xl md:text-3xl font-bold leading-tight">Segíts, ahol tudsz</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-white leading-tight" style={{ textShadow: '0 0 30px rgba(234,179,8,0.3)' }}>
+                Segíts, ahol tudsz
+              </h1>
+              <div className="flex items-center gap-3 mt-1.5">
+                {totalRaised > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#eab308' }} />
+                    <span>Összegyűlt: <strong style={{ color: '#fde047' }}>{totalRaised.toLocaleString('hu-HU')} Ft</strong></span>
+                  </div>
+                )}
               </div>
             </div>
-            <p className="text-zinc-400 text-sm md:text-base max-w-lg leading-relaxed">
-              Helyi adománygyűjtési kampányok — gyerekeknek, állatoknak, rászorulóknak és közösségi projekteknek.
-            </p>
-            {totalRaised > 0 && (
-              <div className="flex items-center gap-2 mt-4">
-                <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                <span className="text-zinc-400 text-sm">
-                  Összesen összegyűlt: <strong className="text-rose-300">{totalRaised.toLocaleString('hu-HU')} Ft</strong>
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2.5 self-start md:self-center">
-            <button
-              onClick={() => navigate('/offers/create')}
-              className="flex items-center gap-2.5 bg-teal-500/15 border border-teal-500/30 hover:bg-teal-500/25 text-teal-300 px-5 py-3 rounded-2xl font-semibold transition-all hover:scale-[1.02] whitespace-nowrap"
-            >
-              <HandHeart className="w-5 h-5" />
-              Felajánlok valamit
-            </button>
-            {user && (
+            <div className="flex gap-2">
               <button
-                onClick={() => navigate('/donations/create')}
-                className="flex items-center gap-2.5 bg-rose-500/15 border border-rose-500/30 hover:bg-rose-500/25 text-rose-300 px-5 py-3 rounded-2xl font-semibold transition-all hover:scale-[1.02] whitespace-nowrap"
+                onClick={() => navigate('/offers/create')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
+                style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.35)', color: '#5eead4' }}
               >
-                <Plus className="w-5 h-5" />
-                Kampány indítása
+                <HandHeart className="w-4 h-4" />
+                Felajánlok
               </button>
-            )}
+              {user && (
+                <button
+                  onClick={() => navigate('/donations/create')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
+                  style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.35)', color: '#fde047' }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Kampány
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>

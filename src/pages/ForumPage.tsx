@@ -172,28 +172,51 @@ function ForumHome({ categories, threads, onSelectCategory, onSelectThread, onNe
 
   return (
     <div className="space-y-6">
-      {/* Hero */}
-      <div className="glass rounded-3xl p-6 md:p-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
-        <div className="relative flex flex-col sm:flex-row items-start gap-4 justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-zinc-100 mb-2">Közösségi Fórum</h1>
-            <p className="text-zinc-400 text-sm md:text-base max-w-xl leading-relaxed">
-              Kérdezz, segíts másoknak, ossz meg tippeket és lépj kapcsolatba a közösséggel.
-            </p>
-            <div className="flex gap-3 mt-4 text-sm text-zinc-500">
-              <span className="flex items-center gap-1.5"><MessageCircle className="w-4 h-4 text-emerald-400" />{threads.length} téma</span>
-              <span className="flex items-center gap-1.5"><Eye className="w-4 h-4 text-sky-400" />{categories.length} kategória</span>
+      {/* City Hero — Közösségi Tér */}
+      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
+        <img
+          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          alt="Közösségi Tér"
+          className="page-hero-bg"
+          style={{ objectPosition: 'center 50%', filter: 'brightness(0.28) saturate(1.5) hue-rotate(175deg)' }}
+        />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(56,189,248,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="absolute inset-0 grid-overlay opacity-40" />
+        <div className="scan-line" />
+        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#38bdf8' }} />
+                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: '#38bdf8' }}>Közösségi Tér</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-white leading-tight" style={{ textShadow: '0 0 30px rgba(56,189,248,0.3)' }}>
+                Közösségi Fórum
+              </h1>
+              <div className="flex items-center gap-3 mt-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                  <MessageCircle className="w-3 h-3" style={{ color: '#38bdf8' }} />
+                  <span><strong className="text-zinc-200">{threads.length}</strong> téma</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                  <Eye className="w-3 h-3 text-zinc-500" />
+                  <span><strong className="text-zinc-200">{categories.length}</strong> kategória</span>
+                </div>
+              </div>
             </div>
+            {user && (
+              <button
+                onClick={onNewThread}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
+                style={{ background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.35)', color: '#7dd3fc' }}
+              >
+                <PlusCircle className="w-4 h-4" />
+                Új téma
+              </button>
+            )}
           </div>
-          {user && (
-            <button onClick={onNewThread}
-              className="glass-pill-active text-emerald-300 px-4 py-2.5 rounded-xl text-sm font-medium hover:scale-[1.02] transition-all flex items-center gap-2 flex-shrink-0">
-              <PlusCircle className="w-4 h-4" />Új téma
-            </button>
-          )}
         </div>
-      </div>
+      </section>
 
       {/* Search */}
       <div className="relative">

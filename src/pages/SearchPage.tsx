@@ -6,7 +6,7 @@ import { HUNGARIAN_COUNTIES, normalizeListingAuction } from '../lib/utils';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Search, SlidersHorizontal, X, MapPin, ChevronDown, ShoppingBag, Plus,
+  Search, SlidersHorizontal, X, MapPin, ChevronDown, Plus,
   Tag, Package, Navigation
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
@@ -260,40 +260,45 @@ export default function SearchPage() {
   return (
     <div className="space-y-5">
 
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl glass p-7 md:p-9">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/6 rounded-full blur-[90px] pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-teal-500/5 rounded-full blur-[70px] pointer-events-none" />
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-emerald-500/15 border border-emerald-500/20 rounded-2xl flex items-center justify-center">
-                <ShoppingBag className="w-6 h-6 text-emerald-400" />
+      {/* City Hero — Piac Tér */}
+      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
+        <img
+          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          alt="Piac Tér"
+          className="page-hero-bg"
+          style={{ objectPosition: 'center 55%', filter: 'brightness(0.32) saturate(1.5)' }}
+        />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(0,208,132,0.08) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="absolute inset-0 grid-overlay opacity-40" />
+        <div className="scan-line" />
+        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#00d084' }} />
+                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: '#00d084' }}>Piac Tér</span>
               </div>
-              <div>
-                <p className="text-emerald-400 text-xs font-semibold uppercase tracking-widest">Piactér</p>
-                <h1 className="text-2xl md:text-3xl font-bold leading-tight">Hirdetések</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-white leading-tight" style={{ textShadow: '0 0 30px rgba(0,208,132,0.3)' }}>
+                Hirdetések
+              </h1>
+              <div className="flex items-center gap-3 mt-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span><strong className="text-zinc-200">{listings.length}</strong> aktív hirdetés</span>
+                </div>
               </div>
             </div>
-            <p className="text-zinc-400 text-sm md:text-base max-w-lg">
-              Böngészd az eladó termékeket — keress kategória, helyszín és ár szerint.
-            </p>
-            <div className="flex items-center gap-4 mt-4">
-              <div className="flex items-center gap-2 text-sm text-zinc-400">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span><strong className="text-zinc-200">{listings.length}</strong> hirdetés</span>
-              </div>
-            </div>
+            {user && (
+              <button
+                onClick={() => navigate('/create')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
+                style={{ background: 'rgba(0,208,132,0.15)', border: '1px solid rgba(0,208,132,0.35)', color: '#00d084' }}
+              >
+                <Plus className="w-4 h-4" />
+                Hirdetés feladása
+              </button>
+            )}
           </div>
-          {user && (
-            <button
-              onClick={() => navigate('/create')}
-              className="flex items-center gap-2.5 glass-pill-active text-emerald-300 px-6 py-3 rounded-2xl font-semibold transition-all hover:scale-[1.03] whitespace-nowrap self-start md:self-center"
-            >
-              <Plus className="w-5 h-5" />
-              Hirdetés feladása
-            </button>
-          )}
         </div>
       </section>
 

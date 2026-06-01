@@ -1386,62 +1386,82 @@ export default function JobsPage() {
         <ContactSeekerModal seekerAd={contactSeekerAd} onClose={() => setContactSeekerAd(null)} />
       )}
 
-      {/* ── HERO ── */}
-      <section className="relative overflow-hidden rounded-3xl glass p-8 md:p-10">
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/[0.06] rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-sky-500/[0.05] rounded-full blur-[80px] pointer-events-none" />
-        <div className="relative">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight mb-2">
-            Állásbörzé<span className="text-emerald-400">nk</span>
-          </h1>
-          <p className="text-zinc-400 text-base mb-8 max-w-xl leading-relaxed">
-            Munkáltatók és álláskeresők egy helyen. Adj fel hirdetést, vagy találd meg álmaid állását percek alatt.
-          </p>
-
-          {/* Two big CTA cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Munkát hirdetek */}
-            <div
-              onClick={() => { setMainTab('offers'); user ? setView('create') : window.location.assign('/login'); }}
-              className="group cursor-pointer glass-bubble rounded-2xl p-5 border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all hover:scale-[1.02]"
-            >
-              <div className="w-12 h-12 bg-emerald-500/15 border border-emerald-500/25 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-500/25 transition-colors">
-                <Briefcase className="w-6 h-6 text-emerald-400" />
+      {/* ── CITY HERO — Munka Negyed ── */}
+      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
+        <img
+          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          alt="Munka Negyed"
+          className="page-hero-bg"
+          style={{ objectPosition: 'center 30%', filter: 'brightness(0.28) saturate(1.5) hue-rotate(200deg)' }}
+        />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(59,130,246,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="absolute inset-0 grid-overlay opacity-40" />
+        <div className="scan-line" />
+        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#3b82f6' }} />
+                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: '#3b82f6' }}>Munka Negyed</span>
               </div>
-              <h2 className="text-lg font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors mb-1">Munkát hirdetek</h2>
-              <p className="text-zinc-500 text-sm leading-relaxed mb-4">
-                Állásajánlatot adok fel, hogy a legjobb jelöltek megtaláljanak.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-600">{jobs.length} aktív hirdetés</span>
-                <span className="flex items-center gap-1 text-emerald-400 text-xs font-semibold group-hover:gap-2 transition-all">
-                  Hirdetés feladása <ChevronRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </div>
-
-            {/* Munkát keresek */}
-            <div
-              onClick={() => { setMainTab('seekers'); user ? setView('seeker-create') : window.location.assign('/login'); }}
-              className="group cursor-pointer glass-bubble rounded-2xl p-5 border border-sky-500/20 hover:border-sky-500/40 hover:bg-sky-500/5 transition-all hover:scale-[1.02]"
-            >
-              <div className="w-12 h-12 bg-sky-500/15 border border-sky-500/25 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-sky-500/25 transition-colors">
-                <UserSearch className="w-6 h-6 text-sky-400" />
-              </div>
-              <h2 className="text-lg font-bold text-zinc-100 group-hover:text-sky-300 transition-colors mb-1">Munkát keresek</h2>
-              <p className="text-zinc-500 text-sm leading-relaxed mb-4">
-                Bemutatkozom, és várom, hogy a megfelelő munkáltató megtaláljon.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-600">{seekerAds.length} álláskeresési hirdetés</span>
-                <span className="flex items-center gap-1 text-sky-400 text-xs font-semibold group-hover:gap-2 transition-all">
-                  Hirdetés feladása <ChevronRight className="w-3.5 h-3.5" />
-                </span>
+              <h1 className="text-2xl md:text-3xl font-black text-white leading-tight" style={{ textShadow: '0 0 30px rgba(59,130,246,0.35)' }}>
+                Állásbörzénk
+              </h1>
+              <div className="flex items-center gap-3 mt-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                  <Briefcase className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                  <span><strong className="text-zinc-200">{jobs.length}</strong> állásajánlat</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                  <UserSearch className="w-3 h-3 text-sky-400" />
+                  <span><strong className="text-zinc-200">{seekerAds.length}</strong> álláskeresési hirdetés</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* CTA cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div
+          onClick={() => { setMainTab('offers'); user ? setView('create') : window.location.assign('/login'); }}
+          className="group cursor-pointer glass-bubble rounded-2xl p-5 border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all hover:scale-[1.02]"
+        >
+          <div className="w-12 h-12 bg-emerald-500/15 border border-emerald-500/25 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-500/25 transition-colors">
+            <Briefcase className="w-6 h-6 text-emerald-400" />
+          </div>
+          <h2 className="text-lg font-bold text-zinc-100 group-hover:text-emerald-300 transition-colors mb-1">Munkát hirdetek</h2>
+          <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+            Állásajánlatot adok fel, hogy a legjobb jelöltek megtaláljanak.
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-zinc-600">{jobs.length} aktív hirdetés</span>
+            <span className="flex items-center gap-1 text-emerald-400 text-xs font-semibold group-hover:gap-2 transition-all">
+              Hirdetés feladása <ChevronRight className="w-3.5 h-3.5" />
+            </span>
+          </div>
+        </div>
+
+        <div
+          onClick={() => { setMainTab('seekers'); user ? setView('seeker-create') : window.location.assign('/login'); }}
+          className="group cursor-pointer glass-bubble rounded-2xl p-5 border border-sky-500/20 hover:border-sky-500/40 hover:bg-sky-500/5 transition-all hover:scale-[1.02]"
+        >
+          <div className="w-12 h-12 bg-sky-500/15 border border-sky-500/25 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-sky-500/25 transition-colors">
+            <UserSearch className="w-6 h-6 text-sky-400" />
+          </div>
+          <h2 className="text-lg font-bold text-zinc-100 group-hover:text-sky-300 transition-colors mb-1">Munkát keresek</h2>
+          <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+            Bemutatkozom, és várom, hogy a megfelelő munkáltató megtaláljon.
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-zinc-600">{seekerAds.length} álláskeresési hirdetés</span>
+            <span className="flex items-center gap-1 text-sky-400 text-xs font-semibold group-hover:gap-2 transition-all">
+              Hirdetés feladása <ChevronRight className="w-3.5 h-3.5" />
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* ── MAIN TABS ── */}
       <div className="glass rounded-2xl p-1.5 flex gap-1">

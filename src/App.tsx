@@ -36,6 +36,7 @@ import CreateOfferPage from './pages/CreateOfferPage';
 import OfferDetailPage from './pages/OfferDetailPage';
 import ForumPage from './pages/ForumPage';
 import VedelemPage from './pages/VedelemPage';
+import PiacAIChatPage from './pages/PiacAIChatPage';
 
 function App() {
   const router = useRouterProvider();
@@ -83,6 +84,7 @@ function App() {
     if (path === '/forum/hibak') return <ForumPage />;
     if (path.startsWith('/forum/')) return <ForumPage />;
     if (path === '/vedelem') return <VedelemPage />;
+    if (path === '/piac-ai') return <PiacAIChatPage />;
 
     return (
       <div className="text-center py-20">

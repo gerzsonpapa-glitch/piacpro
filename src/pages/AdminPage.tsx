@@ -551,7 +551,7 @@ export default function AdminPage() {
     setActionLoading(null);
   }
   async function toggleAiAccess(userId: string, grant: boolean) {
-    if (!isSuperAdmin) return;
+    if (!profile?.is_admin) return;
     setActionLoading(userId + '-ai');
     await supabase.from('profiles').update({ ai_access: grant }).eq('id', userId);
     await loadUsers();
@@ -1750,7 +1750,7 @@ function UserRow({ u, currentUserId, isSuperAdmin, actionLoading, onBan, onVerif
                   <Store className="w-3.5 h-3.5" />
                 </button>
           )}
-          {isSuperAdmin && (
+          {canModify && (
             u.ai_access
               ? <button onClick={() => onAiAccess(u.id, false)} disabled={actionLoading === u.id + '-ai'}
                   title="AI jog elvétele"

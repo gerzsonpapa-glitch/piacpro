@@ -207,7 +207,36 @@ export default function LocalBusinessesPage() {
 
   return (
     <div className="space-y-6">
-      {/* ── Hero ── */}
+      {/* City Hero — Boltok Utcája / Termelők Piaca */}
+      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
+        <img
+          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          alt="Helyi vállalkozások"
+          className="page-hero-bg"
+          style={{ objectPosition: 'center 47%', filter: 'brightness(0.28) saturate(1.5) sepia(0.2)' }}
+        />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(245,158,11,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="absolute inset-0 grid-overlay opacity-40" />
+        <div className="scan-line" />
+        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#f59e0b' }} />
+                <span className="text-xs font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>Boltok Utcája</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
+                Helyi vállalkozások
+              </h1>
+              <p className="text-zinc-300 text-sm mt-1" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+                Kistermelők, kézművesek, kisboltok egy helyen
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Hero info ── */}
       <div className="glass rounded-3xl p-6 md:p-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
         <div className="relative">
