@@ -78,7 +78,7 @@ function AuctionCard({ listing, urgent }: { listing: Listing; urgent?: boolean }
       } : {}}>
       <div className="relative aspect-[4/3] overflow-hidden">
         {image
-          ? <img src={image} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          ? <img src={image} alt={listing.title} loading="lazy" decoding="async" sizes="(max-width: 640px) 50vw, 25vw" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           : <div className="w-full h-full bg-white/5 flex items-center justify-center"><Gavel className="w-10 h-10 text-zinc-600" /></div>
         }
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/75 to-transparent" />
@@ -439,7 +439,8 @@ export default function HomePage() {
               </div>
               <div className="relative sm:w-44">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
-                <select value={searchLocation} onChange={(e) => setSearchLocation(e.target.value)}
+                <label htmlFor="search-location" className="sr-only">Helyszín szűrő</label>
+                <select id="search-location" value={searchLocation} onChange={(e) => setSearchLocation(e.target.value)}
                   className="w-full pl-8 pr-3 py-3.5 glass-input rounded-2xl text-zinc-100 focus:outline-none text-sm cursor-pointer">
                   <option value="">Országos</option>
                   {COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -448,10 +449,12 @@ export default function HomePage() {
             </div>
             <div className="flex gap-2">
               <button type="submit"
+                aria-label="Keresés mindenben"
                 className="flex-1 py-3.5 glass-pill-active text-emerald-300 font-semibold rounded-2xl transition-all hover:scale-[1.01] text-sm">
                 Keresés mindenben
               </button>
               <button type="button" onClick={(e) => handleMarketSearch(e as unknown as React.FormEvent)}
+                aria-label="Keresés csak a piactéren"
                 className="px-5 py-3.5 glass-pill text-zinc-400 hover:text-zinc-200 rounded-2xl text-sm font-medium transition-colors">
                 Csak piactér
               </button>
@@ -688,7 +691,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {latestListings.map((l) => <ListingCard key={l.id} listing={l} />)}
+            {latestListings.map((l, i) => <ListingCard key={l.id} listing={l} priority={i < 4} />)}
           </div>
         )}
       </section>

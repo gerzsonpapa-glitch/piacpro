@@ -30,6 +30,12 @@
     overflow-x: hidden;
   }
 
+  /* Ensure minimum readable contrast for secondary text on dark bg.
+     zinc-500 (#71717a) on #050507 is ~4.2:1 which just passes WCAG AA.
+     zinc-400 (#a1a1aa) is ~6.5:1 — use for body copy. */
+  .text-zinc-600 { color: #71717a !important; }
+  .text-zinc-500 { color: #8a8a96 !important; }
+
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;

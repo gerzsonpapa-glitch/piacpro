@@ -44,6 +44,26 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
   return classes.filter(Boolean).join(' ');
 }
 
+/**
+ * Appends Supabase image transform params for width-limited delivery.
+ * Only applies to Supabase storage URLs; passes through all other URLs unchanged.
+ */
+export function getOptimizedImageUrl(url: string | null | undefined, width: number): string {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith('.supabase.co') && u.pathname.includes('/storage/')) {
+      u.searchParams.set('width', String(width));
+      u.searchParams.set('quality', '80');
+      u.searchParams.set('format', 'webp');
+      return u.toString();
+    }
+  } catch {
+    // not a valid URL, return as-is
+  }
+  return url;
+}
+
 export type OnlineStatus = 'online' | 'recently' | 'offline';
 
 export function getOnlineStatus(lastSeen: string | null | undefined): OnlineStatus {

@@ -1,6 +1,6 @@
 import { Heart, MapPin, Gavel } from 'lucide-react';
 import { useRouter } from '../lib/router';
-import { formatPrice, formatRelativeTime } from '../lib/utils';
+import { formatPrice, formatRelativeTime, getOptimizedImageUrl } from '../lib/utils';
 import type { Listing } from '../lib/types';
 
 const statusLabel: Record<string, { text: string; cls: string }> = {
@@ -8,9 +8,10 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
   ended: { text: 'Lezárult', cls: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' },
 };
 
-export default function ListingCard({ listing }: { listing: Listing }) {
+export default function ListingCard({ listing, priority = false }: { listing: Listing; priority?: boolean }) {
   const { navigate } = useRouter();
   const imageUrl = listing.images?.[0] || '';
+  const optimizedUrl = getOptimizedImageUrl(imageUrl, 480);
   const status = listing.status !== 'active' ? statusLabel[listing.status] : null;
   const isAuction = listing.listing_type === 'auction';
   const href = isAuction ? `/auction/${listing.id}` : `/listing/${listing.id}`;
@@ -19,6 +20,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
   return (
     <button
       onClick={() => navigate(href)}
+      aria-label={`${listing.title} — ${formatPrice(displayPrice)}`}
       className="group text-left w-full glass-bubble rounded-2xl overflow-hidden"
       style={{ transition: 'all 0.28s cubic-bezier(0.22,1,0.36,1)' }}
       onMouseEnter={(e) => {
@@ -36,7 +38,11 @@ export default function ListingCard({ listing }: { listing: Listing }) {
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-white/[0.03]">
         {imageUrl ? (
-          <img src={imageUrl} alt={listing.title}
+          <img src={optimizedUrl} alt={listing.title}
+            loading={priority ? 'eager' : 'lazy'}
+            decoding={priority ? 'sync' : 'async'}
+            fetchPriority={priority ? 'high' : 'low'}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className={`w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500 ease-out ${status ? 'opacity-60 grayscale-[40%]' : ''}`} />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-700">
@@ -82,10 +88,10 @@ export default function ListingCard({ listing }: { listing: Listing }) {
             {formatPrice(displayPrice)}
           </p>
           {isAuction && listing.auction && listing.auction.bid_count > 0 && (
-            <span className="text-[11px] text-zinc-600">{listing.auction.bid_count} licit</span>
+            <span className="text-[11px] text-zinc-500">{listing.auction.bid_count} licit</span>
           )}
         </div>
-        <div className="flex items-center justify-between mt-2.5 text-zinc-600 text-[11px]">
+        <div className="flex items-center justify-between mt-2.5 text-zinc-500 text-[11px]">
           {listing.location && (
             <span className="flex items-center gap-1 truncate">
               <MapPin className="w-3 h-3 flex-shrink-0" />

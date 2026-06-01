@@ -258,7 +258,12 @@ export default function VedelemPage() {
             style={{ background: 'linear-gradient(160deg, rgba(52,211,153,0.06) 0%, transparent 70%)' }}>
             <img
               src="/profile_picture_720.webp"
-              alt="Ákom László Zsolt"
+              alt="Ákom László Zsolt OVB fiókvezető"
+              width={240}
+              height={320}
+              loading="eager"
+              fetchPriority="high"
+              decoding="sync"
               className="w-52 lg:w-full max-w-[240px] lg:max-w-none object-contain object-bottom mt-6 lg:mt-0"
               style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}
             />

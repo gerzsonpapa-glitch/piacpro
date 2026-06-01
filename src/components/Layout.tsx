@@ -221,7 +221,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className="max-w-7xl mx-auto px-4 h-[60px] flex items-center justify-between gap-2">
           {/* Logo */}
-          <button onClick={() => navigate('/')} className="flex items-center gap-2.5 hover:opacity-85 transition-opacity duration-200 flex-shrink-0">
+          <button onClick={() => navigate('/')} aria-label="PiacPro főoldal" className="flex items-center gap-2.5 hover:opacity-85 transition-opacity duration-200 flex-shrink-0">
             <div className="w-8 h-8 glass-bubble rounded-xl flex items-center justify-center">
               <ShoppingBag className="w-4 h-4 text-emerald-400" />
             </div>
@@ -310,6 +310,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {user && (
               <button
                 onClick={signOut}
+                aria-label="Kijelentkezés"
                 className="hidden md:flex items-center gap-1.5 glass-pill px-3 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 text-[13px] transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -318,6 +319,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Menü bezárása' : 'Menü megnyitása'}
+              aria-expanded={mobileMenuOpen}
               className="md:hidden p-2 glass-bubble rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -414,17 +417,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
+                aria-label={item.label}
+                aria-current={isActive(item.path) ? 'page' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-xl transition-all duration-200 flex-shrink-0 min-w-[52px] ${
                   isActive(item.path) ? 'glass-pill-active text-emerald-300' : 'text-zinc-500'
                 }`}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className="w-5 h-5" aria-hidden="true" />
                 <span className="text-[9px] font-medium leading-tight">{item.label}</span>
               </button>
             ))}
             {user && (
               <button
                 onClick={() => navigate('/messages')}
+                aria-label={unreadCount > 0 ? `Üzenetek — ${unreadCount} olvasatlan` : 'Üzenetek'}
+                aria-current={isActive('/messages') ? 'page' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-xl transition-all duration-200 flex-shrink-0 min-w-[52px] relative ${
                   isActive('/messages') || isActive('/chat') ? 'glass-pill-active text-emerald-300' : 'text-zinc-500'
                 }`}

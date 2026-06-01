@@ -380,8 +380,9 @@ export default function Footer() {
               ].map((item) => (
                 <li key={item.path}>
                   <button onClick={() => navigate(item.path)}
-                    className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
-                    <item.icon className="w-3.5 h-3.5 text-zinc-700" />
+                    aria-label={`Ugrás: ${item.label}`}
+                    className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-sm transition-colors">
+                    <item.icon className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
                     {item.label}
                   </button>
                 </li>
@@ -395,20 +396,20 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <button onClick={() => navigate('/rules')}
-                  className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
-                  <ScrollText className="w-3.5 h-3.5" />Felhasználási szabályzat
+                  className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-sm transition-colors">
+                  <ScrollText className="w-3.5 h-3.5" aria-hidden="true" />Felhasználási szabályzat
                 </button>
               </li>
               <li>
                 <button onClick={() => navigate('/rules')}
-                  className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
-                  <Shield className="w-3.5 h-3.5" />Adatvédelem
+                  className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-sm transition-colors">
+                  <Shield className="w-3.5 h-3.5" aria-hidden="true" />Adatvédelem
                 </button>
               </li>
               <li>
                 <button onClick={() => setShowGuide(true)}
-                  className="flex items-center gap-1.5 text-zinc-500 hover:text-emerald-400 text-sm transition-colors">
-                  <ScrollText className="w-3.5 h-3.5" />Használati útmutató
+                  className="flex items-center gap-1.5 text-zinc-400 hover:text-emerald-400 text-sm transition-colors">
+                  <ScrollText className="w-3.5 h-3.5" aria-hidden="true" />Használati útmutató
                 </button>
               </li>
             </ul>
