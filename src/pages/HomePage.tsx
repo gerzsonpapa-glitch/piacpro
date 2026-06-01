@@ -402,20 +402,32 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ background: '#07111f' }}>
+    <div style={{ background: 'var(--piac-bg, #07111f)' }}>
 
       {/* ═══════════════════════════════════════════════════════════
           HERO — városkép
       ═══════════════════════════════════════════════════════════ */}
       <section
         className={`relative w-full overflow-hidden ${devModeActive ? 'ring-2 ring-[#00d084]/50 ring-inset' : ''}`}
-        style={{ height: 'clamp(520px, 80vh, 820px)' }}
+        style={{ height: `clamp(520px, ${config.hero.heightVh}vh, 920px)` }}
       >
 
         {/* City background */}
         <img src={config.hero.imageUrl} alt="PiacPro városképe"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{ filter: `brightness(${config.hero.brightness}) saturate(1.25)` }} fetchPriority="high" />
+          className="piac-hero-bg absolute inset-0 w-full h-full object-cover object-center"
+          style={{
+            filter: `brightness(${config.hero.brightness}) saturate(${config.hero.saturation})`,
+          }}
+          fetchPriority="high"
+        />
+
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: config.hero.overlayColor,
+            opacity: config.hero.overlayOpacity,
+          }}
+        />
 
         {/* Gradients */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.55) 0%, rgba(7,17,31,0.05) 22%, rgba(7,17,31,0.05) 52%, rgba(7,17,31,0.8) 82%, rgba(7,17,31,1) 100%)' }} />
@@ -423,8 +435,10 @@ export default function HomePage() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(7,17,31,0.9) 0%, rgba(7,17,31,0.5) 14%, transparent 28%)' }} />
 
         {/* Scan line + grid */}
-        <div className="scan-line" />
-        <div className="absolute inset-0 pointer-events-none grid-overlay opacity-25" />
+        {config.world.scanLines && <div className="scan-line" />}
+        {config.world.gridVisible && (
+          <div className="absolute inset-0 pointer-events-none grid-overlay opacity-25" />
+        )}
 
         {/* ── Top title ── */}
         <div className={`absolute top-5 inset-x-0 flex flex-col items-center z-10 pointer-events-none transition-all duration-700 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
@@ -440,8 +454,8 @@ export default function HomePage() {
             style={{ background: 'radial-gradient(circle, rgba(0,208,132,0.25), rgba(7,17,31,0.85))', border: '2px solid rgba(0,208,132,0.55)', boxShadow: '0 0 40px rgba(0,208,132,0.45), inset 0 0 20px rgba(0,208,132,0.12)' }}
             onClick={() => navigate('/')}>
             <div className="text-center leading-none">
-              <div className="text-[11px] font-black" style={{ color: '#00d084' }}>Piac</div>
-              <div className="text-[11px] font-black text-white">Pro</div>
+              <div className="text-[11px] font-black" style={{ color: 'var(--piac-accent,#00d084)' }}>{config.hero.badgeTop}</div>
+              <div className="text-[11px] font-black text-white">{config.hero.badgeBottom}</div>
             </div>
           </div>
         </div>

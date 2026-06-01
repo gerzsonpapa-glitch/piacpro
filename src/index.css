@@ -554,3 +554,55 @@
     background-clip: text;
   }
 }
+
+/* ── Digitális világ (fejlesztői szerkesztő) ─────────────────────── */
+@keyframes piac-particle-float {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+  50% { transform: translateY(-24px) translateX(8px); opacity: 0.85; }
+}
+
+@keyframes piac-kenburns {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+@keyframes piac-neon-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(0, 208, 132, 0.25); }
+  50% { box-shadow: 0 0 32px rgba(0, 208, 132, 0.55); }
+}
+
+.piac-particle {
+  animation: piac-particle-float ease-in-out infinite;
+}
+
+html[data-piac-kenburns='1'] .piac-hero-bg {
+  animation: piac-kenburns 28s ease-in-out infinite alternate;
+}
+
+html[data-piac-cardfloat='1'] .glass:hover,
+html[data-piac-cardfloat='1'] button.glass-pill:hover {
+  transform: translateY(-3px);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-piac-neonpulse='1'] .breathe-green,
+html[data-piac-neonpulse='1'] .glass-pill-active {
+  animation: piac-neon-pulse 3s ease-in-out infinite;
+}
+
+html[data-piac-scanlines='0'] .scan-line {
+  display: none !important;
+}
+
+html[data-piac-grid='0'] body::after {
+  opacity: 0 !important;
+}
+
+html[data-piac-grid='1'] body::after {
+  opacity: var(--piac-grid-opacity, 0.35);
+}
+
+.glass {
+  backdrop-filter: blur(var(--piac-glass-blur, 48px)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--piac-glass-blur, 48px)) saturate(180%);
+}

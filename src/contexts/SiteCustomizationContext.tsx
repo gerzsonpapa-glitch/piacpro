@@ -7,12 +7,16 @@ import {
   type ReactNode,
 } from 'react';
 import { supabase } from '../lib/supabase';
+import { translateMessage } from '../lib/hu';
 import { useAuth } from './AuthContext';
 import { isSiteDeveloper } from '../lib/developer';
 import {
   applySiteTheme,
   mergeSiteConfig,
   DEFAULT_SITE_CONFIG,
+  loadConfigFromLocalStorage,
+  saveConfigToLocalStorage,
+  formatSiteSaveError,
   type SiteCustomizationConfig,
 } from '../lib/siteCustomization';
 
@@ -22,7 +26,7 @@ interface SiteCustomizationContextType {
   canEdit: boolean;
   devModeActive: boolean;
   setDevModeActive: (v: boolean) => void;
-  saveConfig: (next: SiteCustomizationConfig) => Promise<{ error: string | null }>;
+  saveConfig: (next: SiteCustomizationConfig) => Promise<{ error: string | null; usedLocalFallback?: boolean }>;
   refresh: () => Promise<void>;
 }
 
@@ -56,6 +60,11 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
     [canEdit],
   );
 
+  const applyConfig = useCallback((merged: SiteCustomizationConfig) => {
+    setConfig(merged);
+    applySiteTheme(merged);
+  }, []);
+
   const refresh = useCallback(async () => {
     const { data, error } = await supabase
       .from('site_customization')
@@ -64,14 +73,15 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
       .maybeSingle();
 
     if (!error && data?.config) {
-      const merged = mergeSiteConfig(data.config);
-      setConfig(merged);
-      applySiteTheme(merged);
+      applyConfig(mergeSiteConfig(data.config));
+      saveConfigToLocalStorage(mergeSiteConfig(data.config));
     } else {
-      applySiteTheme(DEFAULT_SITE_CONFIG);
+      const local = loadConfigFromLocalStorage();
+      if (local) applyConfig(local);
+      else applyConfig(DEFAULT_SITE_CONFIG);
     }
     setLoading(false);
-  }, []);
+  }, [applyConfig]);
 
   useEffect(() => {
     refresh();
@@ -94,25 +104,80 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
     if (!canEdit && devModeActive) setDevModeActiveState(false);
   }, [canEdit, devModeActive]);
 
-  async function saveConfig(next: SiteCustomizationConfig): Promise<{ error: string | null }> {
-    if (!canEdit || !user) return { error: 'Nincs jogosultságod a weboldal szerkesztéséhez.' };
+  async function saveConfig(
+    next: SiteCustomizationConfig,
+  ): Promise<{ error: string | null; usedLocalFallback?: boolean }> {
+    if (!canEdit || !user) {
+      return { error: 'Nincs jogosultságod a weboldal szerkesztéséhez.' };
+    }
 
-    const { error } = await supabase
-      .from('site_customization')
-      .upsert(
-        {
+    const payload = { ...next, version: 2 };
+
+    // 1) RPC (legmegbízhatóbb)
+    const { error: rpcError } = await supabase.rpc('save_site_customization', {
+      p_config: payload,
+    });
+
+    if (!rpcError) {
+      applyConfig(payload);
+      saveConfigToLocalStorage(payload);
+      return { error: null };
+    }
+
+    const rpcMsg = rpcError.message || '';
+
+    // 2) Közvetlen update / insert
+    if (!rpcMsg.includes('Could not find the function') && !rpcMsg.includes('schema cache')) {
+      const { data: row } = await supabase
+        .from('site_customization')
+        .select('id')
+        .eq('id', 'global')
+        .maybeSingle();
+
+      let tableError = null;
+      if (row) {
+        const res = await supabase
+          .from('site_customization')
+          .update({
+            config: payload,
+            updated_at: new Date().toISOString(),
+            updated_by: user.id,
+          })
+          .eq('id', 'global');
+        tableError = res.error;
+      } else {
+        const res = await supabase.from('site_customization').insert({
           id: 'global',
-          config: next,
+          config: payload,
           updated_at: new Date().toISOString(),
           updated_by: user.id,
-        },
-        { onConflict: 'id' },
-      );
+        });
+        tableError = res.error;
+      }
 
-    if (error) return { error: error.message };
-    setConfig(next);
-    applySiteTheme(next);
-    return { error: null };
+      if (!tableError) {
+        applyConfig(payload);
+        saveConfigToLocalStorage(payload);
+        return { error: null };
+      }
+    }
+
+    // 3) Helyi mentés ha DB nem elérhető
+    const isDbMissing =
+      rpcMsg.includes('does not exist') ||
+      rpcMsg.includes('site_customization') ||
+      rpcMsg.includes('Could not find');
+
+    if (isDbMissing || rpcMsg.includes('permission') || rpcMsg.includes('row-level')) {
+      applyConfig(payload);
+      saveConfigToLocalStorage(payload);
+      return {
+        error: null,
+        usedLocalFallback: isDbMissing,
+      };
+    }
+
+    return { error: formatSiteSaveError(translateMessage(rpcMsg)) };
   }
 
   return (

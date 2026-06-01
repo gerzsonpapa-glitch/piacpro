@@ -13,6 +13,8 @@ import DeveloperModeBar from './DeveloperModeBar';
 import { DEFENSE_LINKS } from '../pages/VedelemPage';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { isSiteDeveloper } from '../lib/developer';
+import { getPageSkin } from '../lib/siteCustomization';
+import WorldEffects from './WorldEffects';
 
 const DEFENSE_ITEMS = [
   { key: 'nyugdij' as const,                icon: TrendingUp, label: 'Nyugdíj-előtakarékosság',           desc: 'Hosszú távú megtakarítás, adókedvezmény' },
@@ -145,6 +147,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const navTransparent = isHome && !scrolled;
+  const pageSkin = getPageSkin(config, path);
 
   const NAV_LINKS = [
     { icon: ShoppingBag, label: 'Piactér',    path: '/search' },
@@ -161,15 +164,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen text-zinc-100" style={{ background: '#07111f' }}>
+    <div className="min-h-screen text-zinc-100 relative" style={{ background: config.theme.background }}>
 
-      {/* Ambient city glow layers */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-20 left-[10%] w-[800px] h-[500px] rounded-full blur-[180px]" style={{ background: 'rgba(0,208,132,0.032)', transform: 'rotate(-15deg)' }} />
-        <div className="absolute top-[30%] right-[5%] w-[600px] h-[400px] rounded-full blur-[160px]" style={{ background: 'rgba(59,130,246,0.025)' }} />
-        <div className="absolute bottom-0 left-[30%] w-[700px] h-[350px] rounded-full blur-[150px]" style={{ background: 'rgba(0,208,132,0.022)' }} />
-        <div className="absolute top-[60%] left-[5%] w-[400px] h-[300px] rounded-full blur-[140px]" style={{ background: 'rgba(168,85,247,0.015)' }} />
-      </div>
+      <WorldEffects />
+
+      {/* Oldal-specifikus háttér */}
+      {(pageSkin?.bgImage || pageSkin?.bgColor) && (
+        <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden>
+          {pageSkin.bgImage && (
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-40"
+              style={{ backgroundImage: `url(${pageSkin.bgImage})` }}
+            />
+          )}
+          {pageSkin.bgColor && (
+            <div className="absolute inset-0" style={{ backgroundColor: pageSkin.bgColor, opacity: 0.5 }} />
+          )}
+          {pageSkin.overlay && (
+            <div className="absolute inset-0" style={{ background: pageSkin.overlay }} />
+          )}
+        </div>
+      )}
+
+      {/* Ambient glow (ha nincs WorldEffects orb) */}
+      {!config.world.floatingOrbs && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute -top-20 left-[10%] w-[800px] h-[500px] rounded-full blur-[180px]" style={{ background: 'rgba(0,208,132,0.032)', transform: 'rotate(-15deg)' }} />
+          <div className="absolute top-[30%] right-[5%] w-[600px] h-[400px] rounded-full blur-[160px]" style={{ background: 'rgba(59,130,246,0.025)' }} />
+        </div>
+      )}
 
       {/* ── NAVBAR ───────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 transition-all duration-500"
@@ -192,15 +215,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Logo */}
           <button onClick={() => navigate('/')} className="flex items-center gap-2.5 hover:opacity-90 transition-opacity flex-shrink-0 group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 breathe-green"
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 breathe-green overflow-hidden"
               style={{ background: 'rgba(0,208,132,0.12)', border: '1px solid rgba(0,208,132,0.3)' }}>
-              <ShoppingBag className="w-5 h-5 text-[#00d084]" />
+              {config.media.logoImageUrl ? (
+                <img src={config.media.logoImageUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <ShoppingBag className="w-5 h-5 text-[#00d084]" />
+              )}
             </div>
             <div className="hidden sm:block leading-none">
               <div className="text-[18px] font-black tracking-tight" style={{ color: '#fff' }}>
-                Piac<span style={{ color: '#00d084', textShadow: '0 0 16px rgba(0,208,132,0.6)' }}>Pro</span>
+                Piac<span style={{ color: 'var(--piac-accent,#00d084)', textShadow: '0 0 16px rgba(0,208,132,0.6)' }}>Pro</span>
               </div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: 'rgba(0,208,132,0.55)' }}>Magyar Közösségi Piactér</div>
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: 'rgba(0,208,132,0.55)' }}>
+                {config.nav.brandSubtitle}
+              </div>
             </div>
           </button>
 
@@ -215,7 +244,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="flex-1 flex flex-col px-3 py-1.5">
                 <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'rgba(0,208,132,0.65)' }}>Mit keresel ma?</span>
                 <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
-                  placeholder="Keress hirdetést, munkát, boltot, szolgáltatást..."
+                  placeholder={config.nav.searchPlaceholder}
                   className="bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none leading-tight" />
               </div>
               <button type="submit" className="flex-shrink-0 m-1.5 w-9 h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95"
@@ -396,7 +425,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main */}
-      <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''}`}>{children}</main>
+      <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''}`}>
+        {pageSkin?.title && path !== '/' && (
+          <div className="max-w-[1440px] mx-auto px-4 pt-6 pb-2">
+            <h1 className="text-2xl font-black text-zinc-100">{pageSkin.title}</h1>
+            {pageSkin.subtitle && <p className="text-zinc-500 text-sm mt-1">{pageSkin.subtitle}</p>}
+          </div>
+        )}
+        {children}
+      </main>
 
       <Footer />
 
