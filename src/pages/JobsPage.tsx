@@ -1389,12 +1389,12 @@ export default function JobsPage() {
       {/* ── CITY HERO — Munka Negyed ── */}
       <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
         <img
-          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          src="https://images.pexels.com/photos/1004409/pexels-photo-1004409.jpeg?auto=compress&cs=tinysrgb&w=1600"
           alt="Munka Negyed"
           className="page-hero-bg"
-          style={{ objectPosition: 'center 30%', filter: 'brightness(0.28) saturate(1.5) hue-rotate(200deg)' }}
+          style={{ objectPosition: 'center 30%' }}
         />
-        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(59,130,246,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.35) 0%, rgba(7,17,31,0.2) 40%, rgba(7,17,31,0.88) 100%)' }} />
         <div className="absolute inset-0 grid-overlay opacity-40" />
         <div className="scan-line" />
         <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">

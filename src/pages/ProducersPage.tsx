@@ -192,12 +192,12 @@ export default function ProducersPage() {
       {/* City Hero — Termelők Piaca */}
       <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
         <img
-          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          src="https://images.pexels.com/photos/1407305/pexels-photo-1407305.jpeg?auto=compress&cs=tinysrgb&w=1600"
           alt="Termelők Piaca"
           className="page-hero-bg"
-          style={{ objectPosition: 'left 55%', filter: 'brightness(0.28) saturate(1.6) hue-rotate(90deg)' }}
+          style={{ objectPosition: 'center 50%' }}
         />
-        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(74,222,128,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.35) 0%, rgba(7,17,31,0.2) 40%, rgba(7,17,31,0.88) 100%)' }} />
         <div className="absolute inset-0 grid-overlay opacity-40" />
         <div className="scan-line" />
         <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">

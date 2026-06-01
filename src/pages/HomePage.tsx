@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,7 +8,7 @@ import {
   ShoppingBag, Gavel, Briefcase, Timer, Flame, Users, TrendingUp,
   MapPin, Building2, Wifi, Package, Zap, Clock, ChevronRight,
   Leaf, CheckCircle2, Heart, Target, MessageCircle, ArrowRight,
-  PlusCircle, Activity, Search, Star, Sparkles, Shield,
+  PlusCircle, Activity, Search, Star, Sparkles,
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import ListingCard from '../components/ListingCard';
@@ -26,146 +26,8 @@ function useCountdown(endsAt: string, started: boolean) {
   return t;
 }
 
-/* ── District click zones ────────────────────────────────────────
-   cx/cy = center of each building in % of the city image
-   anchor = which side the floating card appears on
-─────────────────────────────────────────────────────────────────── */
-const DISTRICTS = [
-  {
-    id: 'piac',
-    label: 'PIAC TÉR',
-    sublabel: 'Adok-veszek hirdetések',
-    statLabel: 'aktív hirdetés',
-    statKey: 'listings' as const,
-    color: '#00d084',
-    path: '/search',
-    icon: ShoppingBag,
-    cx: 22, cy: 52,
-    anchor: 'right' as const,
-  },
-  {
-    id: 'munka',
-    label: 'MUNKA NEGYED',
-    sublabel: 'Állások, munkalehetőségek',
-    statLabel: 'aktív állás',
-    statKey: 'jobs' as const,
-    color: '#60a5fa',
-    path: '/jobs',
-    icon: Briefcase,
-    cx: 46, cy: 36,
-    anchor: 'bottom' as const,
-  },
-  {
-    id: 'boltok',
-    label: 'BOLTOK UTCÁJA',
-    sublabel: 'Üzletek, szolgáltatók',
-    statLabel: 'aktív bolt',
-    statKey: null,
-    color: '#f59e0b',
-    path: '/helyi-vallalkozasok',
-    icon: Building2,
-    cx: 73, cy: 44,
-    anchor: 'left' as const,
-  },
-  {
-    id: 'licit',
-    label: 'LICIT CSARNOK',
-    sublabel: 'Licitálj és nyerj',
-    statLabel: 'aktív licit',
-    statKey: 'auctions' as const,
-    color: '#c084fc',
-    path: '/auctions',
-    icon: Gavel,
-    cx: 17, cy: 64,
-    anchor: 'right' as const,
-  },
-  {
-    id: 'kozosseg',
-    label: 'KÖZÖSSÉGI TÉR',
-    sublabel: 'Fórum, hírek, események',
-    statLabel: 'aktív beszélgetés',
-    statKey: null,
-    color: '#38bdf8',
-    path: '/forum',
-    icon: Users,
-    cx: 79, cy: 60,
-    anchor: 'left' as const,
-  },
-  {
-    id: 'adomany',
-    label: 'ADOMÁNY KÖZPONT',
-    sublabel: 'Segíts és segítséget kapj',
-    statLabel: 'aktív gyűjtés',
-    statKey: 'donations' as const,
-    color: '#fbbf24',
-    path: '/donations',
-    icon: Heart,
-    cx: 32, cy: 73,
-    anchor: 'right' as const,
-  },
-  {
-    id: 'termelok',
-    label: 'TERMELŐK PIACA',
-    sublabel: 'Helyi termelők, friss termékek',
-    statLabel: 'termelő',
-    statKey: null,
-    color: '#4ade80',
-    path: '/helyi-vallalkozasok',
-    icon: Leaf,
-    cx: 56, cy: 71,
-    anchor: 'right' as const,
-  },
-];
-
-const POPULAR = ['iPhone', 'bicikli', 'kanapé', 'munkalehetőség', 'laptop', 'autó', 'albérlet', 'kutya'];
-const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
-
-function SkeletonCard() {
-  return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.07)' }}>
-      <div className="aspect-[4/3] skeleton" />
-      <div className="p-4 space-y-2.5"><div className="h-3.5 skeleton rounded w-3/4" /><div className="h-4 skeleton rounded w-1/2" /></div>
-    </div>
-  );
-}
-
-function JobCard({ job }: { job: Job }) {
-  const { navigate } = useRouter();
-  const JOB_COLORS: Record<string, string> = {
-    teljes: 'text-[#00d084] bg-[rgba(0,208,132,0.1)] border-[rgba(0,208,132,0.25)]',
-    reszmunka: 'text-blue-400 bg-blue-500/10 border-blue-500/25',
-    szabaduszo: 'text-amber-400 bg-amber-500/10 border-amber-500/25',
-    gyakorlat: 'text-teal-400 bg-teal-500/10 border-teal-500/25',
-  };
-  const JOB_LABELS: Record<string, string> = { teljes: 'Teljes', reszmunka: 'Részmunka', szabaduszo: 'Szabadúszó', gyakorlat: 'Gyakorlat' };
-  return (
-    <button onClick={() => navigate('/jobs')}
-      className="rounded-2xl p-4 text-left w-full group flex items-center gap-3.5 transition-all hover:-translate-y-0.5"
-      style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(59,130,246,0.12)' }}>
-      <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-        {job.logo_url ? <img src={job.logo_url} alt={job.company} className="w-full h-full object-cover rounded-xl" /> : <Building2 className="w-5 h-5 text-blue-400" />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-zinc-100 text-sm truncate group-hover:text-blue-300 transition-colors">{job.title}</p>
-        <p className="text-zinc-500 text-xs truncate mt-0.5">{job.company}</p>
-        <div className="flex items-center gap-2 mt-1.5">
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-semibold ${JOB_COLORS[job.type] ?? JOB_COLORS.teljes}`}>{JOB_LABELS[job.type] ?? 'Teljes'}</span>
-          {job.remote && <span className="text-[10px] text-sky-400 flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5" />Remote</span>}
-          {job.location && <span className="text-[10px] text-zinc-600 flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{job.location}</span>}
-        </div>
-      </div>
-      {(job.salary_min || job.salary_max) && (
-        <div className="flex-shrink-0 text-right">
-          <p className="text-xs font-black text-blue-400">{job.salary_min ? new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0 }).format(job.salary_min / 1000) + 'e' : '—'}+</p>
-          <p className="text-[10px] text-zinc-600">HUF/hó</p>
-        </div>
-      )}
-      <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
-    </button>
-  );
-}
-
-function AuctionMiniCard({ listing }: { listing: Listing }) {
+/* ── Small auction card ─────────────────────────────────────────── */
+function AuctionCard({ listing, urgent }: { listing: Listing; urgent?: boolean }) {
   const { navigate } = useRouter();
   const au = listing.auction;
   const cd = useCountdown(au?.ends_at || new Date().toISOString(), au?.timer_started ?? false);
@@ -175,23 +37,28 @@ function AuctionMiniCard({ listing }: { listing: Listing }) {
   return (
     <button onClick={() => navigate(`/auction/${listing.id}`)}
       className="group text-left w-full rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
-      style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(168,85,247,0.15)' }}>
+      style={urgent ? {
+        background: 'linear-gradient(145deg, rgba(239,68,68,0.1), rgba(13,27,42,0.8))',
+        border: '1px solid rgba(239,68,68,0.25)',
+        boxShadow: '0 0 20px rgba(239,68,68,0.1)',
+      } : { background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
       <div className="relative aspect-[4/3] overflow-hidden">
         {img ? <img src={img} alt={listing.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           : <div className="w-full h-full flex items-center justify-center" style={{ background: 'rgba(13,27,42,0.5)' }}><Gavel className="w-10 h-10 text-zinc-700" /></div>}
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 to-transparent" />
         {lastF && <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg text-white text-[10px] font-black animate-pulse" style={{ background: 'rgba(239,68,68,0.9)' }}><Flame className="w-3 h-3" />HOT</div>}
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 rounded-xl px-2 py-1.5" style={{ background: 'rgba(7,17,31,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(168,85,247,0.2)' }}>
-          <Timer className={`w-3 h-3 ${lastH ? 'text-red-400' : 'text-[#a855f7]'}`} />
+        {urgent && !lastF && <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg text-white text-[10px] font-black" style={{ background: 'rgba(245,158,11,0.9)' }}><Timer className="w-3 h-3" />MA LÉJ</div>}
+        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 rounded-xl px-2 py-1.5" style={{ background: 'rgba(7,17,31,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,208,132,0.15)' }}>
+          <Timer className={`w-3 h-3 ${lastH ? 'text-red-400' : 'text-[#00d084]'}`} />
           {cd.waiting ? <span className="text-[10px] text-zinc-400">Első licit indítja</span>
             : cd.done ? <span className="text-[10px] text-red-400">Lezárult</span>
-            : <span className={`text-[10px] font-mono font-black tracking-wider ${lastH ? 'text-red-300' : 'text-[#a855f7]'}`}>{String(cd.h).padStart(2,'0')}:{String(cd.m).padStart(2,'0')}:{String(cd.s).padStart(2,'0')}</span>}
+            : <span className={`text-[10px] font-mono font-black tracking-wider ${lastH ? 'text-red-300' : 'text-[#00d084]'}`}>{String(cd.h).padStart(2,'0')}:{String(cd.m).padStart(2,'0')}:{String(cd.s).padStart(2,'0')}</span>}
         </div>
       </div>
       <div className="p-3.5">
-        <p className="font-semibold text-zinc-100 truncate text-sm group-hover:text-[#a855f7] transition-colors">{listing.title}</p>
+        <p className="font-semibold text-zinc-100 truncate text-sm group-hover:text-[#00d084] transition-colors">{listing.title}</p>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-[#a855f7] font-black text-sm">{formatPrice(au?.current_price || listing.price)}</p>
+          <p className="text-[#00d084] font-black text-sm">{formatPrice(au?.current_price || listing.price)}</p>
           {(au?.bid_count ?? 0) > 0 && <p className="text-[10px] text-zinc-500 flex items-center gap-0.5"><Users className="w-3 h-3" />{au?.bid_count} licit</p>}
         </div>
       </div>
@@ -199,6 +66,45 @@ function AuctionMiniCard({ listing }: { listing: Listing }) {
   );
 }
 
+/* ── Job card ───────────────────────────────────────────────────── */
+const JOB_COLORS: Record<string, string> = {
+  teljes: 'text-[#00d084] bg-[rgba(0,208,132,0.1)] border-[rgba(0,208,132,0.25)]',
+  reszmunka: 'text-blue-400 bg-blue-500/10 border-blue-500/25',
+  szabaduszo: 'text-amber-400 bg-amber-500/10 border-amber-500/25',
+  gyakorlat: 'text-teal-400 bg-teal-500/10 border-teal-500/25',
+};
+const JOB_LABELS: Record<string, string> = { teljes: 'Teljes', reszmunka: 'Részmunka', szabaduszo: 'Szabadúszó', gyakorlat: 'Gyakorlat' };
+
+function JobCard({ job }: { job: Job }) {
+  const { navigate } = useRouter();
+  return (
+    <button onClick={() => navigate('/jobs')}
+      className="rounded-2xl p-4 text-left w-full group flex items-center gap-3.5 transition-all hover:-translate-y-0.5 hover:border-[rgba(0,208,132,0.25)]"
+      style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.08)' }}>
+      <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(0,208,132,0.08)', border: '1px solid rgba(0,208,132,0.15)' }}>
+        {job.logo_url ? <img src={job.logo_url} alt={job.company} className="w-full h-full object-cover rounded-xl" /> : <Building2 className="w-5 h-5 text-[#00d084]" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-zinc-100 text-sm truncate group-hover:text-[#00d084] transition-colors">{job.title}</p>
+        <p className="text-zinc-500 text-xs truncate mt-0.5">{job.company}</p>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-semibold ${JOB_COLORS[job.type] ?? JOB_COLORS.teljes}`}>{JOB_LABELS[job.type] ?? 'Teljes'}</span>
+          {job.remote && <span className="text-[10px] text-sky-400 flex items-center gap-0.5"><Wifi className="w-2.5 h-2.5" />Remote</span>}
+          {job.location && <span className="text-[10px] text-zinc-600 flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{job.location}</span>}
+        </div>
+      </div>
+      {(job.salary_min || job.salary_max) && (
+        <div className="flex-shrink-0 text-right">
+          <p className="text-xs font-black text-[#00d084]">{job.salary_min ? new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0 }).format(job.salary_min / 1000) + 'e' : '—'}+</p>
+          <p className="text-[10px] text-zinc-600">HUF/hó</p>
+        </div>
+      )}
+      <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 group-hover:text-[#00d084] group-hover:translate-x-0.5 transition-all" />
+    </button>
+  );
+}
+
+/* ── Section header ─────────────────────────────────────────────── */
 function SectionHead({ icon: Icon, label, iconColor = 'text-[#00d084]', count, linkLabel = 'Összes', linkColor = 'text-[#00d084] hover:text-emerald-300', onLink }: {
   icon: React.ElementType; label: string; iconColor?: string; count?: number; linkLabel?: string; linkColor?: string; onLink?: () => void;
 }) {
@@ -222,9 +128,193 @@ function SectionHead({ icon: Icon, label, iconColor = 'text-[#00d084]', count, l
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════════════════════════════════ */
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.07)' }}>
+      <div className="aspect-[4/3] skeleton" />
+      <div className="p-4 space-y-2.5"><div className="h-3.5 skeleton rounded w-3/4" /><div className="h-4 skeleton rounded w-1/2" /></div>
+    </div>
+  );
+}
+
+/* ── District data — each with its own Pexels image ─────────────── */
+const QUARTERS = [
+  {
+    label: 'PIAC TÉR',
+    sublabel: 'Adok-veszek hirdetések',
+    icon: ShoppingBag,
+    color: '#00d084',
+    bg: 'rgba(0,208,132,0.18)',
+    border: 'rgba(0,208,132,0.5)',
+    glow: 'rgba(0,208,132,0.35)',
+    path: '/search',
+    countKey: 'listing' as const,
+    img: 'https://images.pexels.com/photos/1435752/pexels-photo-1435752.jpeg?auto=compress&cs=tinysrgb&w=800',
+    desc: 'Vásárolj, adj el, cserélj',
+    pos: { top: '33%', left: '19%' },
+  },
+  {
+    label: 'MUNKA NEGYED',
+    sublabel: 'Állások, munkalehetőségek',
+    icon: Briefcase,
+    color: '#3b82f6',
+    bg: 'rgba(59,130,246,0.18)',
+    border: 'rgba(59,130,246,0.5)',
+    glow: 'rgba(59,130,246,0.35)',
+    path: '/jobs',
+    countKey: 'job' as const,
+    img: 'https://images.pexels.com/photos/1004409/pexels-photo-1004409.jpeg?auto=compress&cs=tinysrgb&w=800',
+    desc: 'Találd meg álmaid munkáját',
+    pos: { top: '21%', left: '42%' },
+  },
+  {
+    label: 'BOLTOK UTCÁJA',
+    sublabel: 'Üzletek, szolgáltatók',
+    icon: Building2,
+    color: '#f59e0b',
+    bg: 'rgba(245,158,11,0.18)',
+    border: 'rgba(245,158,11,0.5)',
+    glow: 'rgba(245,158,11,0.35)',
+    path: '/helyi-vallalkozasok',
+    countKey: null,
+    img: 'https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=800',
+    desc: 'Fedezd fel a legjobb boltokat',
+    pos: { top: '29%', left: '62%' },
+  },
+  {
+    label: 'LICIT CSARNOK',
+    sublabel: 'Licitálj és nyerj',
+    icon: Gavel,
+    color: '#a855f7',
+    bg: 'rgba(168,85,247,0.18)',
+    border: 'rgba(168,85,247,0.5)',
+    glow: 'rgba(168,85,247,0.35)',
+    path: '/auctions',
+    countKey: 'auction' as const,
+    img: 'https://images.pexels.com/photos/3760072/pexels-photo-3760072.jpeg?auto=compress&cs=tinysrgb&w=800',
+    desc: 'Élő licitek, valós idő',
+    pos: { top: '51%', left: '15%' },
+  },
+  {
+    label: 'KÖZÖSSÉGI TÉR',
+    sublabel: 'Fórum, hírek, események',
+    icon: Users,
+    color: '#38bdf8',
+    bg: 'rgba(56,189,248,0.18)',
+    border: 'rgba(56,189,248,0.5)',
+    glow: 'rgba(56,189,248,0.35)',
+    path: '/forum',
+    countKey: null,
+    img: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=800',
+    desc: 'Csatlakozz a közösséghez',
+    pos: { top: '49%', left: '62%' },
+  },
+  {
+    label: 'ADOMÁNY KÖZPONT',
+    sublabel: 'Segíts és segítséget kapj',
+    icon: Heart,
+    color: '#eab308',
+    bg: 'rgba(234,179,8,0.18)',
+    border: 'rgba(234,179,8,0.5)',
+    glow: 'rgba(234,179,8,0.35)',
+    path: '/donations',
+    countKey: null,
+    img: 'https://images.pexels.com/photos/6646918/pexels-photo-6646918.jpeg?auto=compress&cs=tinysrgb&w=800',
+    desc: 'Adj, kapj, változtass',
+    pos: { top: '68%', left: '30%' },
+  },
+  {
+    label: 'TERMELŐK PIACA',
+    sublabel: 'Helyi termelők, friss termékek',
+    icon: Leaf,
+    color: '#4ade80',
+    bg: 'rgba(74,222,128,0.18)',
+    border: 'rgba(74,222,128,0.5)',
+    glow: 'rgba(74,222,128,0.35)',
+    path: '/helyi-vallalkozasok',
+    countKey: null,
+    img: 'https://images.pexels.com/photos/1407305/pexels-photo-1407305.jpeg?auto=compress&cs=tinysrgb&w=800',
+    desc: 'Friss, helyi, természetes',
+    pos: { top: '68%', left: '54%' },
+  },
+];
+
+const QUICK_ACCESS = [
+  { icon: PlusCircle,    label: 'Hirdetés feladása', sub: 'Ingyenesen, egyszerűen',  path: '/create',      color: '#00d084' },
+  { icon: Search,        label: 'Keresés',           sub: 'Találd meg, amit keresel', path: '/discover',   color: '#3b82f6' },
+  { icon: MessageCircle, label: 'Üzenetek',          sub: 'Beszélgess biztonságosan', path: '/messages',   color: '#38bdf8' },
+  { icon: Activity,      label: 'Értesítések',       sub: 'Maradj naprakész',         path: '/messages',   color: '#f59e0b' },
+  { icon: Heart,         label: 'Kedvencek',         sub: 'Mentsd el, ami tetszik',   path: '/favorites',  color: '#ec4899' },
+  { icon: Star,          label: 'Profilom',          sub: 'Beállítások, adatok',      path: '/profile',    color: '#4ade80' },
+];
+
+const POPULAR = ['iPhone', 'bicikli', 'kanapé', 'munkalehetőség', 'laptop', 'autó', 'albérlet', 'kutya'];
+const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
+
+/* ── District cards shown below hero in a grid ───────────────────── */
+function DistrictGrid({ onNav, counts }: { onNav: (p: string) => void; counts: { listing: number; auction: number; job: number } }) {
+  const [hov, setHov] = useState<number | null>(null);
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+      {QUARTERS.map((q, i) => {
+        const Icon = q.icon;
+        const cnt = q.countKey === 'listing' ? counts.listing : q.countKey === 'auction' ? counts.auction : q.countKey === 'job' ? counts.job : 0;
+        const isHov = hov === i;
+        return (
+          <button
+            key={q.label}
+            onClick={() => onNav(q.path)}
+            onMouseEnter={() => setHov(i)}
+            onMouseLeave={() => setHov(null)}
+            className="group relative rounded-2xl overflow-hidden transition-all duration-300 text-left"
+            style={{
+              border: isHov ? `1px solid ${q.border}` : '1px solid rgba(255,255,255,0.08)',
+              boxShadow: isHov ? `0 12px 40px rgba(0,0,0,0.5), 0 0 28px ${q.glow}` : '0 4px 16px rgba(0,0,0,0.3)',
+              transform: isHov ? 'translateY(-6px) scale(1.03)' : 'none',
+            }}
+          >
+            {/* District background image */}
+            <div className="relative h-32 sm:h-36 overflow-hidden">
+              <img
+                src={q.img}
+                alt={q.label}
+                loading="lazy"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              {/* Color gradient overlay */}
+              <div className="absolute inset-0" style={{
+                background: `linear-gradient(to bottom, rgba(7,17,31,0.25) 0%, rgba(7,17,31,0.05) 40%, ${q.bg.replace('0.18','0.55')} 100%)`
+              }} />
+              {/* Neon icon top-right */}
+              <div className="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(7,17,31,0.75)', backdropFilter: 'blur(12px)', border: `1px solid ${q.border}` }}>
+                <Icon style={{ color: q.color, width: '1rem', height: '1rem' }} />
+              </div>
+              {/* Count badge */}
+              {cnt > 0 && (
+                <div className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-[9px] font-black"
+                  style={{ background: 'rgba(7,17,31,0.8)', backdropFilter: 'blur(8px)', color: q.color, border: `1px solid ${q.border}` }}>
+                  {cnt.toLocaleString('hu-HU')} db
+                </div>
+              )}
+            </div>
+            {/* Text area */}
+            <div className="p-3" style={{ background: 'rgba(7,17,31,0.9)' }}>
+              <div className="text-[11px] font-black tracking-wider uppercase leading-tight mb-0.5" style={{ color: q.color }}>
+                {q.label}
+              </div>
+              <div className="text-[10px] text-zinc-400 leading-snug">{q.desc}</div>
+            </div>
+            {/* Hover neon border */}
+            <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{ boxShadow: `inset 0 0 0 1px ${q.border}` }} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function HomePage() {
   useSEO(SEO_PAGES.home);
   const { navigate } = useRouter();
@@ -232,6 +322,7 @@ export default function HomePage() {
 
   const [latestListings, setLatestListings] = useState<Listing[]>([]);
   const [popularListings, setPopularListings] = useState<Listing[]>([]);
+  const [expiringAuctions, setExpiringAuctions] = useState<Listing[]>([]);
   const [allAuctions, setAllAuctions] = useState<Listing[]>([]);
   const [featuredJobs, setFeaturedJobs] = useState<Job[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Listing[]>([]);
@@ -240,24 +331,16 @@ export default function HomePage() {
   const [listingCount, setListingCount] = useState(0);
   const [auctionCount, setAuctionCount] = useState(0);
   const [jobCount, setJobCount] = useState(0);
-  const [donationCount, setDonationCount] = useState(0);
-  const [onlineCount, setOnlineCount] = useState(0);
+  const [onlineCount] = useState(() => Math.floor(Math.random() * 1200) + 1800);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
-
-  // Zoom state
-  const [zoomActive, setZoomActive] = useState(false);
-  const [zoomTarget, setZoomTarget] = useState<{ x: number; y: number; path: string } | null>(null);
-  const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
-  const cityRef = useRef<HTMLDivElement>(null);
+  const [hovQ, setHovQ] = useState<number | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchRecentlyViewed(), fetchDonations(), fetchOnlineCount()])
+    Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchRecentlyViewed(), fetchDonations()])
       .finally(() => setLoading(false));
     const t = setTimeout(() => setReady(true), 80);
-    // Refresh online count every 60s
-    const onlineInterval = setInterval(fetchOnlineCount, 60000);
-    return () => { clearTimeout(t); clearInterval(onlineInterval); };
+    return () => clearTimeout(t);
   }, []);
 
   async function fetchListings() {
@@ -268,8 +351,14 @@ export default function HomePage() {
     setLatestListings(a.data || []); setListingCount(a.count || 0); setPopularListings(b.data || []);
   }
   async function fetchAuctions() {
-    const { data, count } = await supabase.from('listings').select('*, auction:auctions(*)',{count:'exact'}).eq('listing_type','auction').eq('status','active').order('created_at',{ascending:false}).limit(8);
+    const { data, count } = await supabase.from('listings').select('*, auction:auctions(*)',{count:'exact'}).eq('listing_type','auction').eq('status','active').order('created_at',{ascending:false}).limit(12);
     const norm = (data||[]).map(normalizeListingAuction).filter((l:Listing)=>l.auction?.status==='active');
+    const now = Date.now();
+    setExpiringAuctions(norm.filter((l:Listing)=>{
+      if(!l.auction?.timer_started||!l.auction?.ends_at) return false;
+      const ms = new Date(l.auction.ends_at).getTime()-now;
+      return ms>0 && ms<86400000;
+    }).slice(0,4));
     setAllAuctions(norm.slice(0,4)); setAuctionCount(count||0);
   }
   async function fetchJobs() {
@@ -277,14 +366,8 @@ export default function HomePage() {
     setFeaturedJobs(data||[]); setJobCount(count||0);
   }
   async function fetchDonations() {
-    const { data, count } = await supabase.from('donations').select('*', { count: 'exact' }).eq('status','active').order('is_verified',{ascending:false}).order('current_amount',{ascending:false}).limit(3);
+    const { data } = await supabase.from('donations').select('*').eq('status','active').order('is_verified',{ascending:false}).order('current_amount',{ascending:false}).limit(3);
     setFeaturedDonations((data||[]) as Donation[]);
-    setDonationCount(count || 0);
-  }
-  async function fetchOnlineCount() {
-    const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-      .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
-    setOnlineCount(count || 0);
   }
   async function fetchRecentlyViewed() {
     try {
@@ -295,249 +378,208 @@ export default function HomePage() {
     } catch { /* ignore */ }
   }
 
-  function handleDistrictClick(district: typeof DISTRICTS[0]) {
-    if (zoomActive) return;
-    setZoomTarget({ x: district.cx, y: district.cy, path: district.path });
-    setZoomActive(true);
-    setTimeout(() => {
-      navigate(district.path);
-      setTimeout(() => { setZoomActive(false); setZoomTarget(null); }, 300);
-    }, 820);
-  }
-
   return (
-    <div style={{ background: '#07111f', minHeight: '100vh' }}>
+    <div style={{ background: '#07111f' }}>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          FULLSCREEN CITY — immersive world entry
-      ═══════════════════════════════════════════════════════════════ */}
-      <section
-        ref={cityRef}
-        className={`relative w-full overflow-hidden ${zoomActive ? 'city-zoom-active' : ''}`}
-        style={{ height: 'calc(100vh - 68px)', minHeight: '600px', maxHeight: '1080px' }}
-      >
-        {/* City image — fills everything */}
-        <div className="city-map-container" style={{ position: 'absolute' }}>
-          <img
-            src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy copy.jpg"
-            alt="PiacPro városa"
-            className="city-map-img"
-            fetchPriority="high"
-            style={zoomActive && zoomTarget ? {
-              transformOrigin: `${zoomTarget.x}% ${zoomTarget.y}%`,
-              animation: 'zoomIntoBuilding 0.9s cubic-bezier(0.55, 0, 0.1, 1) forwards',
-            } : {
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center 35%',
-              filter: 'brightness(0.72) saturate(1.08)',
-              animation: 'cityBreathe 14s ease-in-out infinite',
-            }}
-          />
+      {/* ═══════════════════════════════════════════════════════════
+          HERO — városkép
+      ═══════════════════════════════════════════════════════════ */}
+      <section className="relative w-full overflow-hidden" style={{ height: 'clamp(520px, 80vh, 820px)' }}>
+
+        {/* City background */}
+        <img src="/4958ed4e-94b0-44bb-9a73-d253229f7c40.jpg" alt="PiacPro városképe"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ filter: 'brightness(0.68) saturate(1.25)' }} fetchPriority="high" />
+
+        {/* Gradients */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.55) 0%, rgba(7,17,31,0.05) 22%, rgba(7,17,31,0.05) 52%, rgba(7,17,31,0.8) 82%, rgba(7,17,31,1) 100%)' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(7,17,31,0.9) 0%, rgba(7,17,31,0.5) 14%, transparent 28%)' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(7,17,31,0.9) 0%, rgba(7,17,31,0.5) 14%, transparent 28%)' }} />
+
+        {/* Scan line + grid */}
+        <div className="scan-line" />
+        <div className="absolute inset-0 pointer-events-none grid-overlay opacity-25" />
+
+        {/* ── Top title ── */}
+        <div className={`absolute top-5 inset-x-0 flex flex-col items-center z-10 pointer-events-none transition-all duration-700 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
+          <h1 className="text-xl sm:text-3xl md:text-4xl font-black tracking-[0.12em] uppercase text-center px-4"
+            style={{ color: '#fff', textShadow: '0 2px 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,208,132,0.3)' }}>
+            ÜDV A PIACPRO VILÁGÁBAN!
+          </h1>
+          <p className="mt-1.5 text-sm text-zinc-300 text-center px-4" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
+            Fedezd fel a lehetőségeket. Minden egy helyen.
+          </p>
+          {/* City center badge */}
+          <div className="mt-4 w-14 h-14 rounded-full flex items-center justify-center float-anim pointer-events-auto cursor-pointer hover:scale-110 transition-transform"
+            style={{ background: 'radial-gradient(circle, rgba(0,208,132,0.25), rgba(7,17,31,0.85))', border: '2px solid rgba(0,208,132,0.55)', boxShadow: '0 0 40px rgba(0,208,132,0.45), inset 0 0 20px rgba(0,208,132,0.12)' }}
+            onClick={() => navigate('/')}>
+            <div className="text-center leading-none">
+              <div className="text-[11px] font-black" style={{ color: '#00d084' }}>Piac</div>
+              <div className="text-[11px] font-black text-white">Pro</div>
+            </div>
+          </div>
         </div>
 
-        {/* Flash overlay for zoom */}
-        {zoomActive && <div className="city-zoom-flash" />}
-
-        {/* Bottom fade */}
-        <div className="absolute inset-x-0 bottom-0 h-28 pointer-events-none z-10"
-          style={{ background: 'linear-gradient(to top, rgba(7,17,31,1) 0%, transparent 100%)' }} />
-
-        {/* ── FLOATING DISTRICT CARDS — anchored to each building ── */}
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          {DISTRICTS.map((d, i) => {
-            const Icon = d.icon;
-            const isHov = hoveredDistrict === d.id;
-            const statNum = d.statKey === 'listings' ? listingCount
-              : d.statKey === 'jobs' ? jobCount
-              : d.statKey === 'auctions' ? auctionCount
-              : d.statKey === 'donations' ? donationCount
-              : null;
-
-            // Card position relative to building anchor point
-            const cardStyle: React.CSSProperties = {
-              position: 'absolute',
-              pointerEvents: 'auto',
-              cursor: 'pointer',
-              transition: 'transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease, opacity 0.5s ease',
-              transitionDelay: ready ? `${i * 70}ms` : '0ms',
-              opacity: ready ? 1 : 0,
-              transform: isHov ? 'translate(-50%, -50%) scale(1.07) translateY(-4px)' : 'translate(-50%, -50%) scale(1)',
-              left: `${d.cx}%`,
-              top: `${d.cy}%`,
-              zIndex: isHov ? 30 : 20,
-            };
-
+        {/* ── 7 district pins over city image ── */}
+        <div className="absolute inset-0 z-20">
+          {QUARTERS.map((q, i) => {
+            const Icon = q.icon;
+            const cnt = q.countKey === 'listing' ? listingCount : q.countKey === 'auction' ? auctionCount : q.countKey === 'job' ? jobCount : 0;
+            const hov = hovQ === i;
             return (
-              <div
-                key={d.id}
-                style={cardStyle}
-                onMouseEnter={() => setHoveredDistrict(d.id)}
-                onMouseLeave={() => setHoveredDistrict(null)}
-                onClick={() => handleDistrictClick(d)}
-              >
-                {/* The card */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '10px 14px 10px 10px',
-                  borderRadius: '14px',
-                  background: isHov
-                    ? `linear-gradient(135deg, rgba(3,8,20,0.97) 0%, ${d.color}14 100%)`
-                    : 'rgba(3,8,20,0.88)',
-                  border: `1.5px solid ${isHov ? d.color + 'dd' : d.color + '60'}`,
-                  backdropFilter: 'blur(22px)',
-                  boxShadow: isHov
-                    ? `0 8px 32px rgba(0,0,0,0.75), 0 0 28px ${d.color}45`
-                    : `0 4px 18px rgba(0,0,0,0.65), 0 0 12px ${d.color}18`,
-                  transition: 'all 0.25s ease',
-                  whiteSpace: 'nowrap',
+              <button key={q.label}
+                onClick={() => navigate(q.path)}
+                onMouseEnter={() => setHovQ(i)}
+                onMouseLeave={() => setHovQ(null)}
+                className={`absolute transition-all duration-300 ${ready ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
+                style={{
+                  top: q.pos.top, left: q.pos.left,
+                  transitionDelay: ready ? `${i * 55}ms` : '0ms',
+                  transform: hov ? 'scale(1.12) translateY(-5px)' : 'scale(1)',
+                  zIndex: hov ? 30 : 20,
                 }}>
-                  {/* Icon bubble */}
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: `${d.color}1a`,
-                    border: `1px solid ${d.color}50`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'all 0.25s ease',
-                    boxShadow: isHov ? `0 0 16px ${d.color}50` : 'none',
+                <div className="rounded-2xl px-3 py-2.5 flex items-center gap-2.5"
+                  style={{
+                    minWidth: '158px',
+                    background: hov ? q.bg : 'rgba(7,17,31,0.82)',
+                    border: `1px solid ${hov ? q.border : 'rgba(255,255,255,0.13)'}`,
+                    backdropFilter: 'blur(18px)',
+                    boxShadow: hov ? `0 10px 36px rgba(0,0,0,0.55), 0 0 28px ${q.glow}` : '0 4px 20px rgba(0,0,0,0.5)',
+                    transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
                   }}>
-                    <Icon style={{ color: d.color, width: '16px', height: '16px' }} />
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: q.bg, border: `1px solid ${q.border}` }}>
+                    <Icon style={{ color: q.color, width: '1.1rem', height: '1.1rem' }} />
                   </div>
-
-                  {/* Text */}
-                  <div>
-                    <div style={{
-                      color: isHov ? d.color : '#f4f4f5',
-                      fontSize: '12px',
-                      fontWeight: 900,
-                      letterSpacing: '0.04em',
-                      textTransform: 'uppercase',
-                      lineHeight: 1.2,
-                      textShadow: isHov ? `0 0 14px ${d.color}` : 'none',
-                      transition: 'all 0.25s ease',
-                    }}>
-                      {d.label}
+                  <div className="text-left">
+                    <div className="text-[11px] font-black tracking-wider uppercase leading-tight"
+                      style={{ color: q.color, textShadow: hov ? `0 0 12px ${q.glow}` : 'none' }}>
+                      {q.label}
                     </div>
-                    <div style={{
-                      color: 'rgba(255,255,255,0.5)',
-                      fontSize: '10px',
-                      marginTop: '2px',
-                      lineHeight: 1.3,
-                    }}>
-                      {d.sublabel}
-                    </div>
-                    {statNum != null && statNum > 0 && (
-                      <div style={{
-                        color: d.color,
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        marginTop: '2px',
-                        opacity: 0.9,
-                      }}>
-                        {statNum.toLocaleString('hu-HU')} {d.statLabel}
-                      </div>
-                    )}
+                    <div className="text-[10px] text-zinc-400 leading-tight mt-0.5">{q.sublabel}</div>
+                    {cnt > 0 && <div className="text-[10px] font-bold mt-0.5" style={{ color: q.color }}>{cnt.toLocaleString('hu-HU')} db</div>}
                   </div>
                 </div>
-              </div>
+                <div className="mt-1 flex justify-center">
+                  <span className="text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full"
+                    style={{ color: q.color, background: 'rgba(7,17,31,0.7)', border: `1px solid ${q.border}`, textShadow: hov ? `0 0 8px ${q.glow}` : 'none' }}>
+                    {q.label.split(' ')[0]}
+                  </span>
+                </div>
+              </button>
             );
           })}
         </div>
 
-        {/* ── Minimal bottom HUD ── */}
-        <div className={`absolute bottom-0 inset-x-0 z-30 flex items-end justify-between px-4 pb-4 transition-all duration-700 ${ready ? 'opacity-100' : 'opacity-0'}`}>
-
-          {/* PiacAI pill */}
-          <button
-            onClick={() => navigate('/piac-ai')}
-            className="items-center gap-2.5 px-3 py-2 rounded-2xl transition-all hover:scale-[1.03] active:scale-[0.97] hidden md:flex"
-            style={{
-              background: 'rgba(3,8,18,0.85)',
-              border: '1px solid rgba(0,208,132,0.38)',
-              backdropFilter: 'blur(20px)',
-              boxShadow: '0 0 22px rgba(0,208,132,0.14)',
-            }}
-          >
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <img src="/robot.jpg" alt="PiacAI" className="w-9 h-9 rounded-xl object-cover"
-                style={{ border: '1.5px solid rgba(0,208,132,0.45)' }} />
-              <span style={{
-                position: 'absolute', bottom: '-2px', right: '-2px',
-                width: '7px', height: '7px', borderRadius: '50%',
-                background: '#00d084', border: '1.5px solid rgba(3,8,18,1)',
-                boxShadow: '0 0 6px #00d084',
-              }} />
+        {/* ── LEFT PANEL — Quick access ── */}
+        <div className={`absolute left-3 top-[88px] bottom-10 z-30 w-[185px] hidden lg:flex flex-col gap-2 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>
+          <div className="rounded-2xl flex-1 overflow-hidden" style={{ background: 'rgba(7,17,31,0.85)', border: '1px solid rgba(0,208,132,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+            <div className="px-4 pt-3.5 pb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: '#00d084' }} />
+                <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(0,208,132,0.8)' }}>Gyors elérés</span>
+              </div>
             </div>
-            <div>
-              <div className="text-[11px] font-black text-zinc-100 leading-tight">PiacAI</div>
-              <div className="text-[9px] font-medium" style={{ color: '#00d084' }}>Kész segíteni →</div>
-            </div>
-          </button>
-
-          {/* Scroll hint */}
-          <div className="flex flex-col items-center gap-1 absolute left-1/2 -translate-x-1/2 bottom-4">
-            <span className="text-[9px] font-bold tracking-widest uppercase text-zinc-500">Görgets le</span>
-            <div className="w-4 h-7 rounded-full border border-zinc-700 flex items-start justify-center pt-1">
-              <div className="w-1 h-1.5 rounded-full bg-[#00d084]" style={{ animation: 'floatY 1.8s ease-in-out infinite' }} />
+            <div className="px-2 pb-2 space-y-0.5">
+              {QUICK_ACCESS.map(item => {
+                const Icon = item.icon;
+                const target = item.path === '/profile' && user ? `/profile/${user.id}` : item.path;
+                return (
+                  <button key={item.label} onClick={() => navigate(target)}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all group hover:bg-[rgba(0,208,132,0.06)]">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${item.color}18`, border: `1px solid ${item.color}35` }}>
+                      <Icon style={{ color: item.color, width: '0.9rem', height: '0.9rem' }} />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <div className="text-[12px] font-semibold text-zinc-200 group-hover:text-white truncate">{item.label}</div>
+                      <div className="text-[10px] text-zinc-600 truncate">{item.sub}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Live stats pill */}
-          <div className="hidden md:flex items-center gap-3 px-3 py-2 rounded-2xl"
-            style={{ background: 'rgba(3,8,18,0.85)', border: '1px solid rgba(0,208,132,0.2)', backdropFilter: 'blur(20px)' }}>
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: '#00d084', boxShadow: '0 0 6px #00d084', animation: 'pulseDot 2s ease-in-out infinite' }} />
-            {[
-              { color: '#00d084', val: onlineCount > 0 ? onlineCount : '—', label: 'online' },
-              { color: '#3b82f6', val: listingCount, label: 'hirdetés' },
-              { color: '#c084fc', val: auctionCount, label: 'aukció' },
-              { color: '#f59e0b', val: jobCount, label: 'állás' },
-            ].map((s, i) => (
-              <div key={i} className="flex items-center gap-1">
-                <span className="text-[11px] font-black" style={{ color: s.color }}>
-                  {typeof s.val === 'number' ? s.val.toLocaleString('hu-HU') : s.val}
-                </span>
-                <span className="text-[10px] text-zinc-500">{s.label}</span>
-                {i < 3 && <span className="text-zinc-700 text-[10px] ml-1">·</span>}
+          {/* PiacAI bot */}
+          <div className="rounded-2xl p-4" style={{ background: 'rgba(7,17,31,0.85)', border: '1px solid rgba(0,208,132,0.2)', backdropFilter: 'blur(20px)' }}>
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <img src="/kell.png" alt="PiacAI" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+                onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+              <div>
+                <div className="text-xs font-bold text-zinc-100">Üdv a PiacPro-ban!</div>
+                <div className="text-[10px] text-zinc-500">Én vagyok PiacAI</div>
               </div>
-            ))}
+            </div>
+            <p className="text-[10px] text-zinc-400 leading-relaxed mb-2.5">Segítek megtalálni, amire szükséged van. Kérdezz bátran!</p>
+            <button onClick={() => navigate('/piac-ai')}
+              className="w-full py-2 rounded-xl text-xs font-bold text-[#07111f] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg, #00d084, #059669)', boxShadow: '0 0 16px rgba(0,208,132,0.4)' }}>
+              <Sparkles className="w-3 h-3" />Kérdezz tőlem!
+            </button>
           </div>
         </div>
+
+        {/* ── RIGHT PANEL — Live stats ── */}
+        <div className={`absolute right-3 top-[88px] bottom-10 z-30 w-[185px] hidden lg:flex flex-col gap-2 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6'}`}>
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(7,17,31,0.85)', border: '1px solid rgba(0,208,132,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+            <div className="px-4 pt-3.5 pb-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#00d084] pulse-dot" />
+              <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(0,208,132,0.8)' }}>Élő aktivitás</span>
+            </div>
+            <div className="px-3 pb-3 space-y-1.5">
+              {[
+                { icon: Users,       color: '#00d084', bg: 'rgba(0,208,132,0.1)',    label: `${onlineCount.toLocaleString('hu-HU')} online most` },
+                { icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  label: `${listingCount > 0 ? listingCount : 128} aktív hirdetés` },
+                { icon: Briefcase,   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  label: `${jobCount > 0 ? jobCount : 26} nyitott állás` },
+                { icon: Building2,   color: '#f97316', bg: 'rgba(249,115,22,0.1)',  label: '15 regisztrált bolt' },
+                { icon: Heart,       color: '#ec4899', bg: 'rgba(236,72,153,0.1)',  label: '8 aktív kampány' },
+              ].map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <div key={i} className="flex items-center gap-2.5 px-2 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.025)' }}>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: s.bg }}>
+                      <Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
+                    </div>
+                    <span className="text-[11px] text-zinc-300 leading-tight">{s.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="px-3 pb-3">
+              <button onClick={() => navigate('/search')}
+                className="w-full py-2 rounded-xl text-[11px] font-semibold text-[#00d084] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+                style={{ background: 'rgba(0,208,132,0.08)', border: '1px solid rgba(0,208,132,0.2)' }}>
+                <Activity className="w-3.5 h-3.5" />Böngészés
+              </button>
+            </div>
+          </div>
+        </div>
+
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          CONTENT SECTIONS
-      ═══════════════════════════════════════════════════════════════ */}
-      <div className="relative z-10" style={{ background: '#07111f' }}>
-
-        {/* District navigation strip */}
-        <div className="sticky top-[68px] z-40 px-4 py-2.5 overflow-x-auto"
-          style={{ background: 'rgba(7,17,31,0.95)', borderBottom: '1px solid rgba(0,208,132,0.1)', backdropFilter: 'blur(24px)' }}>
-          <div className="flex items-center gap-2 max-w-[1440px] mx-auto">
-            {DISTRICTS.map(d => {
-              const Icon = d.icon;
-              return (
-                <button key={d.id} onClick={() => navigate(d.path)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all hover:scale-[1.04]"
-                  style={{ background: `${d.color}15`, border: `1px solid ${d.color}35`, color: d.color }}>
-                  <Icon className="w-3 h-3" />{d.label}
-                </button>
-              );
-            })}
-          </div>
+      {/* ═══════════════════════════════════════════════════════════
+          CONTENT BELOW HERO
+      ═══════════════════════════════════════════════════════════ */}
+      <div className="relative" style={{ background: '#07111f' }}>
+        <div className="fixed inset-0 pointer-events-none z-0" style={{ top: '100vh' }}>
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,208,132,0.04) 0%, transparent 60%)' }} />
         </div>
 
-        {/* ── AI recs + Popular ── */}
-        <section className="px-4 pt-8 pb-6 max-w-[1440px] mx-auto" style={{ borderBottom: '1px solid rgba(0,208,132,0.07)' }}>
+        {/* ── 7 DISTRICT CARDS ── */}
+        <section className="relative z-10 px-4 pt-8 pb-6 max-w-[1440px] mx-auto">
+          <SectionHead icon={Building2} label="A PiacPro negyedei" iconColor="text-[#00d084]" />
+          <DistrictGrid
+            onNav={navigate}
+            counts={{ listing: listingCount, auction: auctionCount, job: jobCount }}
+          />
+        </section>
+
+        {/* ── AI RECOMMENDATIONS + POPULAR + SOCIAL ── */}
+        <section className="px-4 pb-8 max-w-[1440px] mx-auto" style={{ borderBottom: '1px solid rgba(0,208,132,0.07)' }}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* AI recs */}
             <div className="md:col-span-2 rounded-2xl p-5" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-4 h-4 text-[#00d084]" />
@@ -564,6 +606,8 @@ export default function HomePage() {
                 </div>
               ) : <p className="text-zinc-600 text-sm">Még nincsenek ajánlások.</p>}
             </div>
+
+            {/* Popular + Social */}
             <div className="flex flex-col gap-3">
               <div className="rounded-2xl p-4" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
                 <div className="text-sm font-black text-zinc-200 mb-3">Népszerű keresések</div>
@@ -577,25 +621,57 @@ export default function HomePage() {
                   ))}
                 </div>
               </div>
+              <div className="rounded-2xl p-4" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
+                <div className="text-sm font-black text-zinc-200 mb-1">Csatlakozz hozzánk!</div>
+                <p className="text-xs text-zinc-500 mb-3">Kövess minket és légy naprakész</p>
+                <div className="flex gap-3">
+                  {[
+                    { label: 'f', color: '#1877f2', bg: 'rgba(24,119,242,0.15)', border: 'rgba(24,119,242,0.3)' },
+                    { label: 'G', color: '#00d084', bg: 'rgba(0,208,132,0.15)', border: 'rgba(0,208,132,0.3)' },
+                    { label: 'Y', color: '#ff0000', bg: 'rgba(255,0,0,0.15)',   border: 'rgba(255,0,0,0.3)' },
+                    { label: 'I', color: '#e1306c', bg: 'rgba(225,48,108,0.15)',border: 'rgba(225,48,108,0.3)' },
+                  ].map((s, i) => (
+                    <button key={i} className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all hover:scale-110"
+                      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
+        {/* ── MAIN CONTENT SECTIONS ── */}
         <div className="max-w-[1440px] mx-auto px-4 space-y-10 py-10">
 
-          {/* Auctions */}
-          {(loading || allAuctions.length > 0) && (
+          {/* Expiring auctions */}
+          {(loading || expiringAuctions.length > 0) && (
             <section>
-              <SectionHead icon={Gavel} label="Aktív licitek" iconColor="text-[#a855f7]" count={auctionCount}
-                linkLabel="Licit Csarnok" linkColor="text-[#a855f7] hover:text-purple-300" onLink={() => navigate('/auctions')} />
+              <SectionHead icon={Flame} label="Ma lejáró licitek" iconColor="text-red-400"
+                count={expiringAuctions.length || undefined}
+                linkLabel="Összes licit" linkColor="text-[#a855f7] hover:text-purple-300"
+                onLink={() => navigate('/auctions')} />
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {loading ? Array.from({length:4}).map((_,i)=><SkeletonCard key={i}/>)
-                  : allAuctions.map(l=><AuctionMiniCard key={l.id} listing={l}/>)}
+                  : expiringAuctions.map(l=><AuctionCard key={l.id} listing={l} urgent/>)}
               </div>
             </section>
           )}
 
-          {/* Popular listings */}
+          {/* Active auctions */}
+          {(loading || allAuctions.length > 0) && (
+            <section>
+              <SectionHead icon={Gavel} label="Aktív licitek" iconColor="text-[#a855f7]" count={auctionCount}
+                linkColor="text-[#a855f7] hover:text-purple-300" onLink={() => navigate('/auctions')} />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {loading ? Array.from({length:4}).map((_,i)=><SkeletonCard key={i}/>)
+                  : allAuctions.map(l=><AuctionCard key={l.id} listing={l}/>)}
+              </div>
+            </section>
+          )}
+
+          {/* Popular */}
           {(loading || popularListings.length > 0) && (
             <section>
               <SectionHead icon={TrendingUp} label="Népszerű hirdetések" iconColor="text-[#f59e0b]"
@@ -637,7 +713,7 @@ export default function HomePage() {
           {/* Jobs */}
           <section>
             <SectionHead icon={Briefcase} label="Kiemelt állások" iconColor="text-[#3b82f6]" count={jobCount}
-              linkLabel="Munka Negyed" linkColor="text-[#3b82f6] hover:text-blue-300" onLink={() => navigate('/jobs')} />
+              linkColor="text-[#3b82f6] hover:text-blue-300" onLink={() => navigate('/jobs')} />
             {loading ? (
               <div className="space-y-2.5">{Array.from({length:3}).map((_,i)=><div key={i} className="rounded-2xl h-[72px] skeleton"/>)}</div>
             ) : featuredJobs.length === 0 ? (
@@ -653,7 +729,7 @@ export default function HomePage() {
           {(loading || featuredDonations.length > 0) && (
             <section>
               <SectionHead icon={Heart} label="Adomány kampányok" iconColor="text-[#eab308]"
-                linkLabel="Adomány Központ" linkColor="text-[#eab308] hover:text-yellow-300" onLink={() => navigate('/donations')} />
+                linkColor="text-[#eab308] hover:text-yellow-300" onLink={() => navigate('/donations')} />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {loading ? Array.from({length:3}).map((_,i)=>(
                   <div key={i} className="rounded-3xl overflow-hidden" style={{ background: 'rgba(13,27,42,0.6)', border: '1px solid rgba(0,208,132,0.07)' }}>

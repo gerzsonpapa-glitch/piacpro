@@ -107,13 +107,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [defenseOpen, setDefenseOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const [pageKey, setPageKey] = useState(path);
   const defenseRef = useRef<HTMLDivElement>(null);
   const isHome = path === '/';
-
-  useEffect(() => {
-    setPageKey(path);
-  }, [path]);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -360,7 +355,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main */}
-      <main key={pageKey} className="relative z-10 py-0 pb-24 md:pb-10 page-enter">{children}</main>
+      <main className="relative z-10 py-0 pb-24 md:pb-10">{children}</main>
 
       <Footer />
 

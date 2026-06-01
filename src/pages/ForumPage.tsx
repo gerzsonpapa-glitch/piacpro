@@ -175,12 +175,12 @@ function ForumHome({ categories, threads, onSelectCategory, onSelectThread, onNe
       {/* City Hero — Közösségi Tér */}
       <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
         <img
-          src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy.jpg"
+          src="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=1600"
           alt="Közösségi Tér"
           className="page-hero-bg"
-          style={{ objectPosition: 'center 50%', filter: 'brightness(0.28) saturate(1.5) hue-rotate(175deg)' }}
+          style={{ objectPosition: 'center 40%' }}
         />
-        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(56,189,248,0.1) 0%, rgba(7,17,31,0.15) 40%, rgba(7,17,31,0.92) 100%)' }} />
+        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.35) 0%, rgba(7,17,31,0.2) 40%, rgba(7,17,31,0.88) 100%)' }} />
         <div className="absolute inset-0 grid-overlay opacity-40" />
         <div className="scan-line" />
         <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
