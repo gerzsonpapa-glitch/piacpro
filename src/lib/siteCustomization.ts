@@ -326,6 +326,41 @@ export function applySiteTheme(config: SiteCustomizationConfig) {
     document.head.appendChild(styleEl);
   }
   styleEl.textContent = config.customCss || '';
+
+  let ambientEl = document.getElementById('piac-ambient-css') as HTMLStyleElement | null;
+  if (!ambientEl) {
+    ambientEl = document.createElement('style');
+    ambientEl.id = 'piac-ambient-css';
+    document.head.appendChild(ambientEl);
+  }
+  const accentRgb = hexToRgb(t.accent);
+  ambientEl.textContent = `
+    body::before {
+      background:
+        radial-gradient(ellipse 120% 60% at 15% -10%, ${t.gradientTop} 0%, transparent 55%),
+        radial-gradient(ellipse 80% 50% at 85% 10%, rgba(59,130,246,0.04) 0%, transparent 50%),
+        radial-gradient(ellipse 100% 70% at 50% 110%, ${t.gradientBottom} 0%, transparent 55%) !important;
+    }
+    body::after {
+      opacity: ${w.gridVisible ? w.gridOpacity : 0} !important;
+      background-image:
+        linear-gradient(rgba(${accentRgb},0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(${accentRgb},0.04) 1px, transparent 1px) !important;
+    }
+    .glass, .glass-bubble, .glass-pill {
+      border-color: var(--piac-glass-border, rgba(0,208,132,0.18)) !important;
+    }
+    .glass-pill-active, .breathe-green {
+      color: var(--piac-accent, #00d084) !important;
+    }
+  `;
+}
+
+function hexToRgb(hex: string): string {
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return '0,208,132';
+  const n = parseInt(h, 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 }
 
 /** Felhasználóbarát mentési hibaüzenet */

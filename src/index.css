@@ -606,3 +606,35 @@ html[data-piac-grid='1'] body::after {
   backdrop-filter: blur(var(--piac-glass-blur, 48px)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--piac-glass-blur, 48px)) saturate(180%);
 }
+
+/* Fejlesztői inline szerkesztés */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+body.piac-dev-edit-active [data-piac-edit].piac-editable {
+  cursor: pointer;
+  outline: 1px dashed rgba(124, 58, 237, 0.45);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+body.piac-dev-edit-active [data-piac-edit].piac-editable:hover {
+  outline-color: rgba(124, 58, 237, 0.85);
+  background: rgba(124, 58, 237, 0.08);
+}
+
+body.piac-dev-edit-active .piac-editable-selected {
+  outline: 2px solid #a78bfa !important;
+  outline-offset: 3px;
+  background: rgba(124, 58, 237, 0.12) !important;
+}
+
+body.piac-dev-edit-active header a:not([data-piac-edit]),
+body.piac-dev-edit-active header button:not([data-piac-edit]) {
+  pointer-events: auto;
+}

@@ -53,6 +53,9 @@ export function ImageUrlField({
         </label>
       </div>
       {hint && <p className="text-[10px] text-zinc-600">{hint}</p>}
+      <p className="text-[10px] text-zinc-600">
+        Feltöltés: Supabase tároló, ha nem elérhető → tömörített helyi kép. Vagy illeszd be a közvetlen URL-t.
+      </p>
       {err && <p className="text-[10px] text-red-400">{err}</p>}
       {value && (
         <div className="relative h-24 rounded-xl overflow-hidden border border-white/10 bg-black/30">

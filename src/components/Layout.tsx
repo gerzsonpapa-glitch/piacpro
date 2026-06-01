@@ -15,6 +15,8 @@ import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { isSiteDeveloper } from '../lib/developer';
 import { getPageSkin } from '../lib/siteCustomization';
 import WorldEffects from './WorldEffects';
+import InlineDevEditor from './InlineDevEditor';
+import PiacEditable from './PiacEditable';
 
 const DEFENSE_ITEMS = [
   { key: 'nyugdij' as const,                icon: TrendingUp, label: 'Nyugdíj-előtakarékosság',           desc: 'Hosszú távú megtakarítás, adókedvezmény' },
@@ -211,10 +213,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="absolute top-0 left-0 right-0 h-[1px]"
             style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(0,208,132,0.5) 30%, rgba(0,208,132,0.9) 50%, rgba(0,208,132,0.5) 70%, transparent 100%)' }} />
         )}
-        <div className="max-w-[1440px] mx-auto px-4 h-[68px] flex items-center gap-3">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-4 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 min-h-[64px] h-auto py-2 min-w-0 w-full">
 
           {/* Logo */}
-          <button onClick={() => navigate('/')} className="flex items-center gap-2.5 hover:opacity-90 transition-opacity flex-shrink-0 group">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 hover:opacity-90 transition-opacity flex-shrink-0 group max-w-[42%] sm:max-w-none">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 breathe-green overflow-hidden"
               style={{ background: 'rgba(0,208,132,0.12)', border: '1px solid rgba(0,208,132,0.3)' }}>
               {config.media.logoImageUrl ? (
@@ -223,18 +226,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <ShoppingBag className="w-5 h-5 text-[#00d084]" />
               )}
             </div>
-            <div className="hidden sm:block leading-none">
-              <div className="text-[18px] font-black tracking-tight" style={{ color: '#fff' }}>
+            <div className="hidden sm:block leading-none min-w-0">
+              <div className="text-base lg:text-[18px] font-black tracking-tight truncate" style={{ color: '#fff' }}>
                 Piac<span style={{ color: 'var(--piac-accent,#00d084)', textShadow: '0 0 16px rgba(0,208,132,0.6)' }}>Pro</span>
               </div>
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: 'rgba(0,208,132,0.55)' }}>
+              <PiacEditable editKey="nav.brandSubtitle" as="div" className="text-[8px] lg:text-[9px] font-bold tracking-[0.12em] uppercase truncate block max-w-[140px] lg:max-w-[200px]" style={{ color: 'rgba(0,208,132,0.55)' }}>
                 {config.nav.brandSubtitle}
-              </div>
+              </PiacEditable>
             </div>
           </button>
 
           {/* Center search */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl hidden md:block mx-4">
+          <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-none hidden md:block mx-1 lg:mx-3">
             <div className="relative flex items-center rounded-2xl overflow-hidden transition-all duration-300 hover:border-[rgba(0,208,132,0.3)] focus-within:border-[rgba(0,208,132,0.42)] focus-within:shadow-[0_0_0_3px_rgba(0,208,132,0.08),0_0_28px_rgba(0,208,132,0.07)]"
               style={{ background: 'rgba(10,22,38,0.82)', border: '1px solid rgba(0,208,132,0.16)', backdropFilter: 'blur(20px)' }}>
               <div className="w-10 h-10 flex-shrink-0 ml-1 flex items-center justify-center rounded-xl"
@@ -245,7 +248,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'rgba(0,208,132,0.65)' }}>Mit keresel ma?</span>
                 <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
                   placeholder={config.nav.searchPlaceholder}
-                  className="bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none leading-tight" />
+                  data-piac-edit="nav.searchPlaceholder"
+                  className="bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none leading-tight w-full min-w-0" />
               </div>
               <button type="submit" className="flex-shrink-0 m-1.5 w-9 h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95"
                 style={{ background: 'linear-gradient(135deg, #00d084, #059669)', boxShadow: '0 0 20px rgba(0,208,132,0.45)' }}>
@@ -254,8 +258,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </form>
 
-          {/* Desktop nav links */}
-          <nav className="hidden lg:flex items-center gap-0.5">
+          {/* Desktop nav links — görgethető, ne csússzon szét */}
+          <nav className="hidden lg:flex items-center gap-0.5 flex-shrink min-w-0 max-w-[38vw] xl:max-w-[42vw] overflow-x-auto scrollbar-none">
             {NAV_LINKS.map(item => (
               <button key={item.path} onClick={() => navigate(item.path)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
@@ -277,33 +281,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {defenseOpen && <DefenseDropdown onClose={() => setDefenseOpen(false)} />}
             </div>
 
-            {showDevStudio && (
-              <button
-                onClick={() => navigate('/admin?tab=developer')}
-                className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  isActive('/admin') ? 'glass-pill-active text-violet-300' : 'text-violet-400/80 hover:text-violet-300 hover:bg-violet-500/10'
-                }`}
-                title="Weboldal szerkesztő"
-              >
-                Szerkesztő
-              </button>
-            )}
             {profile?.is_admin && (
               <button onClick={() => navigate('/admin')}
-                className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
+                className={`relative flex items-center gap-1 px-2 py-2 rounded-xl text-[12px] font-medium whitespace-nowrap flex-shrink-0 transition-all ${
                   isActive('/admin') ? 'glass-pill-active text-[#00d084]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
-                }`}>
-                <span className="relative">
-                  <Shield className="w-3.5 h-3.5" />
-                  {pendingApps > 0 && <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-amber-500 text-zinc-900 text-[9px] font-black rounded-full flex items-center justify-center">{pendingApps > 9 ? '9+' : pendingApps}</span>}
-                </span>
-                Adminisztráció
+                }`}
+                title="Adminisztráció">
+                <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="hidden xl:inline">Admin</span>
+                {pendingApps > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-zinc-900 text-[8px] font-black rounded-full flex items-center justify-center">
+                    {pendingApps > 9 ? '9+' : pendingApps}
+                  </span>
+                )}
               </button>
             )}
           </nav>
 
           {/* Right side auth */}
-          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
             {user ? (
               <>
                 <button onClick={() => navigate('/messages')} className="relative p-2.5 rounded-xl hover:bg-white/[0.05] transition-all">
@@ -337,10 +333,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </>
             )}
 
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2.5 rounded-xl hover:bg-white/[0.05] transition-all" aria-label="Menü">
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2.5 rounded-xl hover:bg-white/[0.05] transition-all lg:hidden flex-shrink-0" aria-label="Menü">
               {mobileOpen ? <X className="w-5 h-5 text-zinc-300" /> : <Menu className="w-5 h-5 text-zinc-400" />}
             </button>
           </div>
+        </div>
         </div>
 
         {/* Mobile search */}
@@ -410,10 +407,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         >
           {config.announcement.link ? (
             <a href={config.announcement.link} className="hover:underline">
-              {config.announcement.text}
+              <PiacEditable editKey="announcement.text" as="span">{config.announcement.text}</PiacEditable>
             </a>
           ) : (
-            config.announcement.text
+            <PiacEditable editKey="announcement.text" as="span">{config.announcement.text}</PiacEditable>
           )}
         </div>
       )}
@@ -428,8 +425,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''}`}>
         {pageSkin?.title && path !== '/' && (
           <div className="max-w-[1440px] mx-auto px-4 pt-6 pb-2">
-            <h1 className="text-2xl font-black text-zinc-100">{pageSkin.title}</h1>
-            {pageSkin.subtitle && <p className="text-zinc-500 text-sm mt-1">{pageSkin.subtitle}</p>}
+            <PiacEditable editKey={`page.${path}.title`} as="h1" className="text-2xl font-black text-zinc-100">
+              {pageSkin.title}
+            </PiacEditable>
+            {pageSkin.subtitle && (
+              <PiacEditable editKey={`page.${path}.subtitle`} as="p" className="text-zinc-500 text-sm mt-1">
+                {pageSkin.subtitle}
+              </PiacEditable>
+            )}
           </div>
         )}
         {children}
@@ -471,6 +474,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <ChatWidget />
       <DeveloperModeBar />
+      <InlineDevEditor />
     </div>
   );
 }

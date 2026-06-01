@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from '../lib/router';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
+import PiacEditable from './PiacEditable';
 import {
   ShoppingBag, ScrollText, Shield, Mail, Heart, Phone, Users,
   ChevronDown, ChevronUp, Gavel, Briefcase, Store, Leaf,
@@ -350,9 +351,9 @@ export default function Footer() {
                 Piac<span className="text-emerald-400">Pro</span>
               </span>
             </button>
-            <p className="text-zinc-500 text-sm leading-relaxed">
+            <PiacEditable editKey="footer.tagline" as="p" className="text-zinc-500 text-sm leading-relaxed">
               {config.footer.tagline}
-            </p>
+            </PiacEditable>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {[
                 { icon: Star, text: 'Értékelések' },

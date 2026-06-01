@@ -15,6 +15,7 @@ import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { applyQuarterOverrides } from '../lib/siteCustomization';
 import type { QuarterId } from '../lib/siteCustomization';
 import ListingCard from '../components/ListingCard';
+import PiacEditable from '../components/PiacEditable';
 
 /* ── Countdown ─────────────────────────────────────────────────── */
 function useCountdown(endsAt: string, started: boolean) {
@@ -266,10 +267,12 @@ function DistrictGrid({
   quarters,
   onNav,
   counts,
+  devModeActive,
 }: {
   quarters: typeof QUARTERS;
   onNav: (p: string) => void;
   counts: { listing: number; auction: number; job: number };
+  devModeActive?: boolean;
 }) {
   const [hov, setHov] = useState<number | null>(null);
   return (
@@ -297,7 +300,8 @@ function DistrictGrid({
                 src={q.img}
                 alt={q.label}
                 loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                data-piac-edit={`quarter.${q.id}.img`}
+                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${devModeActive ? 'piac-editable' : ''}`}
               />
               {/* Color gradient overlay */}
               <div className="absolute inset-0" style={{
@@ -318,10 +322,13 @@ function DistrictGrid({
             </div>
             {/* Text area */}
             <div className="p-3" style={{ background: 'rgba(7,17,31,0.9)' }}>
-              <div className="text-[11px] font-black tracking-wider uppercase leading-tight mb-0.5" style={{ color: q.color }}>
+              <PiacEditable editKey={`quarter.${q.id}.label`} as="div"
+                className="text-[11px] font-black tracking-wider uppercase leading-tight mb-0.5" style={{ color: q.color }}>
                 {q.label}
-              </div>
-              <div className="text-[10px] text-zinc-400 leading-snug">{q.desc}</div>
+              </PiacEditable>
+              <PiacEditable editKey={`quarter.${q.id}.desc`} as="div" className="text-[10px] text-zinc-400 leading-snug">
+                {q.desc}
+              </PiacEditable>
             </div>
             {/* Hover neon border */}
             <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -414,7 +421,8 @@ export default function HomePage() {
 
         {/* City background */}
         <img src={config.hero.imageUrl} alt="PiacPro városképe"
-          className="piac-hero-bg absolute inset-0 w-full h-full object-cover object-center"
+          data-piac-edit="hero.imageUrl"
+          className={`piac-hero-bg absolute inset-0 w-full h-full object-cover object-center ${devModeActive ? 'piac-editable' : ''}`}
           style={{
             filter: `brightness(${config.hero.brightness}) saturate(${config.hero.saturation})`,
           }}
@@ -442,20 +450,27 @@ export default function HomePage() {
 
         {/* ── Top title ── */}
         <div className={`absolute top-5 inset-x-0 flex flex-col items-center z-10 pointer-events-none transition-all duration-700 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
-          <h1 className="text-xl sm:text-3xl md:text-4xl font-black tracking-[0.12em] uppercase text-center px-4"
+          <PiacEditable editKey="hero.title" as="h1"
+            className="text-xl sm:text-3xl md:text-4xl font-black tracking-[0.12em] uppercase text-center px-4 pointer-events-auto"
             style={{ color: '#fff', textShadow: '0 2px 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,208,132,0.3)' }}>
             {config.hero.title}
-          </h1>
-          <p className="mt-1.5 text-sm text-zinc-300 text-center px-4" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
+          </PiacEditable>
+          <PiacEditable editKey="hero.subtitle" as="p"
+            className="mt-1.5 text-sm text-zinc-300 text-center px-4 pointer-events-auto"
+            style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
             {config.hero.subtitle}
-          </p>
+          </PiacEditable>
           {/* City center badge */}
           <div className="mt-4 w-14 h-14 rounded-full flex items-center justify-center float-anim pointer-events-auto cursor-pointer hover:scale-110 transition-transform"
             style={{ background: 'radial-gradient(circle, rgba(0,208,132,0.25), rgba(7,17,31,0.85))', border: '2px solid rgba(0,208,132,0.55)', boxShadow: '0 0 40px rgba(0,208,132,0.45), inset 0 0 20px rgba(0,208,132,0.12)' }}
             onClick={() => navigate('/')}>
             <div className="text-center leading-none">
-              <div className="text-[11px] font-black" style={{ color: 'var(--piac-accent,#00d084)' }}>{config.hero.badgeTop}</div>
-              <div className="text-[11px] font-black text-white">{config.hero.badgeBottom}</div>
+              <PiacEditable editKey="hero.badgeTop" as="div" className="text-[11px] font-black" style={{ color: 'var(--piac-accent,#00d084)' }}>
+                {config.hero.badgeTop}
+              </PiacEditable>
+              <PiacEditable editKey="hero.badgeBottom" as="div" className="text-[11px] font-black text-white">
+                {config.hero.badgeBottom}
+              </PiacEditable>
             </div>
           </div>
         </div>
@@ -492,10 +507,11 @@ export default function HomePage() {
                     <Icon style={{ color: q.color, width: '1.1rem', height: '1.1rem' }} />
                   </div>
                   <div className="text-left">
-                    <div className="text-[11px] font-black tracking-wider uppercase leading-tight"
+                    <PiacEditable editKey={`quarter.${q.id}.label`} as="div"
+                      className="text-[11px] font-black tracking-wider uppercase leading-tight"
                       style={{ color: q.color, textShadow: hov ? `0 0 12px ${q.glow}` : 'none' }}>
                       {q.label}
-                    </div>
+                    </PiacEditable>
                     <div className="text-[10px] text-zinc-400 leading-tight mt-0.5">{q.sublabel}</div>
                     {cnt > 0 && <div className="text-[10px] font-bold mt-0.5" style={{ color: q.color }}>{cnt.toLocaleString('hu-HU')} db</div>}
                   </div>
@@ -612,6 +628,7 @@ export default function HomePage() {
           <DistrictGrid
             quarters={quarters}
             onNav={navigate}
+            devModeActive={devModeActive}
             counts={{ listing: listingCount, auction: auctionCount, job: jobCount }}
           />
         </section>

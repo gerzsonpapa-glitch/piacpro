@@ -12,7 +12,7 @@ export default function DeveloperModeBar() {
 
   return (
     <div
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 px-3 py-2 rounded-2xl shadow-2xl"
+      className="piac-dev-toolbar fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-wrap items-center justify-center gap-2 px-3 py-2 rounded-2xl shadow-2xl max-w-[min(100vw-1rem,520px)]"
       style={{
         background: 'rgba(7,17,31,0.95)',
         border: '1px solid rgba(0,208,132,0.35)',
@@ -35,6 +35,12 @@ export default function DeveloperModeBar() {
         {devModeActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         {devModeActive ? 'Aktív' : 'Ki'}
       </button>
+
+      {devModeActive && (
+        <span className="text-[10px] text-violet-300/90 hidden sm:inline max-w-[140px] leading-tight">
+          Kattints a kiemelt elemre
+        </span>
+      )}
 
       {!onAdmin && (
         <button
