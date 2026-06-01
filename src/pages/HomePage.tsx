@@ -5,14 +5,13 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Listing, Job, Donation } from '../lib/types';
 import { normalizeListingAuction, formatPrice } from '../lib/utils';
 import {
-  ShoppingBag, Gavel, Briefcase, Timer, Flame, Users,
+  ShoppingBag, Gavel, Briefcase, Timer, Users,
   Building2, Package, Zap, Clock,
   Leaf, CheckCircle2, Heart, Target, ArrowRight,
-  Search, Sparkles, Send, TrendingUp, MessageCircle,
+  Search, Sparkles, Send, MessageCircle,
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import ListingCard from '../components/ListingCard';
-import Avatar from '../components/Avatar';
 
 /* ── Countdown ─────────────────────────────────────────────────── */
 function useCountdown(endsAt: string, started: boolean) {
@@ -230,93 +229,84 @@ function ZoneNode({
         height: `${iconSize}px`,
         borderRadius: '50%',
         background: hovered
-          ? `radial-gradient(circle at 35% 35%, ${zone.color}30, rgba(3,8,20,0.95))`
-          : `radial-gradient(circle at 35% 35%, ${zone.color}18, rgba(3,8,20,0.9))`,
-        border: `1.5px solid ${hovered ? zone.color + 'cc' : zone.color + '45'}`,
-        backdropFilter: 'blur(20px)',
+          ? `radial-gradient(circle at 35% 35%, ${zone.color}40, rgba(3,8,20,0.92))`
+          : `radial-gradient(circle at 35% 35%, ${zone.color}28, rgba(3,8,20,0.85))`,
+        border: `2px solid ${hovered ? zone.color + 'ee' : zone.color + '70'}`,
+        backdropFilter: 'blur(16px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
         boxShadow: hovered
-          ? `0 0 40px ${zone.glow}, 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 ${zone.color}33`
-          : `0 0 16px ${zone.glow.replace('0.35', '0.15')}, 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 ${zone.color}22`,
-        transform: hovered ? 'scale(1.12)' : 'scale(1)',
+          ? `0 0 60px ${zone.glow}, 0 0 120px ${zone.glow.replace('0.35', '0.15')}, 0 12px 40px rgba(0,0,0,0.7), inset 0 1px 0 ${zone.color}44`
+          : `0 0 28px ${zone.glow.replace('0.35', '0.28')}, 0 0 60px ${zone.glow.replace('0.35', '0.1')}, 0 6px 24px rgba(0,0,0,0.6), inset 0 1px 0 ${zone.color}30`,
+        transform: hovered ? 'scale(1.15)' : 'scale(1)',
         cursor: 'pointer',
         zIndex: 2,
       }}>
-        <Icon style={{ color: zone.color, width: `${iconSize * 0.38}px`, height: `${iconSize * 0.38}px` }} />
+        <Icon style={{ color: zone.color, width: `${iconSize * 0.4}px`, height: `${iconSize * 0.4}px`, filter: `drop-shadow(0 0 8px ${zone.color}88)` }} />
 
         {/* Live stat badge */}
         {stat > 0 && (
           <div style={{
             position: 'absolute',
-            top: '-6px', right: '-6px',
-            padding: '2px 6px',
+            top: '-8px', right: '-8px',
+            padding: '3px 7px',
             borderRadius: '20px',
-            background: `rgba(3,8,20,0.92)`,
-            border: `1px solid ${zone.color}66`,
+            background: `rgba(3,8,20,0.95)`,
+            border: `1.5px solid ${zone.color}88`,
             color: zone.color,
-            fontSize: '9px',
+            fontSize: '10px',
             fontWeight: 900,
             lineHeight: 1.4,
             backdropFilter: 'blur(12px)',
             whiteSpace: 'nowrap',
             transition: 'all 0.3s ease',
-            boxShadow: `0 0 8px ${zone.glow.replace('0.35', '0.25')}`,
+            boxShadow: `0 0 14px ${zone.glow.replace('0.35', '0.4')}`,
+            textShadow: `0 0 8px ${zone.color}`,
           }}>
             {stat > 999 ? `${(stat/1000).toFixed(1)}k` : stat}
           </div>
         )}
       </div>
 
-      {/* Label — appears on hover, floats below */}
+      {/* Label — always visible, stronger on hover */}
       <div style={{
         position: 'absolute',
-        top: `calc(100% + ${iconSize * 0.15}px)`,
+        top: `calc(100% + ${iconSize * 0.18}px)`,
         left: '50%',
         transform: 'translateX(-50%)',
-        opacity: hovered ? 1 : 0.7,
+        opacity: hovered ? 1 : 0.85,
         transition: 'all 0.25s ease',
         pointerEvents: 'none',
         textAlign: 'center',
         whiteSpace: 'nowrap',
       }}>
         <div style={{
-          color: hovered ? zone.color : '#e4e4e7',
+          color: hovered ? zone.color : '#f0f0f2',
           fontSize: zone.size === 'lg' ? '13px' : '11px',
           fontWeight: 800,
-          letterSpacing: '0.03em',
-          textShadow: hovered ? `0 0 16px ${zone.color}` : '0 1px 8px rgba(0,0,0,0.8)',
+          letterSpacing: '0.04em',
+          textShadow: hovered
+            ? `0 0 20px ${zone.color}, 0 0 40px ${zone.color}66`
+            : '0 1px 12px rgba(0,0,0,0.95), 0 2px 4px rgba(0,0,0,0.8)',
           transition: 'all 0.25s ease',
         }}>
           {zone.label}
         </div>
-        {hovered && (
-          <div style={{
-            color: 'rgba(255,255,255,0.5)',
-            fontSize: '10px',
-            marginTop: '2px',
-            animation: 'fadeInUp 0.2s ease',
-          }}>
-            {zone.sublabel}
-          </div>
-        )}
+        <div style={{
+          color: hovered ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)',
+          fontSize: '10px',
+          marginTop: '2px',
+          textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+          transition: 'all 0.25s ease',
+          maxHeight: hovered ? '20px' : '0px',
+          overflow: 'hidden',
+        }}>
+          {zone.sublabel}
+        </div>
       </div>
-
-      {/* Connection line to center — subtle */}
-      <div className="zone-connector" style={{
-        position: 'absolute',
-        top: '50%', left: '50%',
-        width: '1px',
-        transformOrigin: 'top left',
-        opacity: hovered ? 0.4 : 0.12,
-        transition: 'opacity 0.3s ease',
-        background: `linear-gradient(to center, ${zone.color}, transparent)`,
-        pointerEvents: 'none',
-        zIndex: 1,
-      }} />
     </div>
   );
 }
@@ -462,7 +452,7 @@ export default function HomePage() {
         {/* ── Deep space background ── */}
         <div className="absolute inset-0 world-bg" />
 
-        {/* ── City image — atmospheric, not the main UI ── */}
+        {/* ── City image — YOU ARE IN THE CITY ── */}
         <div className="absolute inset-0 overflow-hidden">
           <img
             src="/4958ed4e-94b0-44bb-9a73-d253229f7c40 copy copy.jpg"
@@ -471,40 +461,73 @@ export default function HomePage() {
             fetchPriority="high"
             style={zoomActive && zoomTarget ? {
               position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'center 35%',
+              objectFit: 'cover', objectPosition: 'center 30%',
               transformOrigin: `${zoomTarget.x}% ${zoomTarget.y}%`,
               animation: 'worldZoomIn 0.75s cubic-bezier(0.55, 0, 0.1, 1) forwards',
             } : {
               position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'center 35%',
-              filter: 'brightness(0.28) saturate(0.7)',
+              objectFit: 'cover', objectPosition: 'center 30%',
+              filter: 'brightness(0.72) saturate(1.15) contrast(1.05)',
               animation: 'cityBreathe 18s ease-in-out infinite',
             }}
           />
-          {/* Fog layers */}
+
+          {/* Atmospheric depth — horizon haze */}
           <div className="absolute inset-0" style={{
-            background: 'radial-gradient(ellipse 120% 80% at 50% 110%, rgba(7,17,31,0.98) 0%, transparent 55%)',
+            background: 'linear-gradient(to bottom, rgba(7,17,31,0.45) 0%, transparent 30%, transparent 55%, rgba(7,17,31,0.92) 85%, rgba(7,17,31,1) 100%)',
           }} />
+
+          {/* Side vignette — immersive depth */}
           <div className="absolute inset-0" style={{
-            background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(7,17,31,0.7) 0%, transparent 60%)',
+            background: 'radial-gradient(ellipse 110% 100% at 50% 50%, transparent 45%, rgba(7,17,31,0.55) 80%, rgba(7,17,31,0.88) 100%)',
+          }} />
+
+          {/* Golden hour atmosphere — warm glow from city center */}
+          <div className="absolute inset-0" style={{
+            background: 'radial-gradient(ellipse 70% 50% at 48% 45%, rgba(255,190,60,0.06) 0%, transparent 65%)',
+            mixBlendMode: 'screen',
+          }} />
+
+          {/* Haze layer at treeline */}
+          <div className="absolute inset-x-0" style={{
+            top: '40%', height: '25%',
+            background: 'linear-gradient(to bottom, transparent 0%, rgba(60,100,255,0.04) 50%, transparent 100%)',
+            mixBlendMode: 'screen',
           }} />
         </div>
 
-        {/* ── World grid — subtle depth lines ── */}
+        {/* ── Digital world overlay — grid, particles, depth ── */}
+        {/* Perspective grid — you're standing IN the world */}
         <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: 'linear-gradient(rgba(0,208,132,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,208,132,0.025) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-          maskImage: 'radial-gradient(ellipse 90% 90% at 50% 50%, black 20%, transparent 80%)',
+          backgroundImage: `
+            linear-gradient(rgba(0,208,132,0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,208,132,0.035) 1px, transparent 1px)
+          `,
+          backgroundSize: '64px 64px',
+          maskImage: 'radial-gradient(ellipse 85% 80% at 50% 55%, black 10%, transparent 75%)',
           opacity: worldReady ? 1 : 0,
-          transition: 'opacity 1.2s ease',
+          transition: 'opacity 1.4s ease',
         }} />
 
-        {/* ── Ambient light orbs ── */}
+        {/* District neon halos — each zone casts light on the city */}
+        {ZONES.map(zone => (
+          <div key={`halo-${zone.id}`} className="absolute pointer-events-none" style={{
+            left: `${zone.x}%`, top: `${zone.y}%`,
+            transform: 'translate(-50%, -50%)',
+            width: '280px', height: '280px', borderRadius: '50%',
+            background: `radial-gradient(circle, ${zone.glow.replace('0.35', '0.12')} 0%, transparent 65%)`,
+            animation: `ambientOrb ${4 + ZONES.indexOf(zone) * 0.7}s ease-in-out infinite`,
+            animationDelay: `${ZONES.indexOf(zone) * 0.4}s`,
+            zIndex: 5,
+          }} />
+        ))}
+
+        {/* City ambient glow — warm center light */}
         <div className="absolute pointer-events-none" style={{
-          width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0,208,132,0.04) 0%, transparent 70%)',
-          top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          animation: 'ambientOrb 8s ease-in-out infinite',
+          width: '900px', height: '500px', borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(0,208,132,0.055) 0%, transparent 65%)',
+          top: '38%', left: '50%', transform: 'translate(-50%, -50%)',
+          animation: 'ambientOrb 10s ease-in-out infinite',
         }} />
 
         {/* ── Zone flash overlay for zoom ── */}
@@ -527,17 +550,16 @@ export default function HomePage() {
 
         {/* ── World connection lines (SVG) ── */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ opacity: worldReady ? 0.18 : 0, transition: 'opacity 1s ease 0.5s' }}
+          style={{ opacity: worldReady ? 0.35 : 0, transition: 'opacity 1s ease 0.5s' }}
           preserveAspectRatio="none">
-          {/* Lines from each zone to center (AI hub at 50%, 50%) */}
           {ZONES.map((zone) => (
             <line key={zone.id}
               x1={`${zone.x}%`} y1={`${zone.y}%`}
               x2="50%" y2="50%"
               stroke={zone.color}
-              strokeWidth="0.5"
-              strokeDasharray="4 8"
-              style={{ animation: `lineFlow 3s linear infinite`, animationDelay: `${Math.random() * 2}s` }}
+              strokeWidth="0.8"
+              strokeDasharray="5 10"
+              style={{ animation: `lineFlow 4s linear infinite`, animationDelay: `${ZONES.indexOf(zone) * 0.5}s` }}
             />
           ))}
         </svg>
