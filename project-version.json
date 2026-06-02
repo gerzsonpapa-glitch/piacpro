@@ -1,0 +1,21 @@
+{
+  "active": "v2",
+  "versions": {
+    "v1": {
+      "tag": "project-v1",
+      "label": "PiacPro project v1",
+      "description": "Meleg fantasy hub háttér, hero-only backdrop, szolid görgetős szekció, zóna asset rendszer, fejlesztői mód és kártya stílusok.",
+      "savedAt": "2026-06-02"
+    },
+    "v2": {
+      "label": "PiacPro project v2",
+      "description": "v1 utáni fejlesztések — aktív munkaág",
+      "baseTag": "project-v1"
+    }
+  },
+  "restore": {
+    "tag": "project-v1",
+    "script": "scripts/restore-project-v1.ps1",
+    "manual": "git restore --source=project-v1 --staged --worktree ."
+  }
+}

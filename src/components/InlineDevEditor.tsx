@@ -32,10 +32,14 @@ export default function InlineDevEditor() {
 
     function onClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      if (target.closest('.piac-inline-editor, .piac-dev-toolbar')) return;
+      if (target.closest('.piac-inline-editor, .piac-dev-toolbar, .city-map-hotspot-editor')) return;
+      if (target.closest('.city-map-hotspot-editor, .city-building-pin')) return;
+      if (target.closest('[data-dev-map-tool]') && !target.closest('[data-piac-edit]')) return;
+      if (target.closest('input, textarea, select, option, [contenteditable="true"]')) return;
       if (target.closest('button, a') && !target.closest('[data-piac-edit]')) return;
       const el = target.closest('[data-piac-edit]') as HTMLElement | null;
       if (!el) return;
+      if (el.matches('input, textarea, select')) return;
       e.preventDefault();
       e.stopPropagation();
       const key = el.getAttribute('data-piac-edit');
@@ -77,15 +81,29 @@ export default function InlineDevEditor() {
 
   async function onImageFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !activeKey) return;
     setUploading(true);
     const { url, error } = await uploadSiteAsset(file);
     setUploading(false);
     e.target.value = '';
-    if (error) showToast('error', 'Kép', error);
-    else if (url) {
-      setDraft(url);
-      showToast('success', 'Kép betöltve', 'Kattints a Mentés gombra.');
+    if (error) {
+      showToast('error', 'Kép', error);
+      return;
+    }
+    if (!url) return;
+    setDraft(url);
+    setSaving(true);
+    const next = setConfigValueByEditKey(config, activeKey, url);
+    const { error: saveErr, usedLocalFallback } = await saveConfig(next);
+    setSaving(false);
+    if (saveErr) showToast('error', 'Mentés sikertelen', saveErr);
+    else {
+      showToast(
+        'success',
+        'Kép mentve',
+        usedLocalFallback ? 'Helyi mentés — a kép azonnal frissült.' : 'A kép azonnal frissült az oldalon.',
+      );
+      close();
     }
   }
 
@@ -95,14 +113,14 @@ export default function InlineDevEditor() {
 
   return (
     <>
-      <div className="piac-dev-toolbar fixed top-20 left-1/2 -translate-x-1/2 z-[95] px-4 py-2 rounded-xl text-xs font-medium flex items-center gap-2 pointer-events-none"
+        <div className="piac-dev-toolbar fixed top-20 left-1/2 -translate-x-1/2 z-[95] px-4 py-2 rounded-xl text-xs font-medium flex items-center gap-2 pointer-events-none max-w-[min(100vw-1rem,42rem)] text-center"
         style={{
           background: 'rgba(124,58,237,0.9)',
           color: '#fff',
           boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
         }}>
         <MousePointer2 className="w-3.5 h-3.5" />
-        Kattints bármely kiemelt elemre a szerkesztéshez
+        Kattints a lila keretes elemre, vagy a felső fejlesztői gombokra
       </div>
 
       {activeKey && meta && (

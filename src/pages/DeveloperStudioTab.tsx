@@ -11,7 +11,9 @@ import {
   type QuarterOverride,
   type SiteCustomizationConfig,
   type PageSkinConfig,
+  WORLD_BACKGROUND_4K,
 } from '../lib/siteCustomization';
+import { ZONE_ASSETS } from '../lib/zoneAssets';
 import { ImageUrlField, Field, inputCls } from '../components/developer/ImageUrlField';
 
 const QUARTER_META: { id: QuarterId; name: string }[] = [
@@ -24,7 +26,7 @@ const QUARTER_META: { id: QuarterId; name: string }[] = [
   { id: 'termelok-piaca', name: 'Termelők piaca' },
 ];
 
-type StudioSection = 'world' | 'hero' | 'quarters' | 'pages' | 'theme' | 'media' | 'css' | 'extra';
+type StudioSection = 'world' | 'hero' | 'zones' | 'quarters' | 'pages' | 'theme' | 'media' | 'css' | 'extra';
 
 function Toggle({
   checked,
@@ -108,6 +110,7 @@ export default function DeveloperStudioTab() {
   const sections: { id: StudioSection; label: string; icon: React.ElementType }[] = [
     { id: 'world', label: 'Digitális világ', icon: Sparkles },
     { id: 'hero', label: 'Főoldal hero', icon: Home },
+    { id: 'zones', label: 'Zóna képernyők', icon: Globe },
     { id: 'quarters', label: '7 negyed', icon: LayoutGrid },
     { id: 'pages', label: 'Oldal hátterek', icon: Layers },
     { id: 'theme', label: 'Színek / mélység', icon: Palette },
@@ -223,9 +226,9 @@ export default function DeveloperStudioTab() {
                 <input className={inputCls()} value={draft.hero.subtitle}
                   onChange={(e) => patch('hero', { ...draft.hero, subtitle: e.target.value })} />
               </Field>
-              <ImageUrlField label="Háttérkép" value={draft.hero.imageUrl}
-                onChange={(url) => patch('hero', { ...draft.hero, imageUrl: url })}
-                hint="Városkép / banner — feltöltheted vagy URL" />
+              <ImageUrlField label="Főváros háttér (hub)" value={draft.hero.imageUrl}
+                onChange={(url) => patch('hero', { ...draft.hero, imageUrl: url || WORLD_BACKGROUND_4K })}
+                hint="Alapértelmezett: /zones/hub.jpg — forrás: zones-source/hub.png" />
               <div className="grid sm:grid-cols-2 gap-4">
                 <Field label={`Fényerő (${draft.hero.brightness})`}>
                   <input type="range" min={0.2} max={1.2} step={0.02} value={draft.hero.brightness}
@@ -262,6 +265,27 @@ export default function DeveloperStudioTab() {
                   <input className={inputCls()} value={draft.hero.badgeBottom}
                     onChange={(e) => patch('hero', { ...draft.hero, badgeBottom: e.target.value })} />
                 </Field>
+              </div>
+            </>
+          )}
+
+          {section === 'zones' && (
+            <>
+              <p className="text-[11px] uppercase tracking-widest text-zinc-600 font-semibold">Modulonkénti S&F-szerű képernyők</p>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Minden zóna saját eredeti PiacPro illusztráció. Új kép: <code className="text-[#00E676]">zones-source/&#123;id&#125;.png</code> → <code className="text-[#00E676]">node scripts/build-zone-assets.mjs</code>
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {Object.values(ZONE_ASSETS).map((z) => (
+                  <div key={z.id} className="rounded-xl border border-white/5 overflow-hidden bg-black/20">
+                    <img src={z.static.jpg} alt={z.label} className="w-full h-28 object-cover" />
+                    <div className="p-3 space-y-1">
+                      <p className="text-sm font-bold text-zinc-200">{z.label}</p>
+                      <p className="text-[10px] text-zinc-600 font-mono">{z.static.jpg}</p>
+                      {z.loop?.webp && <p className="text-[10px] text-cyan-600/80">Loop: {z.loop.webp}</p>}
+                    </div>
+                  </div>
+                ))}
               </div>
             </>
           )}
@@ -354,12 +378,13 @@ export default function DeveloperStudioTab() {
           {section === 'media' && (
             <>
               <p className="text-[11px] uppercase tracking-widest text-zinc-600 font-semibold">Globális képek</p>
-              <ImageUrlField label="Teljes oldal ambient háttér" value={draft.media.ambientBgUrl}
-                onChange={(url) => patch('media', { ...draft.media, ambientBgUrl: url })} />
+              <ImageUrlField label="Ambient háttér (fallback)" value={draft.media.ambientBgUrl || WORLD_BACKGROUND_4K}
+                onChange={(url) => patch('media', { ...draft.media, ambientBgUrl: url || WORLD_BACKGROUND_4K })} />
               <ImageUrlField label="Logo / ikon kép (opcionális)" value={draft.media.logoImageUrl}
                 onChange={(url) => patch('media', { ...draft.media, logoImageUrl: url })} />
-              <ImageUrlField label="Közösségi megosztás kép (OG)" value={draft.media.ogImageUrl}
-                onChange={(url) => patch('media', { ...draft.media, ogImageUrl: url })} />
+              <ImageUrlField label="Közösségi megosztás kép (OG)" value={draft.media.ogImageUrl || WORLD_BACKGROUND_4K}
+                onChange={(url) => patch('media', { ...draft.media, ogImageUrl: url || WORLD_BACKGROUND_4K })}
+                hint="Alapértelmezett: /zones/hub.jpg" />
             </>
           )}
 

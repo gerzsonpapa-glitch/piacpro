@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Producer } from '../lib/types';
 import { MapPin, Star, CheckCircle2, Leaf, Search, Map, Grid2x2 as Grid, Sprout, Apple, Sun, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, MessageCircle, User, Clock, Award, Navigation, LocateFixed, AlertCircle, ChevronRight } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 type GeoState = 'idle' | 'loading' | 'granted' | 'denied' | 'unsupported';
 
@@ -189,56 +190,22 @@ export default function ProducersPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* City Hero — Termelők Piaca */}
-      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
-        <img
-          src="https://images.pexels.com/photos/1407305/pexels-photo-1407305.jpeg?auto=compress&cs=tinysrgb&w=1600"
-          alt="Termelők Piaca"
-          className="page-hero-bg"
-          style={{ objectPosition: 'center 50%' }}
-        />
-        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.35) 0%, rgba(7,17,31,0.2) 40%, rgba(7,17,31,0.88) 100%)' }} />
-        <div className="absolute inset-0 grid-overlay opacity-40" />
-        <div className="scan-line" />
-        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#4ade80' }} />
-                <span className="text-xs font-black tracking-widest uppercase" style={{ color: '#4ade80' }}>Termelők Piaca</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
-                Kistermelők
-              </h1>
-              <p className="text-zinc-300 text-sm mt-1" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
-                Friss termékek közvetlenül a forrásból
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Info + actions */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-950 via-zinc-900 to-zinc-900 border border-emerald-900/30 p-8">
-        <div className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #10b981 0%, transparent 60%)' }} />
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Leaf className="w-6 h-6 text-emerald-400" />
-              <h1 className="text-2xl font-bold text-zinc-100">Kistermelők</h1>
-            </div>
-            <p className="text-zinc-400 text-sm max-w-md">Helyi termelők méz, tojás, zöldség, gyümölcs és egyéb friss termékekkel — közvetlenül a forrásból.</p>
-          </div>
+      <WorldZonePageHeader
+        zoneId="producers"
+        title="Kistermelők"
+        subtitle="Friss termékek közvetlenül a forrásból"
+        meta={[{ label: 'termelő', value: producers.length }]}
+        showLiveCount={false}
+        actions={
           <button
             onClick={() => navigate('/producers/apply')}
-            className="flex-shrink-0 px-5 py-2.5 rounded-xl glass-pill-active text-emerald-300 text-sm font-medium hover:scale-[1.02] transition-all flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap glass-pill-active text-emerald-300"
           >
             <Sprout className="w-4 h-4" />
-            Termelői profil igénylése
+            Termelői profil
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Category filters */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">

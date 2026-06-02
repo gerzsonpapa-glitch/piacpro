@@ -1,6 +1,6 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
-import { Search, Menu, X, ShoppingBag, Globe } from 'lucide-react';
+import { Search, Menu, X, ShoppingBag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ChatWidget from './ChatWidget';
@@ -8,7 +8,10 @@ import Footer from './Footer';
 import DeveloperModeBar from './DeveloperModeBar';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { isSiteDeveloper } from '../lib/developer';
-import { getPageSkin } from '../lib/siteCustomization';
+import { getPageSkin, getWorldBackgroundUrl, isBuiltinHubBackground } from '../lib/siteCustomization';
+import WorldGlobalBackdrop from './world/WorldGlobalBackdrop';
+import ZoneScreenBackdrop from './world/ZoneScreenBackdrop';
+import { getZoneAssetForPath } from '../lib/zoneAssets';
 import WorldEffects from './WorldEffects';
 import InlineDevEditor from './InlineDevEditor';
 import PiacEditable from './PiacEditable';
@@ -59,6 +62,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navTransparent = isHome && !scrolled;
   const pageSkin = getPageSkin(config, path);
   const hideChrome = path === '/login' || path === '/register';
+  const zoneAsset = hideChrome ? null : getZoneAssetForPath(path);
+  const homeBgUrl = getWorldBackgroundUrl(config);
+  const useCustomHomeBg = isHome && !isBuiltinHubBackground(homeBgUrl);
+  const showZoneScreen = !!zoneAsset && !hideChrome && !useCustomHomeBg;
+  const showCustomHomeBg = isHome && useCustomHomeBg;
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -66,13 +74,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen text-zinc-100 relative" style={{ background: config.theme.background }} data-world-zone={activeZone?.id ?? 'hub'}>
+    <div className="min-h-screen text-zinc-100 relative" style={{ background: isHome ? '#07111f' : config.theme.background }} data-world-zone={activeZone?.id ?? 'hub'}>
 
-      <WorldEffects />
+      <WorldGlobalBackdrop hidden={hideChrome || !!showZoneScreen || !!showCustomHomeBg || isHome} dimmed={!isHome} />
+      {showCustomHomeBg && !isHome && <WorldGlobalBackdrop dimmed={false} />}
+      {showZoneScreen && zoneAsset && !isHome && (
+        <ZoneScreenBackdrop asset={zoneAsset} dimmed />
+      )}
+      <WorldEffects isHome={isHome} />
       <WorldAmbientLayer zone={activeZone} />
 
-      {/* Oldal-specifikus háttér */}
-      {(pageSkin?.bgImage || pageSkin?.bgColor) && (
+      {/* Oldal-specifikus háttér — zóna képernyőnél ne duplikáljuk */}
+      {(pageSkin?.bgImage || pageSkin?.bgColor) && !showZoneScreen && (
         <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden>
           {pageSkin.bgImage && (
             <div
@@ -100,7 +113,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* ── NAVBAR ───────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 transition-all duration-500"
         style={navTransparent ? {
-          background: 'linear-gradient(to bottom, rgba(7,17,31,0.75) 0%, rgba(7,17,31,0.2) 80%, transparent 100%)',
+          background: 'linear-gradient(to bottom, rgba(7,17,31,0.42) 0%, rgba(7,17,31,0.12) 70%, transparent 100%)',
           borderBottom: '1px solid transparent',
         } : {
           background: 'rgba(7,17,31,0.94)',
@@ -137,35 +150,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
-          {/* Minimális kereső */}
-          <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md hidden sm:block mx-2 lg:mx-4">
-            <div className="relative flex items-center rounded-xl overflow-hidden piac-nav-search-compact transition-all duration-300"
-              style={{ background: 'rgba(7,17,31,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <Search className="absolute left-2.5 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+          {/* Kereső — főoldalon nagy, máshol kompakt */}
+          <form onSubmit={handleSearch} className={`flex-1 min-w-0 mx-2 lg:mx-4 ${isHome ? 'max-w-xl hidden lg:block' : 'max-w-md hidden sm:block'}`}>
+            <div className={`relative flex items-center rounded-2xl overflow-hidden transition-all duration-300 piac-nav-search ${isHome ? 'piac-nav-search-hero flex' : 'piac-nav-search-compact'}`}
+              style={{
+                background: isHome ? 'rgba(7,17,31,0.72)' : 'rgba(7,17,31,0.6)',
+                border: `1px solid ${isHome ? 'rgba(0,230,118,0.22)' : 'rgba(255,255,255,0.08)'}`,
+                backdropFilter: 'blur(24px)',
+              }}>
+              <Search className={`absolute text-zinc-500 pointer-events-none ${isHome ? 'left-4 w-4 h-4' : 'left-2.5 w-3.5 h-3.5'}`} />
               <input
                 type="text"
                 value={searchQ}
                 onChange={e => setSearchQ(e.target.value)}
-                placeholder={config.nav.searchPlaceholder}
+                placeholder={isHome ? 'Mit keresel ma?' : config.nav.searchPlaceholder}
                 data-piac-edit="nav.searchPlaceholder"
-                className="w-full bg-transparent pl-8 pr-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none min-w-0"
+                className={`w-full bg-transparent text-zinc-300 placeholder-zinc-600 focus:outline-none min-w-0 ${isHome ? 'pl-11 pr-14 py-3 text-sm' : 'pl-8 pr-3 py-2 text-xs'}`}
               />
+              {isHome && (
+                <button
+                  type="submit"
+                  className="absolute right-2 w-9 h-9 rounded-xl flex items-center justify-center text-[#07111f] hover:scale-105 transition-transform"
+                  style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 16px rgba(0,230,118,0.45)' }}
+                  aria-label="Keresés"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </form>
 
-          {/* Rendszer + világ hub */}
+          {/* Rendszer menü */}
           <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
-            {!hideChrome && (
-              <button
-                type="button"
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-cyan-300/90 hover:bg-white/[0.05] border border-cyan-500/20"
-                aria-label="Világ zónák"
-              >
-                <Globe className="w-4 h-4" />
-                <span className="hidden lg:inline">Világok</span>
-              </button>
-            )}
             {user ? (
               <SystemIdentityMenu pendingApps={pendingApps} />
             ) : (
@@ -188,7 +204,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         </div>
 
-        {/* Mobil kereső — nem a főoldalon (város térkép) */}
+        {/* Mobil kereső — nem a főoldalon (ott a világ közepén van) */}
         {!isHome && (
         <div className="md:hidden px-3 pb-2">
           <form onSubmit={handleSearch} className="relative flex items-center rounded-xl"
@@ -254,30 +270,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main */}
-      <main className={`relative z-10 py-0 ${isHome ? 'pb-0' : 'pb-36 md:pb-10'} ${showDevStudio && !isHome ? 'md:pb-28 pb-40' : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
-        data-zone={activeZone?.id}>
-        {pageSkin?.title && path !== '/' && (
-          <div className="max-w-[1440px] mx-auto px-4 pt-6 pb-2">
-            <PiacEditable editKey={`page.${path}.title`} as="h1" className="text-2xl sm:text-3xl font-black text-zinc-50 uppercase tracking-tight">
-              {pageSkin.title}
-            </PiacEditable>
-            {pageSkin.subtitle && (
-              <PiacEditable editKey={`page.${path}.subtitle`} as="p" className="text-zinc-500 text-sm mt-2">
-                {pageSkin.subtitle}
-              </PiacEditable>
-            )}
-          </div>
-        )}
+      <main
+        className={`relative z-10 ${isHome ? 'world-home-main pb-0' : 'py-0 pb-36 md:pb-10'} ${showDevStudio && !isHome ? 'md:pb-28 pb-40' : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
+        data-zone={activeZone?.id}
+      >
         <div className={!isHome ? 'piac-page-content' : ''}>
-          <WorldPageTransition path={path}>
-            {children}
-          </WorldPageTransition>
+          <WorldPageTransition path={path}>{children}</WorldPageTransition>
         </div>
       </main>
 
-      <Footer />
+      <div className={isHome ? 'home-footer-wrap' : undefined}>
+        <Footer />
+      </div>
 
-      {!hideChrome && !isHome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
+      {!hideChrome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
 
       <ChatWidget />
       <DeveloperModeBar />

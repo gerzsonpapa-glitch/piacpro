@@ -37,8 +37,10 @@ export default function DeveloperModeBar() {
       </button>
 
       {devModeActive && (
-        <span className="text-[10px] text-violet-300/90 hidden sm:inline max-w-[140px] leading-tight">
-          Kattints a kiemelt elemre
+        <span className="text-[10px] text-violet-300/90 hidden sm:inline max-w-[200px] leading-tight">
+          {path === '/'
+            ? 'Sárga fogantyúval húzd a zóna gombokat · kattintás = szerkesztés'
+            : 'Kattints a kiemelt elemre'}
         </span>
       )}
 

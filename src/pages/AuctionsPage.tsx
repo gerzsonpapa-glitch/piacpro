@@ -9,6 +9,7 @@ import {
   Search, SlidersHorizontal, ChevronDown, Users, Trophy, Zap
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 function useCountdown(endsAt: string, timerStarted: boolean) {
   const calc = useCallback(() => {
@@ -254,51 +255,27 @@ export default function AuctionsPage() {
 
   return (
     <div className="space-y-8">
-      {/* City Hero — Licit Csarnok */}
-      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
-        <img
-          src="https://images.pexels.com/photos/3760072/pexels-photo-3760072.jpeg?auto=compress&cs=tinysrgb&w=1600"
-          alt="Licit Csarnok"
-          className="page-hero-bg"
-          style={{ objectPosition: 'center 40%' }}
-        />
-        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.35) 0%, rgba(7,17,31,0.2) 40%, rgba(7,17,31,0.88) 100%)' }} />
-        <div className="absolute inset-0 grid-overlay opacity-40" />
-        <div className="scan-line" />
-        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#a855f7' }} />
-                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: '#a855f7' }}>Licit Csarnok</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-white leading-tight" style={{ textShadow: '0 0 30px rgba(168,85,247,0.35)' }}>
-                Aukciók
-              </h1>
-              <div className="flex items-center gap-3 mt-1.5">
-                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                  <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#a855f7' }} />
-                  <span><strong className="text-zinc-200">{activeAuctions.length}</strong> aktív licit</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                  <Trophy className="w-3 h-3 text-amber-400" />
-                  <span><strong className="text-zinc-200">{endedAuctions.length}</strong> lezárult</span>
-                </div>
-              </div>
-            </div>
-            {user && (
-              <button
-                onClick={() => navigate('/create-auction')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
-                style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc' }}
-              >
-                <Plus className="w-4 h-4" />
-                Aukció indítása
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
+      <WorldZonePageHeader
+        zoneId="auction"
+        title="Aukciók"
+        meta={[
+          { label: 'aktív licit', value: activeAuctions.length },
+          { label: 'lezárult', value: endedAuctions.length },
+        ]}
+        showLiveCount={false}
+        actions={
+          user ? (
+            <button
+              onClick={() => navigate('/create-auction')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
+              style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc' }}
+            >
+              <Plus className="w-4 h-4" />
+              Aukció indítása
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* Featured — top active auctions */}
       {!loading && featured.length > 0 && (

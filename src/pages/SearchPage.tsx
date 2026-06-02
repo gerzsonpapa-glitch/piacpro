@@ -10,6 +10,7 @@ import {
   Tag, Package, Navigation
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 // ── Compact dropdown ──────────────────────────────────────────────────────────
 function CompactSelect({
@@ -260,47 +261,24 @@ export default function SearchPage() {
   return (
     <div className="space-y-5">
 
-      {/* City Hero — Piac Tér */}
-      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
-        <img
-          src="https://images.pexels.com/photos/1435752/pexels-photo-1435752.jpeg?auto=compress&cs=tinysrgb&w=1600"
-          alt="Piac Tér"
-          className="page-hero-bg"
-          style={{ objectPosition: 'center 40%' }}
-        />
-        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.35) 0%, rgba(7,17,31,0.2) 40%, rgba(7,17,31,0.88) 100%)' }} />
-        <div className="absolute inset-0 grid-overlay opacity-40" />
-        <div className="scan-line" />
-        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#00d084' }} />
-                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: '#00d084' }}>Piac Tér</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-white leading-tight" style={{ textShadow: '0 0 30px rgba(0,208,132,0.3)' }}>
-                Hirdetések
-              </h1>
-              <div className="flex items-center gap-3 mt-1.5">
-                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span><strong className="text-zinc-200">{listings.length}</strong> aktív hirdetés</span>
-                </div>
-              </div>
-            </div>
-            {user && (
-              <button
-                onClick={() => navigate('/create')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
-                style={{ background: 'rgba(0,208,132,0.15)', border: '1px solid rgba(0,208,132,0.35)', color: '#00d084' }}
-              >
-                <Plus className="w-4 h-4" />
-                Hirdetés feladása
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
+      <WorldZonePageHeader
+        zoneId="marketplace"
+        title="Hirdetések"
+        meta={[{ label: 'találat', value: listings.length }]}
+        showLiveCount={false}
+        actions={
+          user ? (
+            <button
+              onClick={() => navigate('/create')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] whitespace-nowrap"
+              style={{ background: 'rgba(0,208,132,0.15)', border: '1px solid rgba(0,208,132,0.35)', color: '#00d084' }}
+            >
+              <Plus className="w-4 h-4" />
+              Hirdetés feladása
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* Search bar */}
       <div className="flex gap-3">

@@ -10,6 +10,7 @@ import {
   Truck, Package, Handshake, Video, Play, Shield,
   Image as ImageIcon, Gift, Sparkles, Lock, Clock
 } from 'lucide-react';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 const DELIVERY_OPTIONS = [
   {
@@ -197,8 +198,8 @@ export default function CreateListingPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Új hirdetés létrehozása</h1>
+    <div className="max-w-2xl mx-auto space-y-5">
+      <WorldZonePageHeader zoneId="marketplace" title="Új hirdetés" subtitle="Add fel terméked a Piactérre" showLiveCount={false} compact />
 
       {/* Mode toggle */}
       <div className="glass rounded-2xl p-1.5 flex gap-1.5 mb-6">

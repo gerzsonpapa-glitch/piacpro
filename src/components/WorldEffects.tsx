@@ -39,21 +39,42 @@ function Particles({ count, color }: { count: number; color: string }) {
   );
 }
 
-export default function WorldEffects() {
+export default function WorldEffects({ isHome = false }: { isHome?: boolean }) {
   const { config } = useSiteCustomization();
   const w = config.world;
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
-    if (!w.enabled || !w.floatingOrbs) return;
+    if (!w.enabled || (!w.floatingOrbs && !isHome)) return;
     const fn = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
-  }, [w.enabled, w.floatingOrbs]);
+  }, [w.enabled, w.floatingOrbs, isHome]);
 
   if (!w.enabled) return null;
 
   const parallax = scrollY * 0.04 * w.parallaxStrength;
+
+  if (isHome) {
+    return (
+      <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden>
+        <div
+          className="piac-orb absolute -top-24 left-[5%] w-[720px] h-[420px] rounded-full blur-[160px]"
+          style={{
+            background: 'rgba(245, 158, 11, 0.07)',
+            transform: `translateY(${parallax * 0.5}px)`,
+          }}
+        />
+        <div
+          className="piac-orb absolute bottom-[10%] right-[8%] w-[560px] h-[320px] rounded-full blur-[140px]"
+          style={{
+            background: 'rgba(249, 115, 22, 0.05)',
+            transform: `translateY(${-parallax * 0.3}px)`,
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -85,13 +106,6 @@ export default function WorldEffects() {
         </div>
       )}
 
-      {config.media.ambientBgUrl && (
-        <div
-          className="pointer-events-none fixed inset-0 z-0 opacity-20 bg-cover bg-center"
-          style={{ backgroundImage: `url(${config.media.ambientBgUrl})` }}
-          aria-hidden
-        />
-      )}
     </>
   );
 }

@@ -6,6 +6,7 @@ import type { Shop } from '../lib/types';
 import { Store, Search, MapPin, ShieldCheck, Package, Tag, Plus } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 const CAT_LABELS: Record<string, string> = {
   electronics: 'Elektronika', fashion: 'Ruha / Divat', food: 'Élelmiszer',
@@ -132,52 +133,36 @@ export default function ShopsPage() {
   return (
     <div className="space-y-6">
 
-      {/* City Hero — Boltok Utcája */}
-      <section className="page-hero rounded-3xl overflow-hidden" style={{ height: 'clamp(180px, 28vh, 260px)' }}>
-        <img
-          src="https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=1600"
-          alt="Boltok Utcája"
-          className="page-hero-bg"
-          style={{ objectPosition: 'center 45%' }}
-        />
-        <div className="page-hero-overlay" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.35) 0%, rgba(7,17,31,0.2) 40%, rgba(7,17,31,0.88) 100%)' }} />
-        <div className="absolute inset-0 grid-overlay opacity-40" />
-        <div className="scan-line" />
-        <div className="page-hero-content h-full flex flex-col justify-end px-6 pb-5">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#f59e0b' }} />
-                <span className="text-xs font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>Boltok Utcája</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
-                Boltok
-              </h1>
-              <p className="text-zinc-300 text-sm mt-1" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
-                {shops.length} bolt a piactéren
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {canOpenShop && (
-                <button onClick={() => navigate('/my-shop')}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03]"
-                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#07111f' }}>
-                  <Store className="w-4 h-4" />Saját boltom
-                </button>
-              )}
-              {user && !canOpenShop && (
-                <button disabled
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm cursor-not-allowed opacity-50 text-zinc-400"
-                  style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <Plus className="w-4 h-4" />Bolt nyitása
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Old header replaced by hero above — spacing kept */}
+      <WorldZonePageHeader
+        zoneId="business"
+        title="Boltok"
+        meta={[{ label: 'bolt', value: shops.length }]}
+        showLiveCount={false}
+        actions={
+          <>
+            {canOpenShop && (
+              <button
+                onClick={() => navigate('/my-shop')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03]"
+                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#07111f' }}
+              >
+                <Store className="w-4 h-4" />
+                Saját boltom
+              </button>
+            )}
+            {user && !canOpenShop && (
+              <button
+                disabled
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm cursor-not-allowed opacity-50 text-zinc-400"
+                style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                <Plus className="w-4 h-4" />
+                Bolt nyitása
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Search */}
       <div className="relative">

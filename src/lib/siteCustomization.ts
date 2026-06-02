@@ -86,6 +86,10 @@ export interface SiteMediaConfig {
   ogImageUrl: string;
 }
 
+import type { CityMapHotspotOverride } from './cityMapPages';
+
+export type { CityMapHotspotOverride };
+
 export interface SiteCustomizationConfig {
   version: number;
   hero: SiteHeroConfig;
@@ -102,6 +106,7 @@ export interface SiteCustomizationConfig {
   quarters: QuarterOverride[];
   pages: PageSkinConfig[];
   quickAccess: QuickAccessOverride[];
+  cityMapHotspots: CityMapHotspotOverride[];
   nav: {
     brandSubtitle: string;
     searchPlaceholder: string;
@@ -111,15 +116,70 @@ export interface SiteCustomizationConfig {
   maintenance: { enabled: boolean; message: string };
 }
 
+export const WORLD_BACKGROUND_4K = '/zones/hub.jpg';
+export const WORLD_BACKGROUND_4K_WEBP = '/zones/hub.webp';
+export const WORLD_HUB_LOOP = '/zones/hub-loop.webp';
+/** Cache-bust — új hub kép után növeld */
+export const WORLD_HUB_ASSET_VERSION = '20260602v3';
+
+const LEGACY_WORLD_BACKGROUNDS = new Set([
+  '',
+  '/piacpro-world-map.png',
+  '/piacpro-world-hero.png',
+  '/piacpro-world-4k.png',
+  '/piacpro-world-4k.jpg',
+  '/piacpro-isometric-world.jpg',
+  '/piacpro-isometric-world.webp',
+]);
+
+export function getWorldBackgroundUrl(config: SiteCustomizationConfig): string {
+  const url = config.media.ambientBgUrl || config.hero.imageUrl || WORLD_BACKGROUND_4K;
+  if (LEGACY_WORLD_BACKGROUNDS.has(url)) return WORLD_BACKGROUND_4K;
+  return url;
+}
+
+/** Beépített hub háttér — nem egyedi feltöltés */
+export function isBuiltinHubBackground(url: string): boolean {
+  if (!url || LEGACY_WORLD_BACKGROUNDS.has(url)) return true;
+  const base = url.split('?')[0];
+  return (
+    base === WORLD_BACKGROUND_4K ||
+    base === WORLD_BACKGROUND_4K_WEBP ||
+    base.endsWith('/zones/hub.jpg') ||
+    base.endsWith('/zones/hub.webp') ||
+    base.endsWith('/zones/hub.png')
+  );
+}
+
+export function getWorldBackgroundSources(config: SiteCustomizationConfig): { jpg: string; webp: string } {
+  const jpg = getWorldBackgroundUrl(config);
+  if (isBuiltinHubBackground(jpg)) {
+    const v = `?v=${WORLD_HUB_ASSET_VERSION}`;
+    return { jpg: `${WORLD_BACKGROUND_4K}${v}`, webp: `${WORLD_BACKGROUND_4K_WEBP}${v}` };
+  }
+  if (jpg.endsWith('.webp')) return { jpg, webp: jpg };
+  if (jpg.endsWith('.jpg') || jpg.endsWith('.jpeg')) {
+    return { jpg, webp: jpg.replace(/\.jpe?g$/i, '.webp') };
+  }
+  return { jpg, webp: jpg };
+}
+
 export const PAGE_SKIN_DEFAULTS: PageSkinConfig[] = [
-  { path: '/', label: 'Főoldal', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
-  { path: '/search', label: 'Piactér', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
-  { path: '/auctions', label: 'Licitek', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
-  { path: '/jobs', label: 'Állások', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
-  { path: '/donations', label: 'Adományok', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
-  { path: '/forum', label: 'Fórum', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
-  { path: '/discover', label: 'Felfedezés', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
-  { path: '/helyi-vallalkozasok', label: 'Helyi', bgImage: '', bgColor: '', overlay: '', title: '', subtitle: '' },
+  { path: '/', label: 'Főoldal', bgImage: '/zones/hub.jpg', bgColor: '', overlay: '', title: '', subtitle: '' },
+  { path: '/search', label: 'Piactér', bgImage: '/zones/marketplace.jpg', bgColor: '', overlay: '', title: 'Piactér', subtitle: 'Hirdetések böngészése és keresés' },
+  { path: '/discover', label: 'Felfedezés', bgImage: '/zones/marketplace.jpg', bgColor: '', overlay: '', title: 'Felfedezés', subtitle: 'Globális keresés a piacon' },
+  { path: '/create', label: 'Hirdetés feladása', bgImage: '/zones/marketplace.jpg', bgColor: '', overlay: '', title: 'Új hirdetés', subtitle: '' },
+  { path: '/favorites', label: 'Kedvencek', bgImage: '/zones/marketplace.jpg', bgColor: '', overlay: '', title: 'Kedvencek', subtitle: '' },
+  { path: '/auctions', label: 'Licitek', bgImage: '/zones/auction.jpg', bgColor: '', overlay: '', title: 'Licit Csarnok', subtitle: 'Élő aukciók és licitek' },
+  { path: '/jobs', label: 'Állások', bgImage: '/zones/jobs.jpg', bgColor: '', overlay: '', title: 'Munka Negyed', subtitle: 'Álláshirdetések és jelentkezés' },
+  { path: '/donations', label: 'Adományok', bgImage: '/zones/donations.jpg', bgColor: '', overlay: '', title: 'Adomány Központ', subtitle: 'Segítség és támogatás' },
+  { path: '/forum', label: 'Fórum', bgImage: '/zones/community.jpg', bgColor: '', overlay: '', title: 'Közösségi Tér', subtitle: 'Beszélgetések és hírek' },
+  { path: '/messages', label: 'Üzenetek', bgImage: '/zones/messages.jpg', bgColor: '', overlay: '', title: 'Üzenet Torony', subtitle: 'Azonnali chat' },
+  { path: '/helyi-vallalkozasok', label: 'Helyi vállalkozások', bgImage: '/zones/business.jpg', bgColor: '', overlay: '', title: 'Boltok Utcája', subtitle: 'Helyi boltok és szolgáltatók' },
+  { path: '/shops', label: 'Boltok', bgImage: '/zones/business.jpg', bgColor: '', overlay: '', title: 'Boltok', subtitle: '' },
+  { path: '/producers', label: 'Termelők', bgImage: '/zones/producers.jpg', bgColor: '', overlay: '', title: 'Termelők Piaca', subtitle: 'Friss helyi termékek' },
+  { path: '/piac-ai', label: 'PiacAI', bgImage: '/zones/piac-ai.jpg', bgColor: '', overlay: '', title: 'PiacAI Torony', subtitle: 'Intelligens asszisztens' },
+  { path: '/admin', label: 'Admin', bgImage: '/zones/admin.jpg', bgColor: '', overlay: '', title: 'Vezérlőközpont', subtitle: 'Rendszerkezelés' },
 ];
 
 export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
@@ -127,11 +187,11 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   hero: {
     title: 'ÜDV A PIACPRO VILÁGÁBAN!',
     subtitle: 'Fedezd fel a lehetőségeket. Minden egy helyen.',
-    imageUrl: '/piacpro-world-map.png',
-    brightness: 0.72,
-    saturation: 1.15,
-    overlayColor: '#0B0F14',
-    overlayOpacity: 0.42,
+    imageUrl: WORLD_BACKGROUND_4K,
+    brightness: 1.04,
+    saturation: 1.06,
+    overlayColor: '#07111f',
+    overlayOpacity: 0.08,
     badgeTop: 'Piac',
     badgeBottom: 'Pro',
     heightVh: 80,
@@ -175,14 +235,15 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   quarters: [],
   pages: PAGE_SKIN_DEFAULTS,
   quickAccess: [],
+  cityMapHotspots: [],
   nav: {
     brandSubtitle: 'Magyar Közösségi Piactér',
-    searchPlaceholder: 'Keress hirdetést, munkát, boltot, szolgáltatást...',
+    searchPlaceholder: 'Mit keresel ma?',
   },
   media: {
     logoImageUrl: '',
-    ambientBgUrl: '',
-    ogImageUrl: '',
+    ambientBgUrl: WORLD_BACKGROUND_4K,
+    ogImageUrl: WORLD_BACKGROUND_4K,
   },
   footer: {
     tagline: 'Magyarország modern közösségi piactere. Add el, vedd meg — egyszerűen, biztonságosan, gyorsan.',
@@ -224,12 +285,32 @@ export function mergeSiteConfig(raw: unknown): SiteCustomizationConfig {
   ) as unknown as SiteCustomizationConfig;
   // Oldalak: alapértelmezett + mentett felülírások
   const pageMap = new Map((merged.pages || []).map((p) => [p.path, p]));
-  merged.pages = PAGE_SKIN_DEFAULTS.map((def) => ({
-    ...def,
-    ...(pageMap.get(def.path) || {}),
-    path: def.path,
-    label: pageMap.get(def.path)?.label || def.label,
-  }));
+  merged.pages = PAGE_SKIN_DEFAULTS.map((def) => {
+    const saved = pageMap.get(def.path) || {};
+    const savedBg = saved.bgImage ?? '';
+    const bgImage =
+      !savedBg || LEGACY_WORLD_BACKGROUNDS.has(savedBg) || savedBg.includes('piacpro-')
+        ? def.bgImage
+        : savedBg;
+    return {
+      ...def,
+      ...saved,
+      path: def.path,
+      label: saved.label || def.label,
+      bgImage,
+      title: saved.title || def.title,
+      subtitle: saved.subtitle || def.subtitle,
+    };
+  });
+  if (LEGACY_WORLD_BACKGROUNDS.has(merged.hero.imageUrl)) {
+    merged.hero.imageUrl = WORLD_BACKGROUND_4K;
+  }
+  if (LEGACY_WORLD_BACKGROUNDS.has(merged.media.ambientBgUrl)) {
+    merged.media.ambientBgUrl = WORLD_BACKGROUND_4K;
+  }
+  if (!merged.media.ogImageUrl || LEGACY_WORLD_BACKGROUNDS.has(merged.media.ogImageUrl)) {
+    merged.media.ogImageUrl = WORLD_BACKGROUND_4K;
+  }
   return merged;
 }
 

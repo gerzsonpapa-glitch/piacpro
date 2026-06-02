@@ -14,7 +14,7 @@ export interface EditFieldMeta {
 export const EDIT_FIELD_META: Record<string, EditFieldMeta> = {
   'hero.title': { key: 'hero.title', label: 'Főcím (hero)', type: 'text' },
   'hero.subtitle': { key: 'hero.subtitle', label: 'Alcím (hero)', type: 'textarea' },
-  'hero.imageUrl': { key: 'hero.imageUrl', label: 'Hero háttérkép', type: 'image' },
+  'hero.imageUrl': { key: 'hero.imageUrl', label: 'Főváros háttér (hub kép)', type: 'image' },
   'hero.badgeTop': { key: 'hero.badgeTop', label: 'Központi jelvény (felső)', type: 'text' },
   'hero.badgeBottom': { key: 'hero.badgeBottom', label: 'Központi jelvény (alsó)', type: 'text' },
   'nav.brandSubtitle': { key: 'nav.brandSubtitle', label: 'Logo alcím', type: 'text' },
@@ -55,9 +55,15 @@ export function quarterEditMeta(id: QuarterId, field: 'label' | 'sublabel' | 'de
 
 export function pageEditMeta(path: string, field: 'title' | 'subtitle' | 'bgImage' | 'bgColor'): EditFieldMeta {
   const type = field === 'bgImage' ? 'image' : field === 'bgColor' ? 'color' : 'text';
+  const fieldNames: Record<string, string> = {
+    title: 'cím',
+    subtitle: 'alcím',
+    bgImage: 'háttérkép',
+    bgColor: 'háttérszín',
+  };
   return {
     key: `page.${path}.${field}`,
-    label: `Oldal ${path} — ${field}`,
+    label: `${path} oldal — ${fieldNames[field] ?? field}`,
     type,
   };
 }
@@ -140,5 +146,11 @@ export function setConfigValueByEditKey(
   if (numFields.includes(key)) {
     return setNested(config, key.split('.'), Number(value)) as SiteCustomizationConfig;
   }
-  return setNested(config, key.split('.'), value) as SiteCustomizationConfig;
+  let next = setNested(config, key.split('.'), value) as SiteCustomizationConfig;
+  if (key === 'hero.imageUrl') {
+    next = { ...next, media: { ...next.media, ambientBgUrl: value } };
+  } else if (key === 'media.ambientBgUrl') {
+    next = { ...next, hero: { ...next.hero, imageUrl: value } };
+  }
+  return next;
 }

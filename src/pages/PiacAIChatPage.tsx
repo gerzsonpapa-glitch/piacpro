@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
 import { Send, ArrowLeft, Sparkles, RotateCcw, Lock } from 'lucide-react';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -167,56 +168,39 @@ export default function PiacAIChatPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 120px)', minHeight: '500px' }}>
-
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4 flex-shrink-0">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-          style={{ background: 'rgba(13,27,42,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Vissza
-        </button>
-        <div className="flex items-center gap-3 flex-1">
-          <div className="relative flex-shrink-0">
-            <img
-              src="/kell.png"
-              alt="PiacAI"
-              className="w-10 h-10 rounded-xl object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-            <span
-              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 pulse-dot"
-              style={{ background: '#00d084', borderColor: '#07111f' }}
-            />
-          </div>
-          <div>
-            <p className="font-bold text-zinc-100 text-sm leading-tight">PiacAI</p>
-            <p className="text-[11px]" style={{ color: '#00d084' }}>Online — kész segíteni</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold"
-              style={{ background: 'rgba(0,208,132,0.1)', border: '1px solid rgba(0,208,132,0.2)', color: '#00d084' }}>
-              <Sparkles className="w-3 h-3" />
-              GPT-4o mini
-            </div>
+    <div className="max-w-2xl mx-auto flex flex-col space-y-4" style={{ height: 'calc(100dvh - 8rem)', minHeight: '420px' }}>
+      <WorldZonePageHeader
+        zoneId="piac-ai"
+        title="PiacAI asszisztens"
+        subtitle="Online — kész segíteni"
+        showLiveCount={false}
+        compact
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              style={{ background: 'rgba(13,27,42,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Vissza
+            </button>
             <button
               onClick={reset}
-              title="Új beszélgetés"
-              className="p-2 rounded-xl transition-all hover:scale-[1.05] text-zinc-500 hover:text-zinc-200"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-zinc-400 hover:text-zinc-200"
               style={{ background: 'rgba(13,27,42,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}
             >
               <RotateCcw className="w-3.5 h-3.5" />
+              Újra
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
+      <div className="flex flex-col flex-1 min-h-0 glass rounded-2xl overflow-hidden p-4" style={{ border: '1px solid rgba(0,208,132,0.12)' }}>
       {/* Chat area */}
       <div
-        className="flex-1 overflow-y-auto space-y-4 pr-1 pb-2"
+        className="flex-1 overflow-y-auto space-y-4 pr-1 pb-2 min-h-0"
         style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(0,208,132,0.15) transparent' }}
       >
         {messages.map((msg, i) => (
@@ -330,6 +314,7 @@ export default function PiacAIChatPage() {
         >
           <Send className="w-4 h-4 text-[#07111f]" style={{ color: input.trim() && !loading ? '#07111f' : '#00d084' }} />
         </button>
+      </div>
       </div>
     </div>
   );

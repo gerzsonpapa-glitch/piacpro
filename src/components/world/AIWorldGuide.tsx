@@ -26,7 +26,7 @@ export default function AIWorldGuide() {
     return 'Mondd el, mit keresel — én navigálok a megfelelő világba.';
   }, [path]);
 
-  if (HIDDEN_PATHS.includes(path)) return null;
+  if (HIDDEN_PATHS.includes(path) || path === '/') return null;
 
   return (
     <>

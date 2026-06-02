@@ -260,7 +260,8 @@
     object-fit: cover;
     object-position: center;
     transition: transform 10s ease-out;
-    filter: saturate(1.1) brightness(0.85);
+    filter: saturate(1.12) brightness(0.92);
+    image-rendering: -webkit-optimize-contrast;
   }
 
   .page-hero:hover .page-hero-bg {
@@ -711,7 +712,239 @@ body.piac-dev-edit-active header button:not([data-piac-edit]) {
 }
 
 .piac-hero-world {
-  background: #0B0F14;
+  background: transparent;
+}
+
+.world-home-page {
+  background: #07111f;
+}
+
+.world-home-hero-viewport {
+  position: relative;
+  background: linear-gradient(180deg, #1a1208 0%, #120c08 45%, #07111f 100%);
+}
+
+/* Hero háttér — csak az első képernyő, teljes városkép */
+.zone-screen-backdrop--hero {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  height: 100%;
+  min-height: 100dvh;
+  background: linear-gradient(180deg, #1a1208 0%, #120c08 50%, #07111f 100%);
+}
+
+.home-hero-backdrop {
+  background: linear-gradient(180deg, #1a1208 0%, #120c08 50%, #07111f 100%);
+}
+
+.home-hero-backdrop-media-wrap,
+.home-hero-backdrop-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.home-hero-backdrop-media {
+  object-fit: contain;
+  object-position: center center;
+}
+
+.home-hero-backdrop-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, rgba(7, 17, 31, 0.55) 0%, transparent 14%, transparent 86%, rgba(7, 17, 31, 0.55) 100%),
+    linear-gradient(to bottom, rgba(7, 17, 31, 0.2) 0%, transparent 18%);
+}
+
+.home-hero-backdrop-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(7, 17, 31, 0.35) 38%,
+    rgba(7, 17, 31, 0.88) 72%,
+    #07111f 100%
+  );
+}
+
+.zone-screen-backdrop--home .zone-screen-media,
+.zone-screen-backdrop--home .zone-screen-loop,
+.zone-screen-backdrop--home .zone-screen-gif,
+.zone-screen-backdrop--home .zone-screen-video,
+.zone-screen-backdrop--hero .zone-screen-media,
+.zone-screen-backdrop--hero .zone-screen-loop,
+.zone-screen-backdrop--hero .zone-screen-gif,
+.zone-screen-backdrop--hero .zone-screen-video {
+  object-fit: contain;
+  object-position: center center;
+}
+
+.zone-screen-backdrop--home .zone-screen-kenburns,
+.zone-screen-backdrop--hero .zone-screen-kenburns {
+  animation: none;
+  transform: none;
+}
+
+.zone-home-warmth {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(245, 158, 11, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 20% 80%, rgba(249, 115, 22, 0.05) 0%, transparent 50%);
+}
+
+.home-info-scroll {
+  position: relative;
+  z-index: 10;
+  margin-top: 0;
+  padding-top: 2.5rem;
+  background: #07111f;
+}
+
+.home-scroll-fade-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.home-footer-wrap {
+  background: #07111f;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.world-home-main {
+  background: #07111f;
+}
+
+.world-home-immersive {
+  height: 100%;
+  min-height: 100dvh;
+}
+
+.world-home-stage {
+  min-height: 100dvh;
+}
+
+.home-glass-panel {
+  background: rgba(12, 20, 32, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.home-quick-nav-card:hover {
+  border-color: rgba(0, 230, 118, 0.35) !important;
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.08);
+}
+
+.home-footer-wrap footer,
+.home-footer-wrap > * {
+  background: transparent !important;
+}
+
+.world-home-grid {
+  position: relative;
+}
+
+.world-zone-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.world-zone-card:hover {
+  border-color: rgba(0, 230, 118, 0.35) !important;
+}
+
+.piac-nav-search-hero:focus-within {
+  border-color: rgba(0, 230, 118, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.08), 0 0 40px rgba(0, 230, 118, 0.12);
+}
+
+.home-hero-dock .piac-glass-panel {
+  background: linear-gradient(145deg, rgba(0,230,118,0.04) 0%, rgba(7,17,31,0.88) 40%, rgba(7,17,31,0.94) 100%);
+}
+
+.piac-ai-home-widget {
+  animation: piac-card-float 6s ease-in-out infinite;
+}
+
+/* ═══ Zóna képernyők (S&F-szerű belépés, eredeti PiacPro art) ═══ */
+.zone-screen-backdrop {
+  isolation: isolate;
+}
+
+.zone-screen-media,
+.zone-screen-media-wrap,
+.zone-screen-loop,
+.zone-screen-gif,
+.zone-screen-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.zone-screen-kenburns {
+  animation: zone-kenburns 18s ease-in-out infinite alternate;
+}
+
+@keyframes zone-kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+
+.zone-ambient-pulse {
+  animation: zone-ambient-pulse 4s ease-in-out infinite;
+}
+
+@keyframes zone-ambient-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+.zone-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.03) 2px,
+    rgba(255, 255, 255, 0.03) 4px
+  );
+}
+
+.world-page-shell .piac-page-content {
+  background: transparent;
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+.world-page-frame {
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+.world-zone-glass-header {
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
 }
 
 .piac-fountain {
@@ -994,31 +1227,58 @@ body {
 }
 
 .city-map-bg {
-  animation: city-map-breathe 18s ease-in-out infinite alternate;
+  will-change: transform;
+  image-rendering: -webkit-optimize-contrast;
 }
 
-@keyframes city-map-breathe {
-  from { transform: scale(1); }
-  to { transform: scale(1.03); }
+.piac-world-backdrop-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.02);
+  image-rendering: -webkit-optimize-contrast;
 }
 
-.city-building-hotspot {
+.city-building-pin {
   cursor: pointer;
   background: transparent;
   border: none;
   padding: 0;
+  min-width: 44px;
 }
 
-.city-building-hotspot:focus-visible {
-  outline: none;
+.city-card-neon {
+  animation: city-card-neon-pulse 2.8s ease-in-out infinite;
 }
 
-.city-building-hotspot:focus-visible .city-building-glow {
-  opacity: 1 !important;
+@keyframes city-card-neon-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+
+.city-card-minimal {
+  opacity: 0.92;
+}
+
+.city-card-bold {
+  transform-origin: center center;
+}
+
+.city-pin-icon {
+  pointer-events: none;
+}
+
+.city-pin-label {
+  pointer-events: none;
 }
 
 .city-quick-pin {
-  backdrop-filter: blur(8px);
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
 .city-live-strip {
@@ -1042,14 +1302,14 @@ body {
 }
 
 @media (max-width: 639px) {
-  .city-map-view {
-    min-height: calc(100svh - 52px);
-    height: calc(100svh - 52px) !important;
+  .world-home-immersive,
+  .world-home-main {
+    min-height: calc(100dvh - 3.25rem);
+    height: calc(100dvh - 3.25rem);
   }
 
-  .city-building-hotspot {
-    min-width: 44px;
-    min-height: 44px;
+  .city-pin-label span:nth-child(2) {
+    display: none;
   }
 }
 
