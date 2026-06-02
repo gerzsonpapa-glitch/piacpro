@@ -5,6 +5,7 @@ import type { Listing } from '../lib/types';
 import ListingCard from '../components/ListingCard';
 import { Heart } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 export default function FavoritesPage() {
   useSEO(SEO_PAGES.favorites);
@@ -42,11 +43,16 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Heart className="w-6 h-6 text-red-400" />
-        Kedvencek
-      </h1>
+    <div className="piac-page-content max-w-[1440px] mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-6">
+      <WorldZonePageHeader
+        zoneId="marketplace"
+        title="Kedvencek"
+        subtitle="Mentett hirdetéseid a Marketplace Zónában"
+        count={listings.length}
+        countLabel="mentett hirdetés"
+        showLiveCount={false}
+        compact
+      />
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

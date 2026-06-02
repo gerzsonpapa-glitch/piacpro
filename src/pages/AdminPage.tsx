@@ -16,6 +16,7 @@ import {
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import { isSiteDeveloper } from '../lib/developer';
 import DeveloperStudioTab from './DeveloperStudioTab';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 type Tab = 'stats' | 'users' | 'listings' | 'auctions' | 'jobs' | 'seekers' | 'reports' | 'scam' | 'producers' | 'shops' | 'moderation' | 'forum' | 'bugreports' | 'developer';
 
@@ -653,29 +654,43 @@ export default function AdminPage() {
   const activeTab = tabs.find((t) => t.id === tab);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="piac-page-content max-w-6xl mx-auto space-y-5 px-3 sm:px-4 py-4 sm:py-6">
       {editingUser && (
         <LevelEditor user={editingUser} onSave={saveUserLevel} onClose={() => setEditingUser(null)} />
       )}
 
-      {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="glass rounded-2xl p-4 flex items-center justify-between">
+      <WorldZonePageHeader
+        zoneId="admin"
+        title="Control Room"
+        subtitle="Rendszer vezérlő felület — nem világ zóna"
+        count={stats.users}
+        countLabel="regisztrált felhasználó"
+        compact
+        actions={
+          <button onClick={loadAll} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:scale-[1.02]"
+            style={{ background: 'rgba(34,211,238,0.12)', border: '1px solid rgba(34,211,238,0.35)', color: '#22D3EE' }}>
+            <RefreshCw className="w-3.5 h-3.5" />Frissítés
+          </button>
+        }
+      />
+
+      {/* ── Gyors státusz ───────────────────────────────────────────── */}
+      <div className="world-control-room-panel glass rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSuperAdmin ? 'bg-amber-500/15 border border-amber-500/25' : 'bg-red-500/15 border border-red-500/25'}`}>
-            <Shield className={`w-5 h-5 ${isSuperAdmin ? 'text-amber-400' : 'text-red-400'}`} />
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSuperAdmin ? 'bg-amber-500/15 border border-amber-500/25' : 'bg-cyan-500/15 border border-cyan-500/25'}`}>
+            <Shield className={`w-5 h-5 ${isSuperAdmin ? 'text-amber-400' : 'text-cyan-400'}`} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold tracking-tight text-zinc-100">Adminisztráció</h1>
+              <h2 className="text-base font-bold tracking-tight text-zinc-100">Moderációs panel</h2>
               {isSuperAdmin && (
                 <span className="text-[9px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-1.5 py-0.5 rounded-md tracking-wider">SZUPER</span>
               )}
             </div>
-            <p className="text-zinc-500 text-[11px]">Moderáció és platformkezelés</p>
+            <p className="text-zinc-500 text-[11px]">Platformkezelés és jóváhagyások</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Quick badges for pending items */}
           {pendingReports.length > 0 && (
             <button onClick={() => { setTab('reports'); setSearch(''); }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/15 transition-colors">
@@ -688,9 +703,6 @@ export default function AdminPage() {
               <Leaf className="w-3.5 h-3.5" />{pendingProducerApps.length}
             </button>
           )}
-          <button onClick={loadAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl glass-bubble border border-white/8 text-zinc-400 hover:text-zinc-200 transition-colors text-xs">
-            <RefreshCw className="w-3.5 h-3.5" />Frissítés
-          </button>
         </div>
       </div>
 

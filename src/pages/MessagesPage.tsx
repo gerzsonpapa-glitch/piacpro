@@ -13,6 +13,7 @@ import {
   BadgeCheck, Award, ShoppingCart, Minus, Plus, Leaf,
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 // ── Parsed order item ─────────────────────────────────────────────────────────
 interface OrderItem {
@@ -635,7 +636,17 @@ export default function MessagesPage() {
   const canReview = isSold && isBuyer && activeConversation?.transaction_id && !myReview;
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-10rem)]">
+    <div className="piac-page-content max-w-[1440px] mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
+      <WorldZonePageHeader
+        zoneId="community"
+        title="Üzenetek"
+        subtitle="Beszélgetések a Közösségi Térben"
+        count={conversations.length}
+        countLabel="beszélgetés"
+        showLiveCount={false}
+        compact
+      />
+    <div className="flex gap-4 h-[calc(100vh-18rem)] md:h-[calc(100vh-16rem)]">
       {/* Conversation list */}
       <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 glass rounded-3xl overflow-hidden flex-shrink-0`}>
         <div className="p-4 border-b border-white/5">
@@ -1036,6 +1047,7 @@ export default function MessagesPage() {
           }}
         />
       )}
+    </div>
     </div>
   );
 }

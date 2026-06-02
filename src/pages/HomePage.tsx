@@ -8,7 +8,7 @@ import {
   ShoppingBag, Gavel, Briefcase, Timer, Flame, Users, TrendingUp,
   MapPin, Building2, Wifi, Package, Zap, Clock, ChevronRight,
   Leaf, CheckCircle2, Heart, Target, MessageCircle, ArrowRight,
-  PlusCircle, Activity, Search, Star, Sparkles,
+  PlusCircle, Activity, Search, Star, Sparkles, Layers,
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
@@ -19,6 +19,8 @@ import ListingCard from '../components/ListingCard';
 import PiacEditable from '../components/PiacEditable';
 import GlassPanel from '../components/ui/GlassPanel';
 import DistrictNavCard from '../components/ui/DistrictNavCard';
+import SecondaryWorldsSheet from '../components/world/SecondaryWorldsSheet';
+import { splitQuarters } from '../lib/worldZones';
 import { motion } from 'framer-motion';
 
 /* ── Countdown ─────────────────────────────────────────────────── */
@@ -246,7 +248,7 @@ const QUARTERS = [
     bg: 'rgba(74,222,128,0.18)',
     border: 'rgba(74,222,128,0.5)',
     glow: 'rgba(74,222,128,0.35)',
-    path: '/helyi-vallalkozasok',
+    path: '/producers',
     countKey: null,
     img: 'https://images.pexels.com/photos/1407305/pexels-photo-1407305.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Friss, helyi, természetes',
@@ -272,15 +274,17 @@ function DistrictGrid({
   onNav,
   counts,
   devModeActive,
+  onMoreWorlds,
 }: {
   quarters: typeof QUARTERS;
   onNav: (p: string) => void;
   counts: { listing: number; auction: number; job: number };
   devModeActive?: boolean;
+  onMoreWorlds?: () => void;
 }) {
   const [hov, setHov] = useState<number | null>(null);
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-3">
       {quarters.map((q, i) => {
         const Icon = q.icon;
         const cnt = q.countKey === 'listing' ? counts.listing : q.countKey === 'auction' ? counts.auction : q.countKey === 'job' ? counts.job : 0;
@@ -340,6 +344,19 @@ function DistrictGrid({
           </button>
         );
       })}
+      {onMoreWorlds && (
+        <button
+          type="button"
+          onClick={onMoreWorlds}
+          className="world-more-worlds-btn col-span-2 sm:col-span-1 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 min-h-[140px] text-center"
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/15 border border-purple-400/25">
+            <Layers className="w-5 h-5 text-purple-300" />
+          </div>
+          <span className="text-[11px] font-black tracking-wider uppercase text-purple-200">További világok</span>
+          <span className="text-[10px] text-zinc-500">Adomány · Termelők</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -354,6 +371,8 @@ export default function HomePage() {
     () => applyQuarterOverrides(QUARTERS, config.quarters),
     [config.quarters],
   );
+  const { primary: primaryQuarters } = useMemo(() => splitQuarters(quarters), [quarters]);
+  const [secondaryOpen, setSecondaryOpen] = useState(false);
 
   const [latestListings, setLatestListings] = useState<Listing[]>([]);
   const [popularListings, setPopularListings] = useState<Listing[]>([]);
@@ -486,9 +505,9 @@ export default function HomePage() {
           </motion.div>
         </div>
 
-        {/* ── 7 district cards over city ── */}
+        {/* ── 5 fő világ a térképen ── */}
         <div className="absolute inset-0 z-20 hidden sm:block">
-          {quarters.map((q, i) => {
+          {primaryQuarters.map((q, i) => {
             const cnt = q.countKey === 'listing' ? listingCount : q.countKey === 'auction' ? auctionCount : q.countKey === 'job' ? jobCount : 0;
             return (
               <DistrictNavCard
@@ -595,6 +614,18 @@ export default function HomePage() {
           </GlassPanel>
         </div>
 
+        {/* ── További világok (asztal) ── */}
+        <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-30 hidden sm:block transition-all duration-700 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <button
+            type="button"
+            onClick={() => setSecondaryOpen(true)}
+            className="world-more-worlds-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-purple-200 backdrop-blur-md"
+          >
+            <Layers className="w-4 h-4" />
+            További világok
+          </button>
+        </div>
+
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
@@ -605,13 +636,14 @@ export default function HomePage() {
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,208,132,0.04) 0%, transparent 60%)' }} />
         </div>
 
-        {/* ── 7 DISTRICT CARDS (mobil + alsó grid) ── */}
+        {/* ── Fő világok (mobil grid) ── */}
         <section className="relative z-10 px-4 pt-8 pb-6 max-w-[1440px] mx-auto sm:hidden">
-          <SectionHead icon={Building2} label="A PiacPro negyedei" iconColor="text-[#00d084]" />
+          <SectionHead icon={Building2} label="Fő világok" iconColor="text-[#00d084]" />
           <DistrictGrid
-            quarters={quarters}
+            quarters={primaryQuarters}
             onNav={navigate}
             devModeActive={devModeActive}
+            onMoreWorlds={() => setSecondaryOpen(true)}
             counts={{ listing: listingCount, auction: auctionCount, job: jobCount }}
           />
         </section>
@@ -883,6 +915,8 @@ export default function HomePage() {
           )}
         </div>
       </div>
+
+      <SecondaryWorldsSheet open={secondaryOpen} onClose={() => setSecondaryOpen(false)} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   Heart, Clock, Star, CheckCircle2, Target, Tag
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
 // ── Unified result type ───────────────────────────────────────────────────────
 interface UnifiedResult {
@@ -282,10 +283,20 @@ export default function DiscoverPage() {
   const filtered = activeTypes.size === 0 ? results : results.filter((r) => activeTypes.has(r.type));
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="piac-page-content max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-6">
 
-      {/* Hero search */}
-      <section className="relative overflow-hidden rounded-3xl glass p-8">
+      <WorldZonePageHeader
+        zoneId="marketplace"
+        title="Globális keresés"
+        subtitle="Keresés minden zónában — hirdetések, állások, boltok"
+        count={results.length}
+        countLabel="találat"
+        showLiveCount={false}
+        compact
+      />
+
+      {/* Search panel */}
+      <section className="relative overflow-hidden rounded-3xl glass p-6 sm:p-8">
         <div className="absolute -top-20 -right-20 w-72 h-72 bg-emerald-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
         <div className="relative">
           <div className="flex items-center gap-3 mb-5">
@@ -293,8 +304,8 @@ export default function DiscoverPage() {
               <Search className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-emerald-400 text-xs font-semibold uppercase tracking-widest">Globális kereső</p>
-              <h1 className="text-xl font-bold">Keresés mindenben</h1>
+              <p className="text-emerald-400 text-xs font-semibold uppercase tracking-widest">Keresőmező</p>
+              <h2 className="text-lg font-bold">Mit keresel?</h2>
             </div>
           </div>
 
