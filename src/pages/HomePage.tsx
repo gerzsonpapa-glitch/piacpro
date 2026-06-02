@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,20 +8,13 @@ import {
   ShoppingBag, Gavel, Briefcase, Timer, Flame, Users, TrendingUp,
   MapPin, Building2, Wifi, Package, Zap, Clock, ChevronRight,
   Leaf, CheckCircle2, Heart, Target, MessageCircle, ArrowRight,
-  PlusCircle, Activity, Search, Star, Sparkles, Layers,
+  Sparkles,
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
-import { applyQuarterOverrides } from '../lib/siteCustomization';
-import type { QuarterId } from '../lib/siteCustomization';
-import { useLiveWorldStats } from '../hooks/useLiveWorldStats';
 import ListingCard from '../components/ListingCard';
-import PiacEditable from '../components/PiacEditable';
 import GlassPanel from '../components/ui/GlassPanel';
-import DistrictNavCard from '../components/ui/DistrictNavCard';
-import SecondaryWorldsSheet from '../components/world/SecondaryWorldsSheet';
-import { splitQuarters } from '../lib/worldZones';
-import { motion } from 'framer-motion';
+import CityMapView from '../components/world/CityMapView';
 
 /* ── Countdown ─────────────────────────────────────────────────── */
 function useCountdown(endsAt: string, started: boolean) {
@@ -147,233 +140,15 @@ function SkeletonCard() {
   );
 }
 
-/* ── District data — each with its own Pexels image ─────────────── */
-const QUARTERS = [
-  {
-    id: 'piac-ter' as QuarterId,
-    label: 'PIAC TÉR',
-    sublabel: 'Adok-veszek hirdetések',
-    icon: ShoppingBag,
-    color: '#00d084',
-    bg: 'rgba(0,208,132,0.18)',
-    border: 'rgba(0,208,132,0.5)',
-    glow: 'rgba(0,208,132,0.35)',
-    path: '/search',
-    countKey: 'listing' as const,
-    img: 'https://images.pexels.com/photos/1435752/pexels-photo-1435752.jpeg?auto=compress&cs=tinysrgb&w=800',
-    desc: 'Vásárolj, adj el, cserélj',
-    pos: { top: '38%', left: '12%' },
-  },
-  {
-    id: 'munka-negyed' as QuarterId,
-    label: 'MUNKA NEGYED',
-    sublabel: 'Állások, munkalehetőségek',
-    icon: Briefcase,
-    color: '#3b82f6',
-    bg: 'rgba(59,130,246,0.18)',
-    border: 'rgba(59,130,246,0.5)',
-    glow: 'rgba(59,130,246,0.35)',
-    path: '/jobs',
-    countKey: 'job' as const,
-    img: 'https://images.pexels.com/photos/1004409/pexels-photo-1004409.jpeg?auto=compress&cs=tinysrgb&w=800',
-    desc: 'Találd meg álmaid munkáját',
-    pos: { top: '16%', left: '36%' },
-  },
-  {
-    id: 'boltok-utcaja' as QuarterId,
-    label: 'BOLTOK UTCÁJA',
-    sublabel: 'Üzletek, szolgáltatók',
-    icon: Building2,
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,0.18)',
-    border: 'rgba(245,158,11,0.5)',
-    glow: 'rgba(245,158,11,0.35)',
-    path: '/helyi-vallalkozasok',
-    countKey: null,
-    img: 'https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=800',
-    desc: 'Fedezd fel a legjobb boltokat',
-    pos: { top: '20%', left: '56%' },
-  },
-  {
-    id: 'licit-csarnok' as QuarterId,
-    label: 'LICIT CSARNOK',
-    sublabel: 'Licitálj és nyerj',
-    icon: Gavel,
-    color: '#a855f7',
-    bg: 'rgba(168,85,247,0.18)',
-    border: 'rgba(168,85,247,0.5)',
-    glow: 'rgba(168,85,247,0.35)',
-    path: '/auctions',
-    countKey: 'auction' as const,
-    img: 'https://images.pexels.com/photos/3760072/pexels-photo-3760072.jpeg?auto=compress&cs=tinysrgb&w=800',
-    desc: 'Élő licitek, valós idő',
-    pos: { top: '50%', left: '8%' },
-  },
-  {
-    id: 'kozossegi-ter' as QuarterId,
-    label: 'KÖZÖSSÉGI TÉR',
-    sublabel: 'Fórum, hírek, események',
-    icon: Users,
-    color: '#38bdf8',
-    bg: 'rgba(56,189,248,0.18)',
-    border: 'rgba(56,189,248,0.5)',
-    glow: 'rgba(56,189,248,0.35)',
-    path: '/forum',
-    countKey: null,
-    img: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=800',
-    desc: 'Csatlakozz a közösséghez',
-    pos: { top: '44%', left: '64%' },
-  },
-  {
-    id: 'adomany-kozpont' as QuarterId,
-    label: 'ADOMÁNY KÖZPONT',
-    sublabel: 'Segíts és segítséget kapj',
-    icon: Heart,
-    color: '#eab308',
-    bg: 'rgba(234,179,8,0.18)',
-    border: 'rgba(234,179,8,0.5)',
-    glow: 'rgba(234,179,8,0.35)',
-    path: '/donations',
-    countKey: null,
-    img: 'https://images.pexels.com/photos/6646918/pexels-photo-6646918.jpeg?auto=compress&cs=tinysrgb&w=800',
-    desc: 'Adj, kapj, változtass',
-    pos: { top: '70%', left: '26%' },
-  },
-  {
-    id: 'termelok-piaca' as QuarterId,
-    label: 'TERMELŐK PIACA',
-    sublabel: 'Helyi termelők, friss termékek',
-    icon: Leaf,
-    color: '#4ade80',
-    bg: 'rgba(74,222,128,0.18)',
-    border: 'rgba(74,222,128,0.5)',
-    glow: 'rgba(74,222,128,0.35)',
-    path: '/producers',
-    countKey: null,
-    img: 'https://images.pexels.com/photos/1407305/pexels-photo-1407305.jpeg?auto=compress&cs=tinysrgb&w=800',
-    desc: 'Friss, helyi, természetes',
-    pos: { top: '68%', left: '48%' },
-  },
-];
-
-const QUICK_ACCESS = [
-  { icon: PlusCircle,    label: 'Hirdetés feladása', sub: 'Ingyenesen, egyszerűen',  path: '/create',      color: '#00d084' },
-  { icon: Search,        label: 'Keresés',           sub: 'Találd meg, amit keresel', path: '/discover',   color: '#3b82f6' },
-  { icon: MessageCircle, label: 'Üzenetek',          sub: 'Beszélgess biztonságosan', path: '/messages',   color: '#38bdf8' },
-  { icon: Activity,      label: 'Értesítések',       sub: 'Maradj naprakész',         path: '/messages',   color: '#f59e0b' },
-  { icon: Heart,         label: 'Kedvencek',         sub: 'Mentsd el, ami tetszik',   path: '/favorites',  color: '#ec4899' },
-  { icon: Star,          label: 'Profilom',          sub: 'Beállítások, adatok',      path: '/profile',    color: '#4ade80' },
-];
-
 const POPULAR = ['iPhone', 'bicikli', 'kanapé', 'munkalehetőség', 'laptop', 'autó', 'albérlet', 'kutya'];
 const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
-
-/* ── District cards shown below hero in a grid ───────────────────── */
-function DistrictGrid({
-  quarters,
-  onNav,
-  counts,
-  devModeActive,
-  onMoreWorlds,
-}: {
-  quarters: typeof QUARTERS;
-  onNav: (p: string) => void;
-  counts: { listing: number; auction: number; job: number };
-  devModeActive?: boolean;
-  onMoreWorlds?: () => void;
-}) {
-  const [hov, setHov] = useState<number | null>(null);
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-      {quarters.map((q, i) => {
-        const Icon = q.icon;
-        const cnt = q.countKey === 'listing' ? counts.listing : q.countKey === 'auction' ? counts.auction : q.countKey === 'job' ? counts.job : 0;
-        const isHov = hov === i;
-        return (
-          <button
-            key={q.label}
-            onClick={() => onNav(q.path)}
-            onMouseEnter={() => setHov(i)}
-            onMouseLeave={() => setHov(null)}
-            className="group relative rounded-2xl overflow-hidden transition-all duration-300 text-left"
-            style={{
-              border: isHov ? `1px solid ${q.border}` : '1px solid rgba(255,255,255,0.08)',
-              boxShadow: isHov ? `0 12px 40px rgba(0,0,0,0.5), 0 0 28px ${q.glow}` : '0 4px 16px rgba(0,0,0,0.3)',
-              transform: isHov ? 'translateY(-6px) scale(1.03)' : 'none',
-            }}
-          >
-            {/* District background image */}
-            <div className="relative h-32 sm:h-36 overflow-hidden">
-              <img
-                src={q.img}
-                alt={q.label}
-                loading="lazy"
-                data-piac-edit={`quarter.${q.id}.img`}
-                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${devModeActive ? 'piac-editable' : ''}`}
-              />
-              {/* Color gradient overlay */}
-              <div className="absolute inset-0" style={{
-                background: `linear-gradient(to bottom, rgba(7,17,31,0.25) 0%, rgba(7,17,31,0.05) 40%, ${q.bg.replace('0.18','0.55')} 100%)`
-              }} />
-              {/* Neon icon top-right */}
-              <div className="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: 'rgba(7,17,31,0.75)', backdropFilter: 'blur(12px)', border: `1px solid ${q.border}` }}>
-                <Icon style={{ color: q.color, width: '1rem', height: '1rem' }} />
-              </div>
-              {/* Count badge */}
-              {cnt > 0 && (
-                <div className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-[9px] font-black"
-                  style={{ background: 'rgba(7,17,31,0.8)', backdropFilter: 'blur(8px)', color: q.color, border: `1px solid ${q.border}` }}>
-                  {cnt.toLocaleString('hu-HU')} db
-                </div>
-              )}
-            </div>
-            {/* Text area */}
-            <div className="p-3" style={{ background: 'rgba(7,17,31,0.9)' }}>
-              <PiacEditable editKey={`quarter.${q.id}.label`} as="div"
-                className="text-[11px] font-black tracking-wider uppercase leading-tight mb-0.5" style={{ color: q.color }}>
-                {q.label}
-              </PiacEditable>
-              <PiacEditable editKey={`quarter.${q.id}.desc`} as="div" className="text-[10px] text-zinc-400 leading-snug">
-                {q.desc}
-              </PiacEditable>
-            </div>
-            {/* Hover neon border */}
-            <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              style={{ boxShadow: `inset 0 0 0 1px ${q.border}` }} />
-          </button>
-        );
-      })}
-      {onMoreWorlds && (
-        <button
-          type="button"
-          onClick={onMoreWorlds}
-          className="world-more-worlds-btn col-span-2 sm:col-span-1 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 min-h-[140px] text-center"
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/15 border border-purple-400/25">
-            <Layers className="w-5 h-5 text-purple-300" />
-          </div>
-          <span className="text-[11px] font-black tracking-wider uppercase text-purple-200">További világok</span>
-          <span className="text-[10px] text-zinc-500">Adomány · Termelők</span>
-        </button>
-      )}
-    </div>
-  );
-}
 
 export default function HomePage() {
   useSEO(SEO_PAGES.home);
   const { navigate } = useRouter();
   const { user } = useAuth();
-  const { config, devModeActive } = useSiteCustomization();
-  const { stats: liveStats } = useLiveWorldStats();
-  const quarters = useMemo(
-    () => applyQuarterOverrides(QUARTERS, config.quarters),
-    [config.quarters],
-  );
-  const { primary: primaryQuarters } = useMemo(() => splitQuarters(quarters), [quarters]);
-  const [secondaryOpen, setSecondaryOpen] = useState(false);
-
+  const { devModeActive } = useSiteCustomization();
+  const [ready, setReady] = useState(false);
   const [latestListings, setLatestListings] = useState<Listing[]>([]);
   const [popularListings, setPopularListings] = useState<Listing[]>([]);
   const [expiringAuctions, setExpiringAuctions] = useState<Listing[]>([]);
@@ -386,7 +161,6 @@ export default function HomePage() {
   const [auctionCount, setAuctionCount] = useState(0);
   const [jobCount, setJobCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchRecentlyViewed(), fetchDonations()])
@@ -433,219 +207,20 @@ export default function HomePage() {
   return (
     <div className="piac-hero-world" style={{ background: 'var(--piac-bg, #0B0F14)' }}>
 
-      {/* ═══════════════════════════════════════════════════════════
-          HERO — Digitális világ (referencia UI)
-      ═══════════════════════════════════════════════════════════ */}
-      <section
-        className={`relative w-full overflow-hidden piac-hero-world ${devModeActive ? 'ring-2 ring-[#00E676]/50 ring-inset' : ''}`}
-        style={{ height: `clamp(560px, ${config.hero.heightVh}vh, 960px)` }}
-      >
-
-        {/* City background */}
-        <img src={config.hero.imageUrl} alt="PiacPro városképe"
-          data-piac-edit="hero.imageUrl"
-          className={`piac-hero-bg absolute inset-0 w-full h-full object-cover object-center ${devModeActive ? 'piac-editable' : ''}`}
-          style={{
-            filter: `brightness(${config.hero.brightness}) saturate(${config.hero.saturation})`,
-          }}
-          fetchPriority="high"
-        />
-
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: config.hero.overlayColor,
-            opacity: config.hero.overlayOpacity,
-          }}
-        />
-
-        {/* Gradients — cinematic depth */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(11,15,20,0.5) 0%, rgba(11,15,20,0.02) 24%, rgba(11,15,20,0.02) 50%, rgba(11,15,20,0.85) 84%, #0B0F14 100%)' }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(11,15,20,0.85) 0%, transparent 22%)' }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(11,15,20,0.85) 0%, transparent 22%)' }} />
-
-        {/* Blimp — referencia animáció */}
-        <motion.div
-          className="absolute top-6 right-[8%] z-10 hidden md:block piac-blimp pointer-events-none"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
-        >
-          <div className="px-4 py-2 rounded-full text-sm font-black tracking-tight"
-            style={{ background: 'rgba(255,255,255,0.92)', color: '#0B0F14', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
-            Piac<span style={{ color: '#00E676' }}>Pro</span>
-          </div>
-        </motion.div>
-
-        {/* Scan line + grid */}
-        {config.world.scanLines && <div className="scan-line" />}
-        {config.world.gridVisible && (
-          <div className="absolute inset-0 pointer-events-none grid-overlay opacity-25" />
-        )}
-
-        {/* ── Top title ── */}
-        <div className={`absolute top-5 inset-x-0 flex flex-col items-center z-10 pointer-events-none transition-all duration-700 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
-          <PiacEditable editKey="hero.title" as="h1"
-            className="text-xl sm:text-3xl md:text-4xl font-black tracking-[0.12em] uppercase text-center px-4 pointer-events-auto"
-            style={{ color: '#fff', textShadow: '0 2px 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,208,132,0.3)' }}>
-            {config.hero.title}
-          </PiacEditable>
-          <PiacEditable editKey="hero.subtitle" as="p"
-            className="mt-1.5 text-sm text-zinc-300 text-center px-4 pointer-events-auto"
-            style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
-            {config.hero.subtitle}
-          </PiacEditable>
-          {/* City center fountain — referencia */}
-          <motion.div
-            className="mt-5 w-16 h-16 rounded-full flex items-center justify-center piac-fountain pointer-events-auto cursor-pointer"
-            whileHover={{ scale: 1.1 }}
-            onClick={() => navigate('/')}
-          >
-            <span className="text-xl font-black text-[#00E676]">P</span>
-          </motion.div>
-        </div>
-
-        {/* ── 5 fő világ a térképen ── */}
-        <div className="absolute inset-0 z-20 hidden sm:block">
-          {primaryQuarters.map((q, i) => {
-            const cnt = q.countKey === 'listing' ? listingCount : q.countKey === 'auction' ? auctionCount : q.countKey === 'job' ? jobCount : 0;
-            return (
-              <DistrictNavCard
-                key={q.id}
-                id={q.id}
-                label={q.label}
-                sublabel={q.sublabel}
-                count={cnt}
-                color={q.color}
-                bg={q.bg}
-                border={q.border}
-                glow={q.glow}
-                icon={q.icon}
-                onClick={() => navigate(q.path)}
-                ready={ready}
-                index={i}
-                pos={q.pos}
-              />
-            );
-          })}
-        </div>
-
-        {/* ── LEFT PANEL — Gyors elérés ── */}
-        <div className={`absolute left-3 top-[92px] bottom-10 z-30 w-[200px] hidden xl:flex flex-col gap-3 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>
-          <GlassPanel className="flex-1 overflow-hidden" float delay={0.2}>
-            <div className="px-4 pt-3.5 pb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full pulse-dot bg-[#00E676]" />
-                <span className="text-[10px] font-black tracking-widest uppercase text-[#00E676]/80">Gyors elérés</span>
-              </div>
-            </div>
-            <div className="px-2 pb-2 space-y-0.5">
-              {QUICK_ACCESS.map(item => {
-                const Icon = item.icon;
-                const target = item.path === '/profile' && user ? `/profile/${user.id}` : item.path;
-                return (
-                  <button key={item.label} onClick={() => navigate(target)}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all group hover:bg-[rgba(0,230,118,0.06)]">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: `${item.color}18`, border: `1px solid ${item.color}35` }}>
-                      <Icon style={{ color: item.color, width: '0.9rem', height: '0.9rem' }} />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <div className="text-[12px] font-semibold text-zinc-200 group-hover:text-white truncate">{item.label}</div>
-                      <div className="text-[10px] text-zinc-600 truncate">{item.sub}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </GlassPanel>
-
-          {/* PiacAI */}
-          <GlassPanel className="p-4" float delay={0.35}>
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <img src="/kell.png" alt="PiacAI" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
-                onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
-              <div>
-                <div className="text-xs font-bold text-zinc-100">Üdv a PiacPro világában!</div>
-                <div className="text-[10px] text-zinc-500">Én vagyok PiacAI</div>
-              </div>
-            </div>
-            <p className="text-[10px] text-zinc-400 leading-relaxed mb-2.5">Segítek megtalálni, amire szükséged van. Kérdezz bátran!</p>
-            <button onClick={() => navigate('/piac-ai')}
-              className="w-full py-2 rounded-xl text-xs font-bold text-[#0B0F14] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 16px rgba(0,230,118,0.35)' }}>
-              <Sparkles className="w-3 h-3" />Kérdezz tőlem valamit!
-            </button>
-          </GlassPanel>
-        </div>
-
-        {/* ── RIGHT PANEL — Élő aktivitás ── */}
-        <div className={`absolute right-3 top-[92px] bottom-10 z-30 w-[200px] hidden xl:flex flex-col gap-3 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6'}`}>
-          <GlassPanel className="overflow-hidden" float delay={0.25}>
-            <div className="px-4 pt-3.5 pb-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#00E676] pulse-dot" />
-              <span className="text-[10px] font-black tracking-widest uppercase text-[#00E676]/80">Most aktív a világban</span>
-            </div>
-            <div className="px-3 pb-3 space-y-1.5">
-              {[
-                { icon: Users,       color: '#00E676', bg: 'rgba(0,230,118,0.1)',    label: `${liveStats.listings.toLocaleString('hu-HU')} aktív hirdetés` },
-                { icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  label: `${liveStats.listingsToday.toLocaleString('hu-HU')} új hirdetés ma` },
-                { icon: Briefcase,   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  label: `${liveStats.jobsToday > 0 ? liveStats.jobsToday : liveStats.jobs} állás · ma ${liveStats.jobsToday}` },
-                { icon: Building2,   color: '#f97316', bg: 'rgba(249,115,22,0.1)',  label: `${liveStats.shops.toLocaleString('hu-HU')} aktív bolt` },
-                { icon: Heart,       color: '#ec4899', bg: 'rgba(236,72,153,0.1)',  label: `${liveStats.donations.toLocaleString('hu-HU')} adomány kampány` },
-              ].map((s, i) => {
-                const Icon = s.icon;
-                return (
-                  <div key={i} className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[0.025]">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: s.bg }}>
-                      <Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
-                    </div>
-                    <span className="text-[10px] text-zinc-300 leading-tight">{s.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="px-3 pb-3">
-              <button onClick={() => navigate('/search')}
-                className="w-full py-2 rounded-xl text-[11px] font-semibold text-[#00E676] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bg-[#00E676]/10 border border-[#00E676]/25">
-                <Activity className="w-3.5 h-3.5" />Élő aktivitás megtekintése
-              </button>
-            </div>
-          </GlassPanel>
-        </div>
-
-        {/* ── További világok (asztal) ── */}
-        <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-30 hidden sm:block transition-all duration-700 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <button
-            type="button"
-            onClick={() => setSecondaryOpen(true)}
-            className="world-more-worlds-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-purple-200 backdrop-blur-md"
-          >
-            <Layers className="w-4 h-4" />
-            További világok
-          </button>
-        </div>
-
-      </section>
+      {/* ══ VÁROS NÉZET — élő térkép, kattintható épületek ══ */}
+      <CityMapView ready={ready} devModeActive={devModeActive} />
 
       {/* ═══════════════════════════════════════════════════════════
-          CONTENT BELOW HERO
+          CONTENT BELOW MAP
       ═══════════════════════════════════════════════════════════ */}
       <div className="relative" style={{ background: '#0B0F14' }}>
         <div className="fixed inset-0 pointer-events-none z-0" style={{ top: '100vh' }}>
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,208,132,0.04) 0%, transparent 60%)' }} />
         </div>
 
-        {/* ── Fő világok (mobil grid) ── */}
-        <section className="relative z-10 px-4 pt-8 pb-6 max-w-[1440px] mx-auto sm:hidden">
-          <SectionHead icon={Building2} label="Fő világok" iconColor="text-[#00d084]" />
-          <DistrictGrid
-            quarters={primaryQuarters}
-            onNav={navigate}
-            devModeActive={devModeActive}
-            onMoreWorlds={() => setSecondaryOpen(true)}
-            counts={{ listing: listingCount, auction: auctionCount, job: jobCount }}
-          />
+        {/* Mobil: épület lista — csak ha a térkép túl kicsi lenne */}
+        <section className="relative z-10 px-4 pt-6 pb-4 max-w-[1440px] mx-auto sm:hidden">
+          <p className="text-[10px] text-zinc-600 text-center mb-3 uppercase tracking-widest">Érintsd az épületeket a térképen</p>
         </section>
 
         {/* ── AI RECOMMENDATIONS + POPULAR + SOCIAL ── */}
@@ -916,7 +491,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      <SecondaryWorldsSheet open={secondaryOpen} onClose={() => setSecondaryOpen(false)} />
     </div>
   );
 }

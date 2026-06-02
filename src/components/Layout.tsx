@@ -1,6 +1,6 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from '../lib/router';
-import { Search, Menu, X, ShoppingBag, Sparkles, Globe } from 'lucide-react';
+import { Search, Menu, X, ShoppingBag, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ChatWidget from './ChatWidget';
@@ -18,7 +18,6 @@ import WorldAmbientLayer from './world/WorldAmbientLayer';
 import AIWorldGuide from './world/AIWorldGuide';
 import LiveActivityStrip from './world/LiveActivityStrip';
 import WorldZoneHub from './world/WorldZoneHub';
-import WorldEntryGate, { shouldShowWorldEntry } from './world/WorldEntryGate';
 import SecondaryWorldsSheet from './world/SecondaryWorldsSheet';
 import SystemIdentityMenu from './world/SystemIdentityMenu';
 import WorldMobileDock from './world/WorldMobileDock';
@@ -35,7 +34,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [pendingApps, setPendingApps] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const [showEntryGate, setShowEntryGate] = useState(() => path === '/' && shouldShowWorldEntry());
   const [secondaryOpen, setSecondaryOpen] = useState(false);
 
   useEffect(() => {
@@ -72,10 +70,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <WorldEffects />
       <WorldAmbientLayer zone={activeZone} />
-
-      {showEntryGate && isHome && (
-        <WorldEntryGate onEnter={() => setShowEntryGate(false)} />
-      )}
 
       {/* Oldal-specifikus háttér */}
       {(pageSkin?.bgImage || pageSkin?.bgColor) && (
@@ -121,7 +115,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(0,208,132,0.5) 30%, rgba(0,208,132,0.9) 50%, rgba(0,208,132,0.5) 70%, transparent 100%)' }} />
         )}
         <div className="max-w-[1440px] mx-auto px-3 sm:px-4 w-full">
-        <div className="flex items-center gap-2 sm:gap-3 min-h-[64px] h-auto py-2 min-w-0 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 min-h-[52px] h-auto py-1.5 min-w-0 w-full">
 
           {/* Logo */}
           <button onClick={() => navigate('/')} className="flex items-center gap-2 hover:opacity-90 transition-opacity flex-shrink-0 group max-w-[42%] sm:max-w-none">
@@ -143,24 +137,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
-          {/* Center search — referencia layout */}
-          <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-2xl hidden sm:block mx-2 lg:mx-6">
-            <div className="relative flex items-center rounded-2xl overflow-hidden piac-nav-search transition-all duration-300">
-              <div className="w-10 h-10 flex-shrink-0 ml-1.5 flex items-center justify-center rounded-xl"
-                style={{ background: 'rgba(0,230,118,0.12)', border: '1px solid rgba(0,230,118,0.22)' }}>
-                <Sparkles className="w-4 h-4 text-[#00E676]" />
-              </div>
-              <div className="flex-1 flex flex-col px-3 py-1.5 min-w-0">
-                <span className="text-[10px] font-bold tracking-widest uppercase text-[#00E676]/70">Mit keresel ma?</span>
-                <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
-                  placeholder={config.nav.searchPlaceholder}
-                  data-piac-edit="nav.searchPlaceholder"
-                  className="bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none leading-tight w-full min-w-0" />
-              </div>
-              <button type="submit" className="flex-shrink-0 m-1.5 w-9 h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 20px rgba(0,230,118,0.4)' }}>
-                <Search className="w-4 h-4 text-[#0B0F14]" />
-              </button>
+          {/* Minimális kereső */}
+          <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md hidden sm:block mx-2 lg:mx-4">
+            <div className="relative flex items-center rounded-xl overflow-hidden piac-nav-search-compact transition-all duration-300"
+              style={{ background: 'rgba(7,17,31,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Search className="absolute left-2.5 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQ}
+                onChange={e => setSearchQ(e.target.value)}
+                placeholder={config.nav.searchPlaceholder}
+                data-piac-edit="nav.searchPlaceholder"
+                className="w-full bg-transparent pl-8 pr-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none min-w-0"
+              />
             </div>
           </form>
 
@@ -199,15 +188,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         </div>
 
-        {/* Mobile search */}
-        <div className="md:hidden px-4 pb-3">
+        {/* Mobil kereső — nem a főoldalon (város térkép) */}
+        {!isHome && (
+        <div className="md:hidden px-3 pb-2">
           <form onSubmit={handleSearch} className="relative flex items-center rounded-xl"
-            style={{ background: 'rgba(13,27,42,0.8)', border: '1px solid rgba(0,208,132,0.15)' }}>
-            <Search className="absolute left-3 w-4 h-4 text-zinc-500 pointer-events-none" />
+            style={{ background: 'rgba(7,17,31,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <Search className="absolute left-2.5 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
-              placeholder="Keresés..." className="w-full bg-transparent pl-9 pr-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none" />
+              placeholder="Keresés..." className="w-full bg-transparent pl-8 pr-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none" />
           </form>
         </div>
+        )}
 
         {/* Világ hub drawer — csak 5 fő zóna + további világok */}
         {mobileOpen && !hideChrome && (
@@ -263,7 +254,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main */}
-      <main className={`relative z-10 py-0 pb-36 md:pb-10 ${showDevStudio ? 'md:pb-28 pb-40' : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
+      <main className={`relative z-10 py-0 ${isHome ? 'pb-0' : 'pb-36 md:pb-10'} ${showDevStudio && !isHome ? 'md:pb-28 pb-40' : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
         data-zone={activeZone?.id}>
         {pageSkin?.title && path !== '/' && (
           <div className="max-w-[1440px] mx-auto px-4 pt-6 pb-2">
@@ -286,7 +277,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <Footer />
 
-      {!hideChrome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
+      {!hideChrome && !isHome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
 
       <ChatWidget />
       <DeveloperModeBar />

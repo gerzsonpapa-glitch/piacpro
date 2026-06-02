@@ -33,15 +33,19 @@ export default function AIWorldGuide() {
       <motion.button
         type="button"
         onClick={() => setOpen(true)}
-        className="world-ai-fab fixed z-[90] flex items-center gap-2 shadow-2xl"
-        style={{ bottom: 'calc(4.75rem + env(safe-area-inset-bottom, 0px))', right: '1rem' }}
-        whileHover={{ scale: 1.05 }}
+        className="world-ai-fab world-ai-fab-icon-only fixed z-[90] flex items-center justify-center shadow-2xl rounded-full"
+        style={{
+          bottom: 'calc(4.75rem + env(safe-area-inset-bottom, 0px))',
+          right: '1rem',
+          width: '3rem',
+          height: '3rem',
+        }}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         aria-label="PiacPro AI Guide"
       >
         <Bot className="w-5 h-5 text-cyan-300" />
-        <span className="hidden sm:inline text-xs font-bold text-zinc-100">AI Guide</span>
-        <span className="world-ai-pulse absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#00E676]" />
+        <span className="world-ai-pulse absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#00E676]" />
       </motion.button>
 
       <AnimatePresence>

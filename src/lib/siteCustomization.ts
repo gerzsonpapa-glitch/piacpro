@@ -127,7 +127,7 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   hero: {
     title: 'ÜDV A PIACPRO VILÁGÁBAN!',
     subtitle: 'Fedezd fel a lehetőségeket. Minden egy helyen.',
-    imageUrl: '/piacpro-world-hero.png',
+    imageUrl: '/piacpro-world-map.png',
     brightness: 0.72,
     saturation: 1.15,
     overlayColor: '#0B0F14',

@@ -8,15 +8,28 @@ import {
 } from '../../lib/worldZones';
 import { useLiveWorldStats } from '../../hooks/useLiveWorldStats';
 
+import { ZONE_SCENE_IMAGES } from '../../lib/cityMapBuildings';
+
 const ZONE_HERO_IMAGES: Partial<Record<WorldZoneId | 'admin', string>> = {
-  marketplace: 'https://images.pexels.com/photos/1435752/pexels-photo-1435752.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  auction: 'https://images.pexels.com/photos/3760072/pexels-photo-3760072.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  jobs: 'https://images.pexels.com/photos/1004409/pexels-photo-1004409.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  community: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  business: 'https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  donations: 'https://images.pexels.com/photos/6646918/pexels-photo-6646918.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  producers: 'https://images.pexels.com/photos/1407305/pexels-photo-1407305.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  admin: 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  marketplace: ZONE_SCENE_IMAGES.marketplace.src,
+  auction: ZONE_SCENE_IMAGES.auction.src,
+  jobs: ZONE_SCENE_IMAGES.jobs.src,
+  community: ZONE_SCENE_IMAGES.community.src,
+  business: ZONE_SCENE_IMAGES.business.src,
+  donations: ZONE_SCENE_IMAGES.donations.src,
+  producers: ZONE_SCENE_IMAGES.producers.src,
+  admin: ZONE_SCENE_IMAGES.admin.src,
+};
+
+const ZONE_HERO_POSITIONS: Partial<Record<WorldZoneId | 'admin', string>> = {
+  marketplace: ZONE_SCENE_IMAGES.marketplace.position,
+  auction: ZONE_SCENE_IMAGES.auction.position,
+  jobs: ZONE_SCENE_IMAGES.jobs.position,
+  community: ZONE_SCENE_IMAGES.community.position,
+  business: ZONE_SCENE_IMAGES.business.position,
+  donations: ZONE_SCENE_IMAGES.donations.position,
+  producers: ZONE_SCENE_IMAGES.producers.position,
+  admin: ZONE_SCENE_IMAGES.admin.position,
 };
 
 export default function WorldZonePageHeader({
@@ -48,6 +61,9 @@ export default function WorldZonePageHeader({
 
   const liveCount = count ?? (showLiveCount ? getLiveCountForZone(zone, stats) : undefined);
   const heroImg = image ?? ZONE_HERO_IMAGES[zoneId] ?? ZONE_HERO_IMAGES.marketplace;
+  const heroPosition = imagePosition !== 'center 40%'
+    ? imagePosition
+    : (ZONE_HERO_POSITIONS[zoneId] ?? 'center 40%');
   const height = compact ? 'clamp(120px, 18vh, 160px)' : 'clamp(180px, 28vh, 260px)';
 
   return (
@@ -65,7 +81,7 @@ export default function WorldZonePageHeader({
         src={heroImg}
         alt={zone.title}
         className="page-hero-bg"
-        style={{ objectPosition: imagePosition }}
+        style={{ objectPosition: heroPosition }}
       />
       <div
         className="page-hero-overlay"
