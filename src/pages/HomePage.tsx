@@ -14,6 +14,7 @@ import { useSEO, SEO_PAGES } from '../lib/seo';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { applyQuarterOverrides } from '../lib/siteCustomization';
 import type { QuarterId } from '../lib/siteCustomization';
+import { useLiveWorldStats } from '../hooks/useLiveWorldStats';
 import ListingCard from '../components/ListingCard';
 import PiacEditable from '../components/PiacEditable';
 import GlassPanel from '../components/ui/GlassPanel';
@@ -348,6 +349,7 @@ export default function HomePage() {
   const { navigate } = useRouter();
   const { user } = useAuth();
   const { config, devModeActive } = useSiteCustomization();
+  const { stats: liveStats } = useLiveWorldStats();
   const quarters = useMemo(
     () => applyQuarterOverrides(QUARTERS, config.quarters),
     [config.quarters],
@@ -364,7 +366,6 @@ export default function HomePage() {
   const [listingCount, setListingCount] = useState(0);
   const [auctionCount, setAuctionCount] = useState(0);
   const [jobCount, setJobCount] = useState(0);
-  const [onlineCount] = useState(() => Math.floor(Math.random() * 1200) + 1800);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
 
@@ -568,11 +569,11 @@ export default function HomePage() {
             </div>
             <div className="px-3 pb-3 space-y-1.5">
               {[
-                { icon: Users,       color: '#00E676', bg: 'rgba(0,230,118,0.1)',    label: `${onlineCount.toLocaleString('hu-HU')} felhasználó online most` },
-                { icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  label: `${listingCount > 0 ? listingCount.toLocaleString('hu-HU') : '12 458'} új hirdetés ma` },
-                { icon: Briefcase,   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  label: `${jobCount > 0 ? jobCount : 26} új állás ma` },
-                { icon: Building2,   color: '#f97316', bg: 'rgba(249,115,22,0.1)',  label: '15 új bolt regisztráció' },
-                { icon: Heart,       color: '#ec4899', bg: 'rgba(236,72,153,0.1)',  label: '8 új adomány kampány' },
+                { icon: Users,       color: '#00E676', bg: 'rgba(0,230,118,0.1)',    label: `${liveStats.listings.toLocaleString('hu-HU')} aktív hirdetés` },
+                { icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  label: `${liveStats.listingsToday.toLocaleString('hu-HU')} új hirdetés ma` },
+                { icon: Briefcase,   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  label: `${liveStats.jobsToday > 0 ? liveStats.jobsToday : liveStats.jobs} állás · ma ${liveStats.jobsToday}` },
+                { icon: Building2,   color: '#f97316', bg: 'rgba(249,115,22,0.1)',  label: `${liveStats.shops.toLocaleString('hu-HU')} aktív bolt` },
+                { icon: Heart,       color: '#ec4899', bg: 'rgba(236,72,153,0.1)',  label: `${liveStats.donations.toLocaleString('hu-HU')} adomány kampány` },
               ].map((s, i) => {
                 const Icon = s.icon;
                 return (

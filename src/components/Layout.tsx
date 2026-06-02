@@ -18,6 +18,13 @@ import WorldEffects from './WorldEffects';
 import InlineDevEditor from './InlineDevEditor';
 import PiacEditable from './PiacEditable';
 import PiacButton from './ui/PiacButton';
+import WorldPageTransition from './world/WorldPageTransition';
+import WorldAmbientLayer from './world/WorldAmbientLayer';
+import AIWorldGuide from './world/AIWorldGuide';
+import LiveActivityStrip from './world/LiveActivityStrip';
+import WorldZoneHub from './world/WorldZoneHub';
+import WorldEntryGate, { shouldShowWorldEntry } from './world/WorldEntryGate';
+import { getZoneForPath } from '../lib/worldZones';
 
 const DEFENSE_ITEMS = [
   { key: 'nyugdij' as const,                icon: TrendingUp, label: 'Nyugdíj-előtakarékosság',           desc: 'Hosszú távú megtakarítás, adókedvezmény' },
@@ -110,13 +117,15 @@ function MobileDefenseAccordion({ onNavigate, isActive }: { onNavigate: (p: stri
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut, unreadCount } = useAuth();
   const { navigate, path } = useRouter();
+  const isHome = path === '/';
+  const activeZone = getZoneForPath(path);
   const { config, canEdit } = useSiteCustomization();
   const showDevStudio = canEdit && isSiteDeveloper(user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingApps, setPendingApps] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const isHome = path === '/';
+  const [showEntryGate, setShowEntryGate] = useState(() => path === '/' && shouldShowWorldEntry());
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -165,9 +174,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen text-zinc-100 relative" style={{ background: config.theme.background }}>
+    <div className="min-h-screen text-zinc-100 relative" style={{ background: config.theme.background }} data-world-zone={activeZone?.id ?? 'hub'}>
 
       <WorldEffects />
+      <WorldAmbientLayer zone={activeZone} />
+
+      {showEntryGate && isHome && (
+        <WorldEntryGate onEnter={() => setShowEntryGate(false)} />
+      )}
 
       {/* Oldal-specifikus háttér */}
       {(pageSkin?.bgImage || pageSkin?.bgColor) && (
@@ -308,8 +322,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {mobileOpen && (
           <div className="border-t max-h-[calc(100vh-80px)] overflow-y-auto"
             style={{ background: 'rgba(11,15,20,0.98)', borderTopColor: 'rgba(0,230,118,0.12)', backdropFilter: 'blur(24px)' }}>
-            <nav className="p-4 space-y-1.5">
-              {[...NAV_LINKS, { icon: User, label: user ? 'Profil' : 'Bejelentkezés', path: user ? `/profile/${user.id}` : '/login' }].map(item => (
+            <nav className="p-4 space-y-4">
+              <WorldZoneHub compact onNavigate={() => setMobileOpen(false)} />
+              <div className="border-t border-white/10 pt-3 space-y-1.5">
+              {[{ icon: User, label: user ? 'Profil' : 'Bejelentkezés', path: user ? `/profile/${user.id}` : '/login' }].map(item => (
                 <button key={item.path} onClick={() => { navigate(item.path); setMobileOpen(false); }}
                   className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive(item.path) ? 'glass-pill-active text-[#00d084]' : 'glass-pill text-zinc-400'}`}>
                   <item.icon className="w-5 h-5" />{item.label}
@@ -357,10 +373,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     style={{ background: 'rgba(0,208,132,0.1)', border: '1px solid rgba(0,208,132,0.3)' }}>Belépés</button>
                 </div>
               )}
+              </div>
             </nav>
           </div>
         )}
       </header>
+
+      {!isHome && path !== '/login' && path !== '/register' && <LiveActivityStrip />}
 
       {config.announcement.enabled && config.announcement.text && (
         <div
@@ -388,7 +407,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main */}
-      <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''} ${!isHome ? 'piac-page-shell' : ''}`}>
+      <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
+        data-zone={activeZone?.id}>
         {pageSkin?.title && path !== '/' && (
           <div className="max-w-[1440px] mx-auto px-4 pt-6 pb-2">
             <PiacEditable editKey={`page.${path}.title`} as="h1" className="text-2xl sm:text-3xl font-black text-zinc-50 uppercase tracking-tight">
@@ -402,7 +422,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         )}
         <div className={!isHome ? 'piac-page-content' : ''}>
-        {children}
+          <WorldPageTransition path={path}>
+            {children}
+          </WorldPageTransition>
         </div>
       </main>
 
@@ -443,6 +465,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <ChatWidget />
       <DeveloperModeBar />
       <InlineDevEditor />
+      <AIWorldGuide />
     </div>
   );
 }

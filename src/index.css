@@ -5,7 +5,7 @@
 :root {
   --piac-accent: #00E676;
   --piac-accent-2: #00C853;
-  --piac-bg: #0B0F14;
+  --piac-bg: #07111f;
   --piac-surface: #121820;
   --piac-glass: rgba(11, 15, 20, 0.82);
 }
@@ -248,6 +248,8 @@
     position: relative;
     overflow: hidden;
     width: 100%;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
   }
 
   .page-hero-bg {
@@ -257,22 +259,32 @@
     height: 100%;
     object-fit: cover;
     object-position: center;
-    transition: transform 8s ease-out;
+    transition: transform 10s ease-out;
+    filter: saturate(1.1) brightness(0.85);
   }
 
   .page-hero:hover .page-hero-bg {
-    transform: scale(1.03);
+    transform: scale(1.05);
   }
 
   .page-hero-overlay {
     position: absolute;
     inset: 0;
     background: linear-gradient(to bottom,
-      rgba(7,17,31,0.4) 0%,
-      rgba(7,17,31,0.18) 35%,
-      rgba(7,17,31,0.72) 80%,
-      rgba(7,17,31,0.96) 100%
+      rgba(7,17,31,0.35) 0%,
+      rgba(7,17,31,0.12) 35%,
+      rgba(7,17,31,0.75) 80%,
+      rgba(7,17,31,0.95) 100%
     );
+  }
+
+  .page-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(6,182,212,0.12) 0%, transparent 70%);
+    z-index: 5;
   }
 
   .page-hero-content {
@@ -758,4 +770,166 @@ body.piac-dev-edit-active header button:not([data-piac-edit]) {
   border-color: rgba(0,230,118,0.25);
   transform: translateY(-3px);
   box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 24px rgba(0,230,118,0.08);
+}
+
+/* ═══ IMMERSIVE WORLD SYSTEM ═══ */
+:root {
+  --world-bg: #07111f;
+  --world-cyan: #06B6D4;
+  --world-purple: #A855F7;
+  --world-neon: #00E676;
+}
+
+body {
+  background-color: var(--world-bg, #07111f) !important;
+}
+
+.world-entry-gate {
+  background: radial-gradient(ellipse 120% 80% at 50% 20%, rgba(124,58,237,0.15) 0%, #07111f 45%, #040810 100%);
+}
+
+.world-entry-fog {
+  background:
+    radial-gradient(circle at 20% 80%, rgba(6,182,212,0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(168,85,247,0.1) 0%, transparent 45%);
+  animation: world-fog-drift 20s ease-in-out infinite alternate;
+}
+
+.world-entry-particles {
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 40%, rgba(0,230,118,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 70%, rgba(6,182,212,0.35) 0%, transparent 100%);
+  animation: world-particles-float 15s linear infinite;
+}
+
+@keyframes world-fog-drift {
+  from { transform: translateX(-2%) translateY(0); }
+  to { transform: translateX(2%) translateY(-1%); }
+}
+
+@keyframes world-particles-float {
+  from { transform: translateY(0); }
+  to { transform: translateY(-20px); }
+}
+
+.world-entry-logo {
+  background: rgba(7,17,31,0.8);
+  border: 1px solid rgba(0,230,118,0.35);
+}
+
+.world-entry-cta {
+  background: linear-gradient(135deg, #00E676 0%, #06B6D4 50%, #A855F7 100%);
+  box-shadow: 0 0 40px rgba(0,230,118,0.35), 0 0 80px rgba(124,58,237,0.2);
+}
+
+.world-entry-cta-sweep {
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.35) 50%, transparent 60%);
+  animation: world-sweep 2.5s ease-in-out infinite;
+}
+
+@keyframes world-sweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.world-zone-portal {
+  border-radius: 1rem;
+  border: 1px solid var(--zone-border, rgba(255,255,255,0.1));
+  backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.35);
+}
+
+.world-zone-portal:hover {
+  border-color: var(--zone-color, #00E676);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 48px rgba(0,0,0,0.5), 0 0 32px var(--zone-glow);
+  transform: translateY(-4px);
+}
+
+.world-ai-fab {
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.9), rgba(6,182,212,0.85));
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(124,58,237,0.4), 0 0 24px rgba(6,182,212,0.2);
+}
+
+.world-ai-pulse {
+  animation: world-pulse 2s ease-in-out infinite;
+}
+
+@keyframes world-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+.world-ai-panel {
+  background: rgba(7,17,31,0.96);
+  border: 1px solid rgba(124,58,237,0.35);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(124,58,237,0.15);
+  backdrop-filter: blur(24px);
+}
+
+.world-ai-option {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.2s ease;
+}
+
+.world-ai-option:hover {
+  background: rgba(6,182,212,0.08);
+  border-color: rgba(6,182,212,0.25);
+  transform: translateX(4px);
+}
+
+.world-live-strip {
+  background: rgba(7,17,31,0.85);
+  border-bottom: 1px solid rgba(0,230,118,0.1);
+  backdrop-filter: blur(12px);
+}
+
+.world-live-dot {
+  animation: world-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(0,230,118,0.6);
+}
+
+.world-identity-card {
+  background: linear-gradient(145deg, rgba(124,58,237,0.08) 0%, rgba(7,17,31,0.92) 40%, rgba(6,182,212,0.06) 100%);
+  border: 1px solid rgba(6,182,212,0.2);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(24px);
+}
+
+.world-page-shell[data-zone='admin'] .piac-page-content {
+  background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(34,211,238,0.06) 0%, transparent 60%);
+}
+
+.world-btn-glow {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.world-btn-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%);
+  transform: translateX(-120%);
+  transition: transform 0.5s ease;
+}
+
+.world-btn-glow:hover::after {
+  transform: translateX(120%);
+}
+
+.world-btn-glow:hover {
+  box-shadow: 0 0 24px rgba(0,230,118,0.35);
+}
+
+@media (min-width: 768px) {
+  .world-ai-fab {
+    bottom: 1.5rem !important;
+  }
 }

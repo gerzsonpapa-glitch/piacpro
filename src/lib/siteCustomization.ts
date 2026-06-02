@@ -146,8 +146,8 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   theme: {
     accent: '#00E676',
     accentSecondary: '#00C853',
-    background: '#0B0F14',
-    surface: '#121820',
+    background: '#07111f',
+    surface: '#0d1b2a',
     gradientTop: 'rgba(0,208,132,0.065)',
     gradientBottom: 'rgba(0,208,132,0.04)',
     glassBlur: 48,

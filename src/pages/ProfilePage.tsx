@@ -362,10 +362,11 @@ export default function ProfilePage() {
     <div className="max-w-4xl mx-auto space-y-6">
 
       {/* ── PROFILE HEADER ─────────────────────────────────────────── */}
-      <div className="glass rounded-3xl overflow-hidden">
-        {/* Cover gradient */}
-        <div className="h-28 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent relative">
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050507]/60 to-transparent" />
+      <div className="world-identity-card glass rounded-3xl overflow-hidden">
+        {/* Cover gradient — digitális identitás */}
+        <div className="h-32 bg-gradient-to-br from-cyan-500/15 via-purple-500/10 to-transparent relative">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07111f]/80 to-transparent" />
+          <div className="absolute inset-0 opacity-40" style={{ background: 'radial-gradient(circle at 80% 20%, rgba(124,58,237,0.25), transparent 50%)' }} />
         </div>
 
         <div className="px-6 pb-6 -mt-14 relative">
