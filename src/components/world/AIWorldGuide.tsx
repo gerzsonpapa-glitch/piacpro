@@ -2,12 +2,14 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Sparkles, ChevronRight, Lightbulb } from 'lucide-react';
 import { useRouter } from '../../lib/router';
+import { useSiteCustomization } from '../../contexts/SiteCustomizationContext';
 import { AI_GUIDE_OPTIONS, getZoneForPath } from '../../lib/worldZones';
 
 const HIDDEN_PATHS = ['/login', '/register'];
 
 export default function AIWorldGuide() {
   const { navigate, path } = useRouter();
+  const { devModeActive } = useSiteCustomization();
   const [open, setOpen] = useState(false);
 
   const suggestions = useMemo(() => {
@@ -26,14 +28,14 @@ export default function AIWorldGuide() {
     return 'Mondd el, mit keresel — én navigálok a megfelelő világba.';
   }, [path]);
 
-  if (HIDDEN_PATHS.includes(path) || path === '/') return null;
+  if (HIDDEN_PATHS.includes(path) || path === '/' || devModeActive) return null;
 
   return (
     <>
       <motion.button
         type="button"
         onClick={() => setOpen(true)}
-        className="world-ai-fab world-ai-fab-icon-only fixed z-[90] flex items-center justify-center shadow-2xl rounded-full"
+        className="world-ai-fab world-ai-fab-icon-only fixed z-[80] flex items-center justify-center shadow-2xl rounded-full"
         style={{
           bottom: 'calc(4.75rem + env(safe-area-inset-bottom, 0px))',
           right: '1rem',

@@ -271,7 +271,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <main
-        className={`relative z-10 ${isHome ? 'world-home-main pb-0' : 'py-0 pb-36 md:pb-10'} ${showDevStudio && !isHome ? 'md:pb-28 pb-40' : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
+        className={`relative z-10 ${isHome ? 'world-home-main pb-0' : 'py-0 pb-36 md:pb-10'} ${showDevStudio ? (isHome ? 'pb-36' : 'pb-44 md:pb-32') : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
         data-zone={activeZone?.id}
       >
         <div className={!isHome ? 'piac-page-content' : ''}>
@@ -283,7 +283,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Footer />
       </div>
 
-      {!hideChrome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
+      {!hideChrome && !isHome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
 
       <ChatWidget />
       <DeveloperModeBar />

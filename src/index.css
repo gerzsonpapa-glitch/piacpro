@@ -637,17 +637,25 @@ body.piac-dev-edit-active [data-piac-edit].piac-editable {
   outline: 1px dashed rgba(124, 58, 237, 0.45);
   outline-offset: 2px;
   border-radius: 4px;
+  position: relative;
+  z-index: 35;
 }
 
 body.piac-dev-edit-active [data-piac-edit].piac-editable:hover {
   outline-color: rgba(124, 58, 237, 0.85);
   background: rgba(124, 58, 237, 0.08);
+  z-index: 36;
 }
 
 body.piac-dev-edit-active .piac-editable-selected {
   outline: 2px solid #a78bfa !important;
   outline-offset: 3px;
   background: rgba(124, 58, 237, 0.12) !important;
+  z-index: 37 !important;
+}
+
+body.piac-dev-edit-active .city-map-hero-head [data-piac-edit] {
+  z-index: 38;
 }
 
 body.piac-dev-edit-active header a:not([data-piac-edit]),
@@ -855,6 +863,127 @@ body.piac-dev-edit-active header button:not([data-piac-edit]) {
   background: transparent !important;
 }
 
+/* ═══ PiacPro v2 — Főtér & prémium város UI ═══ */
+.city-main-square__plaza {
+  position: relative;
+  width: min(72vw, 420px);
+  height: min(72vw, 420px);
+  max-width: 420px;
+  max-height: 420px;
+}
+
+.city-main-square__pavement {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.12) 0%, transparent 55%),
+    repeating-conic-gradient(rgba(255, 255, 255, 0.04) 0deg 8deg, transparent 8deg 16deg),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(7, 17, 31, 0.35));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.city-main-square__greenery {
+  position: absolute;
+  width: 18%;
+  height: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.35) 0%, rgba(34, 197, 94, 0.12) 70%, transparent 100%);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  box-shadow: 0 0 24px rgba(74, 222, 128, 0.12);
+}
+
+.city-main-square__greenery--tl { top: 2%; left: 8%; }
+.city-main-square__greenery--tr { top: 2%; right: 8%; }
+.city-main-square__greenery--bl { bottom: 2%; left: 8%; }
+.city-main-square__greenery--br { bottom: 2%; right: 8%; }
+
+.city-main-square__fountain {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -54%);
+  width: 28%;
+  height: 28%;
+}
+
+.city-main-square__fountain-bowl {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(0, 200, 150, 0.15) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 -8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.city-main-square__fountain-stream {
+  position: absolute;
+  top: -18%;
+  left: 50%;
+  width: 4px;
+  height: 28%;
+  transform: translateX(-50%);
+  background: linear-gradient(to top, rgba(0, 200, 150, 0.5), rgba(255, 255, 255, 0.35));
+  border-radius: 999px;
+  animation: city-fountain-stream 2.8s ease-in-out infinite;
+}
+
+.city-main-square__fountain-glow {
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 200, 150, 0.2) 0%, transparent 70%);
+  animation: city-fountain-glow 3.2s ease-in-out infinite;
+}
+
+@keyframes city-fountain-stream {
+  0%, 100% { opacity: 0.55; transform: translateX(-50%) scaleY(0.92); }
+  50% { opacity: 1; transform: translateX(-50%) scaleY(1.05); }
+}
+
+@keyframes city-fountain-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.city-main-square__label {
+  position: absolute;
+  bottom: 16%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.piac-city-search {
+  background: rgba(7, 17, 31, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.piac-city-search:focus-within {
+  border-color: rgba(0, 200, 150, 0.35);
+  box-shadow: 0 0 0 3px rgba(0, 200, 150, 0.08);
+}
+
+.piac-city-search-btn {
+  background: linear-gradient(135deg, #00C896, #00A67E);
+  box-shadow: 0 4px 16px rgba(0, 200, 150, 0.25);
+}
+
+.city-building-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.city-building-card:hover {
+  transform: translateY(-2px);
+}
+
 .world-home-grid {
   position: relative;
 }
@@ -879,6 +1008,39 @@ body.piac-dev-edit-active header button:not([data-piac-edit]) {
 
 .piac-ai-home-widget {
   animation: piac-card-float 6s ease-in-out infinite;
+}
+
+/* Mobilon — kis ikon-gomb a városkép épületein */
+  .city-map-icon-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    padding: 0;
+    border: 1.5px solid color-mix(in srgb, var(--pin-color) 70%, white);
+    background: rgba(7, 17, 31, 0.82);
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 0 10px color-mix(in srgb, var(--pin-glow) 45%, transparent),
+      0 3px 10px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+.city-map-icon-pin:active {
+  transform: scale(0.92);
+}
+
+.city-map-icon-pin__svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+}
+
+.city-building-pin--icon {
+  z-index: 18;
 }
 
 /* ═══ Zóna képernyők (S&F-szerű belépés, eredeti PiacPro art) ═══ */
@@ -1303,9 +1465,72 @@ body {
 
 @media (max-width: 639px) {
   .world-home-immersive,
-  .world-home-main {
-    min-height: calc(100dvh - 3.25rem);
-    height: calc(100dvh - 3.25rem);
+  .world-home-main,
+  .world-home-hero-viewport {
+    min-height: 100dvh;
+    height: auto;
+  }
+
+  .world-home-stage {
+    min-height: 100dvh;
+  }
+
+  .home-hero-backdrop-media,
+  .zone-screen-backdrop--home .zone-screen-media,
+  .zone-screen-backdrop--hero .zone-screen-media,
+  .zone-screen-backdrop--home .zone-screen-loop,
+  .zone-screen-backdrop--hero .zone-screen-loop {
+    object-position: center center;
+  }
+
+  .city-map-pins {
+    pointer-events: none;
+  }
+
+  .city-map-pins .city-building-pin {
+    pointer-events: auto;
+  }
+
+  .city-map-icon-pin {
+    width: 1.375rem;
+    height: 1.375rem;
+    border-width: 1px;
+  }
+
+  .city-map-icon-pin__svg {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+
+  .city-map-hero-head {
+    max-width: min(100%, 20rem);
+  }
+
+  .city-main-square__plaza {
+    width: min(58vw, 240px);
+    height: min(58vw, 240px);
+  }
+
+  .city-main-square__label {
+    bottom: 12%;
+  }
+
+  .city-main-square__label span:last-child {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  .home-scroll-hint {
+    opacity: 0.85;
+  }
+
+  .home-info-scroll {
+    padding-top: 1.5rem;
+  }
+
+  .home-info-scroll .max-w-\[1200px\] {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
   }
 
   .city-pin-label span:nth-child(2) {

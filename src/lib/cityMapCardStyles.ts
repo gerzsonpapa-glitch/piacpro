@@ -40,7 +40,6 @@ export function getBuildingCardPresentation(
   color: string,
 ): BuildingCardPresentation {
   const glow = colorGlow(color, 0.55);
-  const glowSoft = colorGlow(color, 0.28);
   const glowStrong = colorGlow(color, 0.75);
 
   const baseLabel = 'font-black uppercase tracking-wide leading-tight piac-neon-text';
@@ -110,22 +109,22 @@ export function getBuildingCardPresentation(
     case 'glass':
     default:
       return {
-        cardClass: 'city-card-glass min-w-[168px] max-w-[210px]',
+        cardClass: 'city-card-glass city-building-card min-w-[160px] max-w-[200px]',
         buttonStyle: {
-          background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(7,17,31,0.82) 45%, rgba(7,17,31,0.92) 100%)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          border: `1px solid ${hexToRgba(color, 0.38)}`,
-          boxShadow: `0 8px 32px rgba(0,0,0,0.45), 0 0 24px ${glowSoft}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+          background: 'linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(7,17,31,0.55) 50%, rgba(7,17,31,0.78) 100%)',
+          backdropFilter: 'blur(22px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(22px) saturate(160%)',
+          border: `1px solid ${hexToRgba(color, 0.32)}`,
+          boxShadow: `0 12px 40px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.04) inset`,
         },
-        iconWrapClass: 'w-10 h-10 rounded-xl',
+        iconWrapClass: 'w-9 h-9 rounded-xl',
         iconWrapStyle: {
-          background: hexToRgba(color, 0.14),
-          border: `1px solid ${hexToRgba(color, 0.42)}`,
-          boxShadow: `0 0 16px ${glowSoft}`,
+          background: hexToRgba(color, 0.12),
+          border: `1px solid ${hexToRgba(color, 0.35)}`,
+          boxShadow: 'none',
         },
-        labelClass: `${baseLabel} text-[11px]`,
-        sublabelClass: `${baseSub} text-[10px]`,
+        labelClass: `${baseLabel} text-[10px] sm:text-[11px]`,
+        sublabelClass: `${baseSub} text-[9px] sm:text-[10px] text-zinc-500`,
       };
   }
 }

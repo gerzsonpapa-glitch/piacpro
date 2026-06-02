@@ -119,7 +119,7 @@ export default function ListingCard({ listing, priority = false }: { listing: Li
           {isAuction && listing.auction && listing.auction.bid_count > 0 && (
             <span className="text-[11px] text-zinc-600 font-medium">{listing.auction.bid_count} licit</span>
           )}
-          {listing.is_negotiable && !isAuction && (
+          {listing.negotiable && !isAuction && (
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
               style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)' }}>
               Alku

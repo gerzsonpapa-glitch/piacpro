@@ -72,15 +72,14 @@ export default function HomeInfoScroll({
       <div className="max-w-[1200px] mx-auto px-4 py-12 md:py-16 space-y-14 md:space-y-16">
         {/* Miért PiacPro */}
         <div className="text-center max-w-2xl mx-auto space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-300/90">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#00C896]/90">
             Miért a PiacPro?
           </p>
           <h2 className="text-2xl md:text-3xl font-black text-white leading-tight">
-            Magyarország barátságos digitális piactere
+            Egy élő digitális város — nem csak piactér
           </h2>
           <p className="text-sm md:text-base text-zinc-400 leading-relaxed">
-            Nem csak hirdetéseket listázunk — egy élő közösségi várost építettünk, ahol vásárolsz,
-            eladsz, dolgozol, segítesz és kapcsolódsz. Meleg, átlátható, valós adatokkal.
+            Dolgozz, kereskedj, segíts és építs közösséget — minden egy prémium ökoszisztémában.
           </p>
         </div>
 
@@ -91,7 +90,7 @@ export default function HomeInfoScroll({
               key={s.label}
               className="home-glass-panel rounded-2xl p-4 text-center"
             >
-              <p className="text-2xl md:text-3xl font-black text-[#00E676] tabular-nums">
+              <p className="text-2xl md:text-3xl font-black text-[#00C896] tabular-nums">
                 {stats.loading ? '…' : s.value.toLocaleString('hu-HU')}
               </p>
               <p className="text-[11px] text-zinc-500 mt-1">{s.label}</p>
@@ -140,15 +139,15 @@ export default function HomeInfoScroll({
                 type="button"
                 onClick={() => navigate('/register')}
                 className="px-7 py-3 rounded-xl font-bold text-sm text-[#07111f]"
-                style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 24px rgba(0,230,118,0.35)' }}
+                style={{ background: 'linear-gradient(135deg, #00C896, #00A67E)', boxShadow: '0 0 24px rgba(0,200,150,0.35)' }}
               >
                 Regisztráció — ingyenes
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="px-6 py-3 rounded-xl text-sm font-semibold text-[#00E676]"
-                style={{ border: '1px solid rgba(0,230,118,0.3)', background: 'rgba(0,230,118,0.06)' }}
+                className="px-6 py-3 rounded-xl text-sm font-semibold text-[#00C896]"
+                style={{ border: '1px solid rgba(0,200,150,0.3)', background: 'rgba(0,200,150,0.06)' }}
               >
                 Bejelentkezés
               </button>
@@ -162,7 +161,7 @@ export default function HomeInfoScroll({
 
 export function HomeScrollHint() {
   return (
-    <div className="absolute bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none animate-bounce">
+    <div className="home-scroll-hint absolute bottom-20 sm:bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none animate-bounce">
       <span className="text-[10px] font-semibold text-zinc-500/80 uppercase tracking-widest">Görgess le</span>
       <ChevronDown className="w-4 h-4 text-zinc-500/60" />
     </div>

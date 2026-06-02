@@ -1,16 +1,15 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { motion } from 'framer-motion';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'outline';
 
 const variants: Record<Variant, string> = {
   primary:
-    'text-[#0B0F14] font-bold shadow-[0_0_24px_rgba(0,230,118,0.35)] bg-gradient-to-br from-[#00E676] to-[#00C853] hover:shadow-[0_0_32px_rgba(0,230,118,0.5)]',
+    'text-[#0B0F14] font-bold shadow-[0_0_24px_rgba(0,230,118,0.35)] bg-gradient-to-br from-[#00E676] to-[#00C853] hover:shadow-[0_0_32px_rgba(0,230,118,0.5)] hover:scale-[1.03] active:scale-[0.97]',
   secondary:
-    'text-zinc-100 bg-white/[0.06] border border-white/10 hover:bg-white/[0.1] hover:border-white/20',
-  ghost: 'text-zinc-300 hover:text-white hover:bg-white/[0.06]',
+    'text-zinc-100 bg-white/[0.06] border border-white/10 hover:bg-white/[0.1] hover:border-white/20 hover:scale-[1.03] active:scale-[0.97]',
+  ghost: 'text-zinc-300 hover:text-white hover:bg-white/[0.06] hover:scale-[1.03] active:scale-[0.97]',
   outline:
-    'text-zinc-200 border border-white/25 bg-transparent hover:border-[#00E676]/50 hover:text-[#00E676]',
+    'text-zinc-200 border border-white/25 bg-transparent hover:border-[#00E676]/50 hover:text-[#00E676] hover:scale-[1.03] active:scale-[0.97]',
 };
 
 export default function PiacButton({
@@ -18,6 +17,7 @@ export default function PiacButton({
   size = 'md',
   className = '',
   children,
+  type = 'button',
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
@@ -31,13 +31,12 @@ export default function PiacButton({
   };
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
-      className={`inline-flex items-center justify-center font-semibold transition-colors ${variants[variant]} ${sizes[size]} ${className}`}
+    <button
+      type={type}
+      className={`inline-flex items-center justify-center font-semibold transition-all ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }

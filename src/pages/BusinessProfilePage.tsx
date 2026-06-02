@@ -9,7 +9,7 @@ import { formatRelativeTime } from '../lib/utils';
 import {
   ArrowLeft, MapPin, Star, CheckCircle, Zap, Heart, Globe,
   Phone, Mail, Sprout, Scissors, Store, Briefcase, Home, UserCheck,
-  MessageCircle, Package, ChevronLeft, ChevronRight, X, Banknote,
+  MessageCircle, Package, ChevronLeft, ChevronRight, X, Banknote, Search,
   Pencil, Trash2, PlusCircle, AlertCircle, Tag, Leaf
 } from 'lucide-react';
 import { useSEO } from '../lib/seo';

@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { X, Save, Upload, Loader2, MousePointer2 } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { X, Save, Upload, Loader2 } from 'lucide-react';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { useNotification } from '../contexts/NotificationContext';
 import {
@@ -107,90 +107,77 @@ export default function InlineDevEditor() {
     }
   }
 
-  if (!devModeActive) return null;
+  if (!devModeActive || !activeKey) return null;
 
-  const meta = activeKey ? getEditMeta(activeKey) : null;
+  const meta = getEditMeta(activeKey);
+  if (!meta) return null;
 
   return (
-    <>
-        <div className="piac-dev-toolbar fixed top-20 left-1/2 -translate-x-1/2 z-[95] px-4 py-2 rounded-xl text-xs font-medium flex items-center gap-2 pointer-events-none max-w-[min(100vw-1rem,42rem)] text-center"
+    <div className="piac-inline-editor fixed inset-x-0 bottom-[5.5rem] sm:bottom-[4.75rem] z-[130] px-4 flex justify-center pointer-events-none">
+      <div
+        className="w-full max-w-lg rounded-2xl p-4 space-y-3 shadow-2xl pointer-events-auto"
         style={{
-          background: 'rgba(124,58,237,0.9)',
-          color: '#fff',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-        }}>
-        <MousePointer2 className="w-3.5 h-3.5" />
-        Kattints a lila keretes elemre, vagy a felső fejlesztői gombokra
-      </div>
-
-      {activeKey && meta && (
-        <div className="piac-inline-editor fixed inset-x-0 bottom-20 z-[96] px-4 flex justify-center">
-          <div
-            className="w-full max-w-lg rounded-2xl p-4 space-y-3 shadow-2xl"
-            style={{
-              background: 'rgba(7,17,31,0.98)',
-              border: '1px solid rgba(124,58,237,0.5)',
-            }}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-violet-300">{meta.label}</p>
-              <button type="button" onClick={close} className="p-1.5 text-zinc-500 hover:text-zinc-200">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {meta.type === 'image' ? (
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="URL vagy feltöltés után automatikus"
-                  className="w-full px-3 py-2 glass-input rounded-xl text-sm text-zinc-100"
-                />
-                <label className="flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-violet-500/40 cursor-pointer hover:bg-violet-500/10">
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  <span className="text-sm text-zinc-300">Kép feltöltése</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={onImageFile} disabled={uploading} />
-                </label>
-                {draft && (
-                  <img src={draft} alt="" className="h-20 w-full object-cover rounded-lg border border-white/10" />
-                )}
-              </div>
-            ) : meta.type === 'textarea' ? (
-              <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 glass-input rounded-xl text-sm text-zinc-100 resize-none"
-              />
-            ) : meta.type === 'color' ? (
-              <div className="flex gap-2">
-                <input type="color" value={draft || '#00d084'} onChange={(e) => setDraft(e.target.value)} className="w-12 h-10 rounded-lg" />
-                <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)} className="flex-1 px-3 py-2 glass-input rounded-xl text-sm" />
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                className="w-full px-3 py-2 glass-input rounded-xl text-sm text-zinc-100"
-              />
-            )}
-
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-zinc-900 disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}
-            >
-              <Save className="w-4 h-4" />
-              {saving ? 'Mentés...' : 'Mentés az élő oldalra'}
-            </button>
-          </div>
+          background: 'rgba(7,17,31,0.98)',
+          border: '1px solid rgba(124,58,237,0.5)',
+        }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-violet-300">{meta.label}</p>
+          <button type="button" onClick={close} className="p-1.5 text-zinc-500 hover:text-zinc-200">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      )}
-    </>
+
+        {meta.type === 'image' ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="URL vagy feltöltés után automatikus"
+              className="w-full px-3 py-2 glass-input rounded-xl text-sm text-zinc-100"
+            />
+            <label className="flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-violet-500/40 cursor-pointer hover:bg-violet-500/10">
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              <span className="text-sm text-zinc-300">Kép feltöltése</span>
+              <input type="file" accept="image/*" className="hidden" onChange={onImageFile} disabled={uploading} />
+            </label>
+            {draft && (
+              <img src={draft} alt="" className="h-20 w-full object-cover rounded-lg border border-white/10" />
+            )}
+          </div>
+        ) : meta.type === 'textarea' ? (
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={3}
+            className="w-full px-3 py-2 glass-input rounded-xl text-sm text-zinc-100 resize-none"
+          />
+        ) : meta.type === 'color' ? (
+          <div className="flex gap-2">
+            <input type="color" value={draft || '#00d084'} onChange={(e) => setDraft(e.target.value)} className="w-12 h-10 rounded-lg" />
+            <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)} className="flex-1 px-3 py-2 glass-input rounded-xl text-sm" />
+          </div>
+        ) : (
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-full px-3 py-2 glass-input rounded-xl text-sm text-zinc-100"
+          />
+        )}
+
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-zinc-900 disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}
+        >
+          <Save className="w-4 h-4" />
+          {saving ? 'Mentés...' : 'Mentés az élő oldalra'}
+        </button>
+      </div>
+    </div>
   );
 }

@@ -137,6 +137,7 @@ function ScamTab() {
   const [suspiciousListings, setSuspiciousListings] = useState<Listing[]>([]);
   const [scanning, setScanning] = useState(false);
   const { navigate } = useRouter();
+  const { showToast } = useNotification();
 
   function saveKeywords(kws: string[]) { setKeywords(kws); localStorage.setItem('scam_keywords', JSON.stringify(kws)); }
   function addKeyword() { const kw = newKw.trim().toLowerCase(); if (kw && !keywords.includes(kw)) saveKeywords([...keywords, kw]); setNewKw(''); }

@@ -43,15 +43,29 @@ export default function WorldEffects({ isHome = false }: { isHome?: boolean }) {
   const { config } = useSiteCustomization();
   const w = config.world;
   const [scrollY, setScrollY] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    if (!w.enabled || (!w.floatingOrbs && !isHome)) return;
+    const motionMq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mobileMq = window.matchMedia('(max-width: 639px)');
+    const update = () => setReduceMotion(motionMq.matches || mobileMq.matches);
+    update();
+    motionMq.addEventListener('change', update);
+    mobileMq.addEventListener('change', update);
+    return () => {
+      motionMq.removeEventListener('change', update);
+      mobileMq.removeEventListener('change', update);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!w.enabled || reduceMotion || (!w.floatingOrbs && !isHome)) return;
     const fn = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
-  }, [w.enabled, w.floatingOrbs, isHome]);
+  }, [w.enabled, w.floatingOrbs, isHome, reduceMotion]);
 
-  if (!w.enabled) return null;
+  if (!w.enabled || reduceMotion) return null;
 
   const parallax = scrollY * 0.04 * w.parallaxStrength;
 

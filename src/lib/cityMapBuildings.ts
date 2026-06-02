@@ -1,10 +1,7 @@
 import type { ElementType } from 'react';
 import {
-  ShoppingBag, Gavel, Briefcase, Users, Store, Heart, Leaf, Shield, Church,
+  ShoppingBag, Gavel, Briefcase, Users, Store, Heart, Leaf, Award, HandHeart,
 } from 'lucide-react';
-
-/** Eredeti PiacPro vizuális világ — modern magyar digitális város, karikatúra.
- *  NEM fantasy RPG, NEM ork/troll, NEM más játék másolata. */
 import { WORLD_BACKGROUND_4K } from './siteCustomization';
 import type { CityMapHotspotOverride, CityCardStyle } from './cityMapPages';
 import { resolveCityIcon } from './cityMapIcons';
@@ -20,13 +17,15 @@ export interface CityBuilding {
   glow: string;
   top: string;
   left: string;
+  /** Pozíció a hub képen belül (0–100%), object-fit: contain igazításhoz */
+  imageTop?: string;
+  imageLeft?: string;
   tier: 'primary' | 'secondary' | 'system';
   countKey?: 'listing' | 'auction' | 'job' | 'donations' | 'producers' | 'shops';
   iconId?: string;
   cardStyle?: CityCardStyle;
 }
 
-/** Gyors műveletek — lebegő ikonok az épületek közelében (nem külön panel) */
 export interface CityQuickPin {
   id: string;
   label: string;
@@ -37,115 +36,158 @@ export interface CityQuickPin {
   left: string;
 }
 
-/** Hotspot pozíciók — izometrikus PiacPro városkép */
+/**
+ * PiacPro digitális város — épületek a Főtér körül.
+ * v2 koncepció: prémium, letisztult, nem cyberpunk.
+ */
 export const CITY_BUILDINGS: CityBuilding[] = [
   {
     id: 'piac-ter',
-    label: 'Piac Tér',
-    sublabel: 'Piac zóna',
+    label: 'Piacnegyed',
+    sublabel: 'Apróhirdetés · Adás-vétel · Szolgáltatás',
     path: '/search',
     icon: ShoppingBag,
-    color: '#00E676',
-    glow: 'rgba(0,230,118,0.55)',
-    top: '38%',
-    left: '22%',
+    iconId: 'shopping',
+    color: '#00C896',
+    glow: colorGlow('#00C896', 0.5),
+    top: '36%',
+    left: '11%',
+    imageTop: '60%',
+    imageLeft: '10%',
     tier: 'primary',
     countKey: 'listing',
     cardStyle: 'glass',
   },
   {
     id: 'munka',
-    label: 'Munka Negyed',
-    sublabel: 'Állásközpont',
+    label: 'Munkásnegyed',
+    sublabel: 'Állások · Szakemberek · Vállalkozók',
     path: '/jobs',
     icon: Briefcase,
-    color: '#38BDF8',
-    glow: 'rgba(56,189,248,0.5)',
-    top: '24%',
-    left: '50%',
+    iconId: 'briefcase',
+    color: '#3B82F6',
+    glow: colorGlow('#3B82F6', 0.5),
+    top: '20%',
+    left: '76%',
+    imageTop: '34%',
+    imageLeft: '72%',
     tier: 'primary',
     countKey: 'job',
-    cardStyle: 'neon',
+    cardStyle: 'glass',
+  },
+  {
+    id: 'licit',
+    label: 'Licitközpont',
+    sublabel: 'Élő aukciók · Licitek',
+    path: '/auctions',
+    icon: Gavel,
+    iconId: 'gavel',
+    color: '#8B5CF6',
+    glow: colorGlow('#8B5CF6', 0.5),
+    top: '74%',
+    left: '14%',
+    imageTop: '36%',
+    imageLeft: '20%',
+    tier: 'primary',
+    countKey: 'auction',
+    cardStyle: 'glass',
+  },
+  {
+    id: 'termelok',
+    label: 'Termelői Negyed',
+    sublabel: 'Őstermelők · Kézművesek · Helyi termék',
+    path: '/producers',
+    icon: Leaf,
+    iconId: 'leaf',
+    color: '#4ADE80',
+    glow: colorGlow('#4ADE80', 0.5),
+    top: '82%',
+    left: '48%',
+    imageTop: '48%',
+    imageLeft: '91%',
+    tier: 'primary',
+    countKey: 'producers',
+    cardStyle: 'glass',
   },
   {
     id: 'boltok',
     label: 'Boltok Utcája',
-    sublabel: 'Üzleti negyed',
-    path: '/helyi-vallalkozasok',
+    sublabel: 'Webshopok · Cégek · Üzletek',
+    path: '/shops',
     icon: Store,
-    color: '#FBBF24',
-    glow: 'rgba(251,191,36,0.45)',
-    top: '32%',
-    left: '78%',
+    iconId: 'store',
+    color: '#F97316',
+    glow: colorGlow('#F97316', 0.5),
+    top: '26%',
+    left: '88%',
+    imageTop: '58%',
+    imageLeft: '83%',
     tier: 'primary',
     countKey: 'shops',
     cardStyle: 'glass',
   },
   {
-    id: 'licit',
-    label: 'Licit Csarnok',
-    sublabel: 'Aukció aréna',
-    path: '/auctions',
-    icon: Gavel,
-    color: '#A855F7',
-    glow: 'rgba(168,85,247,0.55)',
-    top: '68%',
-    left: '20%',
+    id: 'kozossegi',
+    label: 'Közösségi Ház',
+    sublabel: 'Fórum · Csoportok · Események',
+    path: '/forum',
+    icon: Users,
+    iconId: 'users',
+    color: '#38BDF8',
+    glow: colorGlow('#38BDF8', 0.5),
+    top: '56%',
+    left: '87%',
+    imageTop: '40%',
+    imageLeft: '58%',
     tier: 'primary',
-    countKey: 'auction',
-    cardStyle: 'neon',
+    cardStyle: 'glass',
+  },
+  {
+    id: 'segitsegkozpont',
+    label: 'Segítségközpont',
+    sublabel: 'Segítségkérés · Felajánlások',
+    path: '/donations',
+    icon: HandHeart,
+    iconId: 'handheart',
+    color: '#60A5FA',
+    glow: colorGlow('#60A5FA', 0.5),
+    top: '48%',
+    left: '8%',
+    imageTop: '44%',
+    imageLeft: '30%',
+    tier: 'secondary',
+    cardStyle: 'minimal',
   },
   {
     id: 'templom-adomany',
-    label: 'Adomány Központ',
-    sublabel: 'Segítség és támogatás',
-    path: '/donations',
-    icon: Church,
-    color: '#EAB308',
-    glow: 'rgba(234,179,8,0.5)',
-    top: '52%',
-    left: '36%',
+    label: 'Adományközpont',
+    sublabel: 'Adománygyűjtés · Támogatás',
+    path: '/donations/create',
+    icon: Heart,
+    iconId: 'heart',
+    color: '#FBBF24',
+    glow: colorGlow('#FBBF24', 0.5),
+    top: '64%',
+    left: '32%',
+    imageTop: '52%',
+    imageLeft: '42%',
     tier: 'secondary',
     countKey: 'donations',
     cardStyle: 'glass',
   },
   {
-    id: 'termelok',
-    label: 'Termelők Piaca',
-    sublabel: 'Helyi termelők',
-    path: '/producers',
-    icon: Leaf,
-    color: '#4ADE80',
-    glow: 'rgba(74,222,128,0.5)',
-    top: '72%',
-    left: '58%',
-    tier: 'secondary',
-    countKey: 'producers',
-    cardStyle: 'glass',
-  },
-  {
-    id: 'kozossegi',
-    label: 'Közösségi Tér',
-    sublabel: 'Fórum és események',
-    path: '/forum',
-    icon: Users,
-    color: '#22D3EE',
-    glow: 'rgba(34,211,238,0.45)',
-    top: '54%',
-    left: '82%',
-    tier: 'primary',
-    cardStyle: 'glass',
-  },
-  {
-    id: 'templom-vedelem',
-    label: 'Védelem',
-    sublabel: 'Biztonság',
-    path: '/vedelem',
-    icon: Shield,
-    color: '#34D399',
-    glow: 'rgba(52,211,153,0.4)',
-    top: '12%',
-    left: '88%',
+    id: 'hirnev-torony',
+    label: 'Hírnév Torony',
+    sublabel: 'Rang · Jelvény · Megbízhatóság',
+    path: '/rules',
+    icon: Award,
+    iconId: 'award',
+    color: '#F59E0B',
+    glow: colorGlow('#F59E0B', 0.5),
+    top: '10%',
+    left: '48%',
+    imageTop: '20%',
+    imageLeft: '49%',
     tier: 'system',
     cardStyle: 'minimal',
   },
@@ -181,14 +223,14 @@ export function applyCityMapOverrides(
     if (!o.top || !o.left || !o.path) continue;
     merged.push({
       id: o.id,
-      label: o.label || 'Új zóna',
+      label: o.label || 'Új épület',
       sublabel: o.sublabel || o.path,
       path: o.path,
       icon: resolveCityIcon(o.iconId, Store),
       iconId: o.iconId,
       cardStyle: o.cardStyle || 'glass',
-      color: o.color || '#00E676',
-      glow: colorGlow(o.color || '#00E676', 0.55),
+      color: o.color || '#00C896',
+      glow: colorGlow(o.color || '#00C896', 0.55),
       top: o.top,
       left: o.left,
       tier: 'secondary',
@@ -198,7 +240,6 @@ export function applyCityMapOverrides(
 }
 
 export const CITY_QUICK_PINS: CityQuickPin[] = [];
-
 export const CITY_MAP_IMAGE = WORLD_BACKGROUND_4K;
 
 export const ZONE_SCENE_IMAGES: Record<string, { src: string; webp: string; position: string }> = {

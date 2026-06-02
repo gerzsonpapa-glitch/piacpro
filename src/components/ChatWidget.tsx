@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useRouter } from '../lib/router';
 import type { Conversation, Message, Profile } from '../lib/types';
@@ -10,6 +11,7 @@ import Avatar from './Avatar';
 
 export default function ChatWidget() {
   const { user, unreadCount, refreshUnread } = useAuth();
+  const { devModeActive } = useSiteCustomization();
   const { showToast } = useNotification();
   const { path } = useRouter();
   const [open, setOpen] = useState(false);
@@ -150,7 +152,7 @@ export default function ChatWidget() {
     setSending(false);
   }
 
-  if (!user || isMessagesPage) return null;
+  if (!user || isMessagesPage || devModeActive) return null;
 
   const otherUser = activeConv
     ? (user.id === activeConv.buyer_id ? activeConv.seller : activeConv.buyer)

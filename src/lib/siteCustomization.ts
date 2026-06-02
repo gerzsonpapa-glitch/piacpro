@@ -185,15 +185,15 @@ export const PAGE_SKIN_DEFAULTS: PageSkinConfig[] = [
 export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   version: 2,
   hero: {
-    title: 'ÜDV A PIACPRO VILÁGÁBAN!',
-    subtitle: 'Fedezd fel a lehetőségeket. Minden egy helyen.',
+    title: 'Beléptél a PiacPro világába',
+    subtitle: 'Válassz épületet a Főtéren — dolgozz, kereskedj, segíts, építs közösséget.',
     imageUrl: WORLD_BACKGROUND_4K,
     brightness: 1.04,
     saturation: 1.06,
     overlayColor: '#07111f',
     overlayOpacity: 0.08,
-    badgeTop: 'Piac',
-    badgeBottom: 'Pro',
+    badgeTop: 'PiacPro',
+    badgeBottom: 'Főtér',
     heightVh: 80,
   },
   announcement: {
@@ -204,12 +204,12 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
     textColor: '#00d084',
   },
   theme: {
-    accent: '#00E676',
-    accentSecondary: '#00C853',
+    accent: '#00C896',
+    accentSecondary: '#00A67E',
     background: '#07111f',
     surface: '#0d1b2a',
-    gradientTop: 'rgba(0,208,132,0.065)',
-    gradientBottom: 'rgba(0,208,132,0.04)',
+    gradientTop: 'rgba(0,200,150,0.05)',
+    gradientBottom: 'rgba(0,200,150,0.03)',
     glassBlur: 48,
     glassBorderOpacity: 0.18,
   },
@@ -238,7 +238,7 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   cityMapHotspots: [],
   nav: {
     brandSubtitle: 'Magyar Közösségi Piactér',
-    searchPlaceholder: 'Mit keresel ma?',
+    searchPlaceholder: 'Mit keresel a városban?',
   },
   media: {
     logoImageUrl: '',

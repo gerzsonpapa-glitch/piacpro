@@ -7,12 +7,13 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           'supabase': ['@supabase/supabase-js'],
+          'motion': ['framer-motion'],
           'icons': ['lucide-react'],
         },
       },

@@ -12,7 +12,7 @@ export default function PageShell({
   children: ReactNode;
   title?: string;
   subtitle?: string;
-  zoneId?: import('../lib/worldZones').WorldZoneId;
+  zoneId?: import('../../lib/worldZones').WorldZoneId;
   className?: string;
 }) {
   return (

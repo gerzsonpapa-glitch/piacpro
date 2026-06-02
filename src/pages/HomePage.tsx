@@ -16,9 +16,14 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchListings().finally(() => setLoading(false));
-    const t = setTimeout(() => setReady(true), 80);
-    return () => clearTimeout(t);
+    const tReady = setTimeout(() => setReady(true), 80);
+    const tFetch = window.setTimeout(() => {
+      fetchListings().finally(() => setLoading(false));
+    }, 120);
+    return () => {
+      clearTimeout(tReady);
+      clearTimeout(tFetch);
+    };
   }, []);
 
   async function fetchListings() {

@@ -41,8 +41,8 @@ export const CITY_ICON_OPTIONS: { id: string; label: string }[] = [
   { id: 'store', label: 'Bolt' },
   { id: 'heart', label: 'Szív / Adomány' },
   { id: 'leaf', label: 'Termelő' },
-  { id: 'shield', label: 'Védelem' },
-  { id: 'church', label: 'Templom' },
+  { id: 'award', label: 'Hírnév / Jelvény' },
+  { id: 'handheart', label: 'Segítség' },
   { id: 'search', label: 'Keresés' },
   { id: 'message', label: 'Üzenet' },
 ];

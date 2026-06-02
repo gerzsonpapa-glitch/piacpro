@@ -1,6 +1,6 @@
 import type { ElementType } from 'react';
 import {
-  ShoppingBag, Gavel, Briefcase, Users, Store, Heart, Leaf, Shield, Church,
+  ShoppingBag, Gavel, Briefcase, Users, Store, Heart, Leaf, Award, HandHeart,
   Search, MessageCircle,
 } from 'lucide-react';
 
@@ -12,8 +12,8 @@ export const CITY_ICON_MAP: Record<string, ElementType> = {
   store: Store,
   heart: Heart,
   leaf: Leaf,
-  shield: Shield,
-  church: Church,
+  award: Award,
+  handheart: HandHeart,
   search: Search,
   message: MessageCircle,
 };
