@@ -3,9 +3,9 @@ import { useRouter } from '../lib/router';
 import {
   Search, MessageCircle, User, Menu, X, LogOut, ShoppingBag, Gavel, Shield, Briefcase,
   Gift, MapPin, Users, ChevronDown, TrendingUp, Baby, Percent, Building2, Lock,
-  Heart, ArrowRight, Car, Globe, Bell, PlusCircle, Home,
+  Heart, ArrowRight, Car, Globe, Bell, PlusCircle, Home, Sparkles,
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ChatWidget from './ChatWidget';
 import Footer from './Footer';
@@ -17,6 +17,7 @@ import { getPageSkin } from '../lib/siteCustomization';
 import WorldEffects from './WorldEffects';
 import InlineDevEditor from './InlineDevEditor';
 import PiacEditable from './PiacEditable';
+import PiacButton from './ui/PiacButton';
 
 const DEFENSE_ITEMS = [
   { key: 'nyugdij' as const,                icon: TrendingUp, label: 'Nyugdíj-előtakarékosság',           desc: 'Hosszú távú megtakarítás, adókedvezmény' },
@@ -113,10 +114,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const showDevStudio = canEdit && isSiteDeveloper(user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingApps, setPendingApps] = useState(0);
-  const [defenseOpen, setDefenseOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const defenseRef = useRef<HTMLDivElement>(null);
   const isHome = path === '/';
 
   useEffect(() => {
@@ -236,67 +235,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
-          {/* Center search */}
-          <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-none hidden md:block mx-1 lg:mx-3">
-            <div className="relative flex items-center rounded-2xl overflow-hidden transition-all duration-300 hover:border-[rgba(0,208,132,0.3)] focus-within:border-[rgba(0,208,132,0.42)] focus-within:shadow-[0_0_0_3px_rgba(0,208,132,0.08),0_0_28px_rgba(0,208,132,0.07)]"
-              style={{ background: 'rgba(10,22,38,0.82)', border: '1px solid rgba(0,208,132,0.16)', backdropFilter: 'blur(20px)' }}>
-              <div className="w-10 h-10 flex-shrink-0 ml-1 flex items-center justify-center rounded-xl"
-                style={{ background: 'rgba(0,208,132,0.1)', border: '1px solid rgba(0,208,132,0.2)' }}>
-                <span className="text-base" style={{ color: '#00d084' }}>✦</span>
+          {/* Center search — referencia layout */}
+          <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-2xl hidden sm:block mx-2 lg:mx-6">
+            <div className="relative flex items-center rounded-2xl overflow-hidden piac-nav-search transition-all duration-300">
+              <div className="w-10 h-10 flex-shrink-0 ml-1.5 flex items-center justify-center rounded-xl"
+                style={{ background: 'rgba(0,230,118,0.12)', border: '1px solid rgba(0,230,118,0.22)' }}>
+                <Sparkles className="w-4 h-4 text-[#00E676]" />
               </div>
-              <div className="flex-1 flex flex-col px-3 py-1.5">
-                <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'rgba(0,208,132,0.65)' }}>Mit keresel ma?</span>
+              <div className="flex-1 flex flex-col px-3 py-1.5 min-w-0">
+                <span className="text-[10px] font-bold tracking-widest uppercase text-[#00E676]/70">Mit keresel ma?</span>
                 <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
                   placeholder={config.nav.searchPlaceholder}
                   data-piac-edit="nav.searchPlaceholder"
                   className="bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none leading-tight w-full min-w-0" />
               </div>
               <button type="submit" className="flex-shrink-0 m-1.5 w-9 h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #00d084, #059669)', boxShadow: '0 0 20px rgba(0,208,132,0.45)' }}>
-                <Search className="w-4 h-4 text-zinc-900" />
+                style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 20px rgba(0,230,118,0.4)' }}>
+                <Search className="w-4 h-4 text-[#0B0F14]" />
               </button>
             </div>
           </form>
-
-          {/* Desktop nav links — görgethető, ne csússzon szét */}
-          <nav className="hidden lg:flex items-center gap-0.5 flex-shrink min-w-0 max-w-[38vw] xl:max-w-[42vw] overflow-x-auto scrollbar-none">
-            {NAV_LINKS.map(item => (
-              <button key={item.path} onClick={() => navigate(item.path)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  isActive(item.path) ? 'glass-pill-active text-[#00d084]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
-                }`}>
-                <item.icon className="w-3.5 h-3.5" />{item.label}
-              </button>
-            ))}
-
-            {/* Defense dropdown */}
-            <div ref={defenseRef} className="relative" onMouseLeave={() => setDefenseOpen(false)}>
-              <button onMouseEnter={() => setDefenseOpen(true)} onClick={() => navigate('/vedelem')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  isActive('/vedelem') ? 'glass-pill-active text-[#00d084]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
-                }`}>
-                <Shield className="w-3.5 h-3.5" />Védelem
-                <ChevronDown className={`w-3 h-3 transition-transform ${defenseOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {defenseOpen && <DefenseDropdown onClose={() => setDefenseOpen(false)} />}
-            </div>
-
-            {profile?.is_admin && (
-              <button onClick={() => navigate('/admin')}
-                className={`relative flex items-center gap-1 px-2 py-2 rounded-xl text-[12px] font-medium whitespace-nowrap flex-shrink-0 transition-all ${
-                  isActive('/admin') ? 'glass-pill-active text-[#00d084]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
-                }`}
-                title="Adminisztráció">
-                <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="hidden xl:inline">Admin</span>
-                {pendingApps > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-zinc-900 text-[8px] font-black rounded-full flex items-center justify-center">
-                    {pendingApps > 9 ? '9+' : pendingApps}
-                  </span>
-                )}
-              </button>
-            )}
-          </nav>
 
           {/* Right side auth */}
           <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
@@ -320,20 +278,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </>
             ) : (
               <>
-                <button onClick={() => navigate('/register')}
-                  className="hidden sm:flex px-4 py-2 rounded-xl text-sm font-bold text-zinc-900 transition-all hover:scale-[1.03]"
-                  style={{ background: 'linear-gradient(135deg, #00d084, #059669)', boxShadow: '0 0 16px rgba(0,208,132,0.3)' }}>
+                <PiacButton variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/register')}>
                   Regisztráció
-                </button>
-                <button onClick={() => navigate('/login')}
-                  className="hidden sm:flex px-4 py-2 rounded-xl text-sm font-semibold text-[#00d084] transition-all hover:scale-[1.02]"
-                  style={{ background: 'rgba(0,208,132,0.1)', border: '1px solid rgba(0,208,132,0.3)' }}>
+                </PiacButton>
+                <PiacButton variant="primary" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/login')}>
                   Bejelentkezés
-                </button>
+                </PiacButton>
               </>
             )}
 
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2.5 rounded-xl hover:bg-white/[0.05] transition-all lg:hidden flex-shrink-0" aria-label="Menü">
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2.5 rounded-xl hover:bg-white/[0.05] transition-all flex-shrink-0" aria-label="Menü">
               {mobileOpen ? <X className="w-5 h-5 text-zinc-300" /> : <Menu className="w-5 h-5 text-zinc-400" />}
             </button>
           </div>
@@ -350,10 +304,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </form>
         </div>
 
-        {/* Mobile menu */}
+        {/* Slide-out menu — mobil + asztali (referencia hamburger) */}
         {mobileOpen && (
-          <div className="md:hidden border-t max-h-[calc(100vh-80px)] overflow-y-auto"
-            style={{ background: 'rgba(7,17,31,0.98)', borderTopColor: 'rgba(0,208,132,0.12)', backdropFilter: 'blur(20px)' }}>
+          <div className="border-t max-h-[calc(100vh-80px)] overflow-y-auto"
+            style={{ background: 'rgba(11,15,20,0.98)', borderTopColor: 'rgba(0,230,118,0.12)', backdropFilter: 'blur(24px)' }}>
             <nav className="p-4 space-y-1.5">
               {[...NAV_LINKS, { icon: User, label: user ? 'Profil' : 'Bejelentkezés', path: user ? `/profile/${user.id}` : '/login' }].map(item => (
                 <button key={item.path} onClick={() => { navigate(item.path); setMobileOpen(false); }}
@@ -362,6 +316,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               ))}
               <MobileDefenseAccordion onNavigate={p => { navigate(p); setMobileOpen(false); }} isActive={isActive('/vedelem')} />
+              {profile?.is_admin && (
+                <button onClick={() => { navigate('/admin'); setMobileOpen(false); }}
+                  className={`relative flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive('/admin') ? 'glass-pill-active text-[#00E676]' : 'glass-pill text-zinc-400'}`}>
+                  <Shield className="w-5 h-5" />
+                  Adminisztráció
+                  {pendingApps > 0 && (
+                    <span className="ml-auto w-5 h-5 bg-amber-500 text-zinc-900 text-[10px] font-black rounded-full flex items-center justify-center">
+                      {pendingApps > 9 ? '9+' : pendingApps}
+                    </span>
+                  )}
+                </button>
+              )}
               {user && (
                 <>
                   <button onClick={() => { navigate('/messages'); setMobileOpen(false); }}
@@ -422,20 +388,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main */}
-      <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''}`}>
+      <main className={`relative z-10 py-0 pb-24 md:pb-10 ${showDevStudio ? 'pb-28' : ''} ${!isHome ? 'piac-page-shell' : ''}`}>
         {pageSkin?.title && path !== '/' && (
           <div className="max-w-[1440px] mx-auto px-4 pt-6 pb-2">
-            <PiacEditable editKey={`page.${path}.title`} as="h1" className="text-2xl font-black text-zinc-100">
+            <PiacEditable editKey={`page.${path}.title`} as="h1" className="text-2xl sm:text-3xl font-black text-zinc-50 uppercase tracking-tight">
               {pageSkin.title}
             </PiacEditable>
             {pageSkin.subtitle && (
-              <PiacEditable editKey={`page.${path}.subtitle`} as="p" className="text-zinc-500 text-sm mt-1">
+              <PiacEditable editKey={`page.${path}.subtitle`} as="p" className="text-zinc-500 text-sm mt-2">
                 {pageSkin.subtitle}
               </PiacEditable>
             )}
           </div>
         )}
+        <div className={!isHome ? 'piac-page-content' : ''}>
         {children}
+        </div>
       </main>
 
       <Footer />

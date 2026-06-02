@@ -16,6 +16,9 @@ import { applyQuarterOverrides } from '../lib/siteCustomization';
 import type { QuarterId } from '../lib/siteCustomization';
 import ListingCard from '../components/ListingCard';
 import PiacEditable from '../components/PiacEditable';
+import GlassPanel from '../components/ui/GlassPanel';
+import DistrictNavCard from '../components/ui/DistrictNavCard';
+import { motion } from 'framer-motion';
 
 /* ── Countdown ─────────────────────────────────────────────────── */
 function useCountdown(endsAt: string, started: boolean) {
@@ -156,7 +159,7 @@ const QUARTERS = [
     countKey: 'listing' as const,
     img: 'https://images.pexels.com/photos/1435752/pexels-photo-1435752.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Vásárolj, adj el, cserélj',
-    pos: { top: '33%', left: '19%' },
+    pos: { top: '38%', left: '12%' },
   },
   {
     id: 'munka-negyed' as QuarterId,
@@ -171,7 +174,7 @@ const QUARTERS = [
     countKey: 'job' as const,
     img: 'https://images.pexels.com/photos/1004409/pexels-photo-1004409.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Találd meg álmaid munkáját',
-    pos: { top: '21%', left: '42%' },
+    pos: { top: '16%', left: '36%' },
   },
   {
     id: 'boltok-utcaja' as QuarterId,
@@ -186,7 +189,7 @@ const QUARTERS = [
     countKey: null,
     img: 'https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Fedezd fel a legjobb boltokat',
-    pos: { top: '29%', left: '62%' },
+    pos: { top: '20%', left: '56%' },
   },
   {
     id: 'licit-csarnok' as QuarterId,
@@ -201,7 +204,7 @@ const QUARTERS = [
     countKey: 'auction' as const,
     img: 'https://images.pexels.com/photos/3760072/pexels-photo-3760072.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Élő licitek, valós idő',
-    pos: { top: '51%', left: '15%' },
+    pos: { top: '50%', left: '8%' },
   },
   {
     id: 'kozossegi-ter' as QuarterId,
@@ -216,7 +219,7 @@ const QUARTERS = [
     countKey: null,
     img: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Csatlakozz a közösséghez',
-    pos: { top: '49%', left: '62%' },
+    pos: { top: '44%', left: '64%' },
   },
   {
     id: 'adomany-kozpont' as QuarterId,
@@ -231,7 +234,7 @@ const QUARTERS = [
     countKey: null,
     img: 'https://images.pexels.com/photos/6646918/pexels-photo-6646918.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Adj, kapj, változtass',
-    pos: { top: '68%', left: '30%' },
+    pos: { top: '70%', left: '26%' },
   },
   {
     id: 'termelok-piaca' as QuarterId,
@@ -246,7 +249,7 @@ const QUARTERS = [
     countKey: null,
     img: 'https://images.pexels.com/photos/1407305/pexels-photo-1407305.jpeg?auto=compress&cs=tinysrgb&w=800',
     desc: 'Friss, helyi, természetes',
-    pos: { top: '68%', left: '54%' },
+    pos: { top: '68%', left: '48%' },
   },
 ];
 
@@ -364,7 +367,6 @@ export default function HomePage() {
   const [onlineCount] = useState(() => Math.floor(Math.random() * 1200) + 1800);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
-  const [hovQ, setHovQ] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([fetchListings(), fetchAuctions(), fetchJobs(), fetchRecentlyViewed(), fetchDonations()])
@@ -409,14 +411,14 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ background: 'var(--piac-bg, #07111f)' }}>
+    <div className="piac-hero-world" style={{ background: 'var(--piac-bg, #0B0F14)' }}>
 
       {/* ═══════════════════════════════════════════════════════════
-          HERO — városkép
+          HERO — Digitális világ (referencia UI)
       ═══════════════════════════════════════════════════════════ */}
       <section
-        className={`relative w-full overflow-hidden ${devModeActive ? 'ring-2 ring-[#00d084]/50 ring-inset' : ''}`}
-        style={{ height: `clamp(520px, ${config.hero.heightVh}vh, 920px)` }}
+        className={`relative w-full overflow-hidden piac-hero-world ${devModeActive ? 'ring-2 ring-[#00E676]/50 ring-inset' : ''}`}
+        style={{ height: `clamp(560px, ${config.hero.heightVh}vh, 960px)` }}
       >
 
         {/* City background */}
@@ -437,10 +439,23 @@ export default function HomePage() {
           }}
         />
 
-        {/* Gradients */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(7,17,31,0.55) 0%, rgba(7,17,31,0.05) 22%, rgba(7,17,31,0.05) 52%, rgba(7,17,31,0.8) 82%, rgba(7,17,31,1) 100%)' }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(7,17,31,0.9) 0%, rgba(7,17,31,0.5) 14%, transparent 28%)' }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(7,17,31,0.9) 0%, rgba(7,17,31,0.5) 14%, transparent 28%)' }} />
+        {/* Gradients — cinematic depth */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(11,15,20,0.5) 0%, rgba(11,15,20,0.02) 24%, rgba(11,15,20,0.02) 50%, rgba(11,15,20,0.85) 84%, #0B0F14 100%)' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(11,15,20,0.85) 0%, transparent 22%)' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(11,15,20,0.85) 0%, transparent 22%)' }} />
+
+        {/* Blimp — referencia animáció */}
+        <motion.div
+          className="absolute top-6 right-[8%] z-10 hidden md:block piac-blimp pointer-events-none"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+        >
+          <div className="px-4 py-2 rounded-full text-sm font-black tracking-tight"
+            style={{ background: 'rgba(255,255,255,0.92)', color: '#0B0F14', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+            Piac<span style={{ color: '#00E676' }}>Pro</span>
+          </div>
+        </motion.div>
 
         {/* Scan line + grid */}
         {config.world.scanLines && <div className="scan-line" />}
@@ -460,80 +475,48 @@ export default function HomePage() {
             style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
             {config.hero.subtitle}
           </PiacEditable>
-          {/* City center badge */}
-          <div className="mt-4 w-14 h-14 rounded-full flex items-center justify-center float-anim pointer-events-auto cursor-pointer hover:scale-110 transition-transform"
-            style={{ background: 'radial-gradient(circle, rgba(0,208,132,0.25), rgba(7,17,31,0.85))', border: '2px solid rgba(0,208,132,0.55)', boxShadow: '0 0 40px rgba(0,208,132,0.45), inset 0 0 20px rgba(0,208,132,0.12)' }}
-            onClick={() => navigate('/')}>
-            <div className="text-center leading-none">
-              <PiacEditable editKey="hero.badgeTop" as="div" className="text-[11px] font-black" style={{ color: 'var(--piac-accent,#00d084)' }}>
-                {config.hero.badgeTop}
-              </PiacEditable>
-              <PiacEditable editKey="hero.badgeBottom" as="div" className="text-[11px] font-black text-white">
-                {config.hero.badgeBottom}
-              </PiacEditable>
-            </div>
-          </div>
+          {/* City center fountain — referencia */}
+          <motion.div
+            className="mt-5 w-16 h-16 rounded-full flex items-center justify-center piac-fountain pointer-events-auto cursor-pointer"
+            whileHover={{ scale: 1.1 }}
+            onClick={() => navigate('/')}
+          >
+            <span className="text-xl font-black text-[#00E676]">P</span>
+          </motion.div>
         </div>
 
-        {/* ── 7 district pins over city image ── */}
-        <div className="absolute inset-0 z-20">
+        {/* ── 7 district cards over city ── */}
+        <div className="absolute inset-0 z-20 hidden sm:block">
           {quarters.map((q, i) => {
-            const Icon = q.icon;
             const cnt = q.countKey === 'listing' ? listingCount : q.countKey === 'auction' ? auctionCount : q.countKey === 'job' ? jobCount : 0;
-            const hov = hovQ === i;
             return (
-              <button key={q.label}
+              <DistrictNavCard
+                key={q.id}
+                id={q.id}
+                label={q.label}
+                sublabel={q.sublabel}
+                count={cnt}
+                color={q.color}
+                bg={q.bg}
+                border={q.border}
+                glow={q.glow}
+                icon={q.icon}
                 onClick={() => navigate(q.path)}
-                onMouseEnter={() => setHovQ(i)}
-                onMouseLeave={() => setHovQ(null)}
-                className={`absolute transition-all duration-300 ${ready ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
-                style={{
-                  top: q.pos.top, left: q.pos.left,
-                  transitionDelay: ready ? `${i * 55}ms` : '0ms',
-                  transform: hov ? 'scale(1.12) translateY(-5px)' : 'scale(1)',
-                  zIndex: hov ? 30 : 20,
-                }}>
-                <div className="rounded-2xl px-3 py-2.5 flex items-center gap-2.5"
-                  style={{
-                    minWidth: '158px',
-                    background: hov ? q.bg : 'rgba(7,17,31,0.82)',
-                    border: `1px solid ${hov ? q.border : 'rgba(255,255,255,0.13)'}`,
-                    backdropFilter: 'blur(18px)',
-                    boxShadow: hov ? `0 10px 36px rgba(0,0,0,0.55), 0 0 28px ${q.glow}` : '0 4px 20px rgba(0,0,0,0.5)',
-                    transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
-                  }}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: q.bg, border: `1px solid ${q.border}` }}>
-                    <Icon style={{ color: q.color, width: '1.1rem', height: '1.1rem' }} />
-                  </div>
-                  <div className="text-left">
-                    <PiacEditable editKey={`quarter.${q.id}.label`} as="div"
-                      className="text-[11px] font-black tracking-wider uppercase leading-tight"
-                      style={{ color: q.color, textShadow: hov ? `0 0 12px ${q.glow}` : 'none' }}>
-                      {q.label}
-                    </PiacEditable>
-                    <div className="text-[10px] text-zinc-400 leading-tight mt-0.5">{q.sublabel}</div>
-                    {cnt > 0 && <div className="text-[10px] font-bold mt-0.5" style={{ color: q.color }}>{cnt.toLocaleString('hu-HU')} db</div>}
-                  </div>
-                </div>
-                <div className="mt-1 flex justify-center">
-                  <span className="text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full"
-                    style={{ color: q.color, background: 'rgba(7,17,31,0.7)', border: `1px solid ${q.border}`, textShadow: hov ? `0 0 8px ${q.glow}` : 'none' }}>
-                    {q.label.split(' ')[0]}
-                  </span>
-                </div>
-              </button>
+                ready={ready}
+                index={i}
+                pos={q.pos}
+              />
             );
           })}
         </div>
 
-        {/* ── LEFT PANEL — Quick access ── */}
-        <div className={`absolute left-3 top-[88px] bottom-10 z-30 w-[185px] hidden lg:flex flex-col gap-2 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>
-          <div className="rounded-2xl flex-1 overflow-hidden" style={{ background: 'rgba(7,17,31,0.85)', border: '1px solid rgba(0,208,132,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+        {/* ── LEFT PANEL — Gyors elérés ── */}
+        <div className={`absolute left-3 top-[92px] bottom-10 z-30 w-[200px] hidden xl:flex flex-col gap-3 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>
+          <GlassPanel className="flex-1 overflow-hidden" float delay={0.2}>
             <div className="px-4 pt-3.5 pb-2">
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: '#00d084' }} />
-                <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(0,208,132,0.8)' }}>Gyors elérés</span>
+                <div className="w-1.5 h-1.5 rounded-full pulse-dot bg-[#00E676]" />
+                <span className="text-[10px] font-black tracking-widest uppercase text-[#00E676]/80">Gyors elérés</span>
               </div>
             </div>
             <div className="px-2 pb-2 space-y-0.5">
@@ -542,7 +525,7 @@ export default function HomePage() {
                 const target = item.path === '/profile' && user ? `/profile/${user.id}` : item.path;
                 return (
                   <button key={item.label} onClick={() => navigate(target)}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all group hover:bg-[rgba(0,208,132,0.06)]">
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all group hover:bg-[rgba(0,230,118,0.06)]">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: `${item.color}18`, border: `1px solid ${item.color}35` }}>
                       <Icon style={{ color: item.color, width: '0.9rem', height: '0.9rem' }} />
@@ -555,61 +538,60 @@ export default function HomePage() {
                 );
               })}
             </div>
-          </div>
+          </GlassPanel>
 
-          {/* PiacAI bot */}
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(7,17,31,0.85)', border: '1px solid rgba(0,208,132,0.2)', backdropFilter: 'blur(20px)' }}>
+          {/* PiacAI */}
+          <GlassPanel className="p-4" float delay={0.35}>
             <div className="flex items-center gap-2.5 mb-2.5">
               <img src="/kell.png" alt="PiacAI" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
                 onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
               <div>
-                <div className="text-xs font-bold text-zinc-100">Üdv a PiacPro-ban!</div>
+                <div className="text-xs font-bold text-zinc-100">Üdv a PiacPro világában!</div>
                 <div className="text-[10px] text-zinc-500">Én vagyok PiacAI</div>
               </div>
             </div>
             <p className="text-[10px] text-zinc-400 leading-relaxed mb-2.5">Segítek megtalálni, amire szükséged van. Kérdezz bátran!</p>
             <button onClick={() => navigate('/piac-ai')}
-              className="w-full py-2 rounded-xl text-xs font-bold text-[#07111f] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg, #00d084, #059669)', boxShadow: '0 0 16px rgba(0,208,132,0.4)' }}>
-              <Sparkles className="w-3 h-3" />Kérdezz tőlem!
+              className="w-full py-2 rounded-xl text-xs font-bold text-[#0B0F14] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 16px rgba(0,230,118,0.35)' }}>
+              <Sparkles className="w-3 h-3" />Kérdezz tőlem valamit!
             </button>
-          </div>
+          </GlassPanel>
         </div>
 
-        {/* ── RIGHT PANEL — Live stats ── */}
-        <div className={`absolute right-3 top-[88px] bottom-10 z-30 w-[185px] hidden lg:flex flex-col gap-2 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6'}`}>
-          <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(7,17,31,0.85)', border: '1px solid rgba(0,208,132,0.15)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+        {/* ── RIGHT PANEL — Élő aktivitás ── */}
+        <div className={`absolute right-3 top-[92px] bottom-10 z-30 w-[200px] hidden xl:flex flex-col gap-3 transition-all duration-700 ${ready ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6'}`}>
+          <GlassPanel className="overflow-hidden" float delay={0.25}>
             <div className="px-4 pt-3.5 pb-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#00d084] pulse-dot" />
-              <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(0,208,132,0.8)' }}>Élő aktivitás</span>
+              <span className="w-2 h-2 rounded-full bg-[#00E676] pulse-dot" />
+              <span className="text-[10px] font-black tracking-widest uppercase text-[#00E676]/80">Most aktív a világban</span>
             </div>
             <div className="px-3 pb-3 space-y-1.5">
               {[
-                { icon: Users,       color: '#00d084', bg: 'rgba(0,208,132,0.1)',    label: `${onlineCount.toLocaleString('hu-HU')} online most` },
-                { icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  label: `${listingCount > 0 ? listingCount : 128} aktív hirdetés` },
-                { icon: Briefcase,   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  label: `${jobCount > 0 ? jobCount : 26} nyitott állás` },
-                { icon: Building2,   color: '#f97316', bg: 'rgba(249,115,22,0.1)',  label: '15 regisztrált bolt' },
-                { icon: Heart,       color: '#ec4899', bg: 'rgba(236,72,153,0.1)',  label: '8 aktív kampány' },
+                { icon: Users,       color: '#00E676', bg: 'rgba(0,230,118,0.1)',    label: `${onlineCount.toLocaleString('hu-HU')} felhasználó online most` },
+                { icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  label: `${listingCount > 0 ? listingCount.toLocaleString('hu-HU') : '12 458'} új hirdetés ma` },
+                { icon: Briefcase,   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  label: `${jobCount > 0 ? jobCount : 26} új állás ma` },
+                { icon: Building2,   color: '#f97316', bg: 'rgba(249,115,22,0.1)',  label: '15 új bolt regisztráció' },
+                { icon: Heart,       color: '#ec4899', bg: 'rgba(236,72,153,0.1)',  label: '8 új adomány kampány' },
               ].map((s, i) => {
                 const Icon = s.icon;
                 return (
-                  <div key={i} className="flex items-center gap-2.5 px-2 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.025)' }}>
+                  <div key={i} className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[0.025]">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: s.bg }}>
                       <Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                     </div>
-                    <span className="text-[11px] text-zinc-300 leading-tight">{s.label}</span>
+                    <span className="text-[10px] text-zinc-300 leading-tight">{s.label}</span>
                   </div>
                 );
               })}
             </div>
             <div className="px-3 pb-3">
               <button onClick={() => navigate('/search')}
-                className="w-full py-2 rounded-xl text-[11px] font-semibold text-[#00d084] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
-                style={{ background: 'rgba(0,208,132,0.08)', border: '1px solid rgba(0,208,132,0.2)' }}>
-                <Activity className="w-3.5 h-3.5" />Böngészés
+                className="w-full py-2 rounded-xl text-[11px] font-semibold text-[#00E676] flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bg-[#00E676]/10 border border-[#00E676]/25">
+                <Activity className="w-3.5 h-3.5" />Élő aktivitás megtekintése
               </button>
             </div>
-          </div>
+          </GlassPanel>
         </div>
 
       </section>
@@ -617,13 +599,13 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════
           CONTENT BELOW HERO
       ═══════════════════════════════════════════════════════════ */}
-      <div className="relative" style={{ background: '#07111f' }}>
+      <div className="relative" style={{ background: '#0B0F14' }}>
         <div className="fixed inset-0 pointer-events-none z-0" style={{ top: '100vh' }}>
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,208,132,0.04) 0%, transparent 60%)' }} />
         </div>
 
-        {/* ── 7 DISTRICT CARDS ── */}
-        <section className="relative z-10 px-4 pt-8 pb-6 max-w-[1440px] mx-auto">
+        {/* ── 7 DISTRICT CARDS (mobil + alsó grid) ── */}
+        <section className="relative z-10 px-4 pt-8 pb-6 max-w-[1440px] mx-auto sm:hidden">
           <SectionHead icon={Building2} label="A PiacPro negyedei" iconColor="text-[#00d084]" />
           <DistrictGrid
             quarters={quarters}
@@ -638,11 +620,11 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
             {/* AI recs */}
-            <div className="md:col-span-2 rounded-2xl p-5" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
+            <GlassPanel className="md:col-span-2 p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-4 h-4 text-[#00d084]" />
+                <Sparkles className="w-4 h-4 text-[#00E676]" />
                 <span className="text-sm font-black text-zinc-200">AI ajánlások neked</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-black" style={{ background: 'rgba(0,208,132,0.15)', color: '#00d084', border: '1px solid rgba(0,208,132,0.3)' }}>Beta</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#00E676]/15 text-[#00E676] border border-[#00E676]/30">Beta</span>
               </div>
               {loading ? (
                 <div className="grid grid-cols-3 gap-3">{[0,1,2].map(i=><div key={i} className="skeleton h-16 rounded-xl"/>)}</div>
@@ -650,36 +632,34 @@ export default function HomePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {latestListings.slice(0,3).map(l => (
                     <button key={l.id} onClick={() => navigate(`/listing/${l.id}`)}
-                      className="flex items-center gap-3 p-3 rounded-xl text-left group transition-all hover:scale-[1.02]"
-                      style={{ background: 'rgba(7,17,31,0.6)', border: '1px solid rgba(0,208,132,0.08)' }}>
+                      className="piac-rec-card flex items-center gap-3 p-3 text-left group">
                       {l.images?.[0] ? <img src={l.images[0]} alt={l.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                        : <div className="w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(0,208,132,0.06)' }}><Package className="w-5 h-5 text-zinc-600" /></div>}
+                        : <div className="w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center bg-[#00E676]/10"><Package className="w-5 h-5 text-zinc-600" /></div>}
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-[#00d084] transition-colors">{l.title}</p>
+                        <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-[#00E676] transition-colors">{l.title}</p>
                         <p className="text-xs text-zinc-600 truncate mt-0.5">{l.location}</p>
-                        <p className="text-xs font-black mt-0.5" style={{ color: '#00d084' }}>{formatPrice(l.price)}</p>
+                        <p className="text-xs font-black mt-0.5 text-[#00E676]">{formatPrice(l.price)}</p>
                       </div>
                     </button>
                   ))}
                 </div>
               ) : <p className="text-zinc-600 text-sm">Még nincsenek ajánlások.</p>}
-            </div>
+            </GlassPanel>
 
             {/* Popular + Social */}
             <div className="flex flex-col gap-3">
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
+              <GlassPanel className="p-4">
                 <div className="text-sm font-black text-zinc-200 mb-3">Népszerű keresések</div>
                 <div className="flex flex-wrap gap-2">
                   {POPULAR.map(s => (
                     <button key={s} onClick={() => navigate(`/search?q=${encodeURIComponent(s)}`)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-300 hover:text-[#00d084] transition-all hover:scale-[1.05]"
-                      style={{ background: 'rgba(7,17,31,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
+                      className="piac-tag-pill px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-300">
                       {s}
                     </button>
                   ))}
                 </div>
-              </div>
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid rgba(0,208,132,0.1)' }}>
+              </GlassPanel>
+              <GlassPanel className="p-4">
                 <div className="text-sm font-black text-zinc-200 mb-1">Csatlakozz hozzánk!</div>
                 <p className="text-xs text-zinc-500 mb-3">Kövess minket és légy naprakész</p>
                 <div className="flex gap-3">
@@ -695,7 +675,7 @@ export default function HomePage() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </GlassPanel>
             </div>
           </div>
         </section>

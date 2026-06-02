@@ -25,8 +25,8 @@ export default function ListingCard({ listing, priority = false }: { listing: Li
       style={{
         borderRadius: '18px',
         background: 'linear-gradient(150deg, rgba(0,208,132,0.055) 0%, rgba(10,22,38,0.8) 45%, rgba(7,17,31,0.85) 100%)',
-        border: '1px solid rgba(0,208,132,0.1)',
-        boxShadow: 'inset 0 1px 0 rgba(0,208,132,0.08), 0 2px 16px -4px rgba(0,0,0,0.55)',
+        border: '1px solid rgba(0,230,118,0.12)',
+        boxShadow: 'inset 0 1px 0 rgba(0,230,118,0.08), 0 2px 16px -4px rgba(0,0,0,0.55)',
         transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
       }}
       onMouseEnter={(e) => {
