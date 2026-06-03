@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
+import { HOME_WOW_STORAGE } from '../../lib/homeWow';
 
-const STORAGE_KEY = 'piacpro_world_entered';
+const STORAGE_KEY = HOME_WOW_STORAGE.worldEntered;
 
 export default function WorldEntryGate({ onEnter }: { onEnter: () => void }) {
   const [exiting, setExiting] = useState(false);
@@ -71,6 +72,13 @@ export default function WorldEntryGate({ onEnter }: { onEnter: () => void }) {
               </span>
               <span className="world-entry-cta-sweep absolute inset-0 pointer-events-none" aria-hidden />
             </motion.button>
+            <button
+              type="button"
+              onClick={handleEnter}
+              className="mt-5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors underline-offset-2 hover:underline"
+            >
+              Kihagyás — egyből a térkép
+            </button>
           </motion.div>
         </motion.div>
       ) : (

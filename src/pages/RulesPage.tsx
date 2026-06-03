@@ -1,6 +1,6 @@
 import { useRouter } from '../lib/router';
 import {
-  ScrollText, ShieldCheck, Users, AlertTriangle, Gavel, Mail,
+  ScrollText, ShieldCheck, Users, AlertTriangle, Gavel, Mail, Shield,
   CheckCircle, XCircle, ChevronRight, Heart, HandHeart, Package,
   Wrench, Store, Tractor, Hammer, MessageCircle, Star, Trophy,
   BadgeCheck, Megaphone
@@ -182,6 +182,21 @@ const sections = [
     ],
   },
   {
+    icon: Shield,
+    title: 'Védelem — pénzügyi tervezés és biztosítás',
+    color: 'text-emerald-400',
+    items: [
+      'A Védelem a PiacPro külön modulja: pénzügyi tanácsadás és biztosítási megoldások — nem része a hirdetés/üzenet vásárlási folyamatnak.',
+      'Hivatalos partner: Ákom László Zsolt OVB fiókvezető. Nem biztosító-összehasonlító oldal — minden út egy szakértőhöz vezet.',
+      'Elérhető témák: nyugdíj-előtakarékosság, gyermekjövő, vagyonépítés, lakáshitel és CSOK, adókedvezmény, KKV és cégvédelem, vagyonvédelem, életbiztosítás.',
+      'Online megoldások: KGFB, gépjármű asszisztencia, utasbiztosítás — közvetlen online kötési linkekkel.',
+      'Az „Élethelyzet” gyorsválasztó segít (pl. lakást vennék, gyerek született, nyugdíjra takarékoskodnék).',
+      'Kérdésedet a Védelem oldalon lévő űrlapon is elküldheted — az üzenet közvetlenül a tanácsadóhoz érkezik, kötelezettség nélkül.',
+      'A modul nem reklámfelület: egyetlen partner, átlátható kapcsolatfelvétel (telefon, e-mail, OVB profil).',
+      'A piactéri tranzakciók (hirdetés, bolt, termelő) és a Védelem szolgáltatás egymástól függetlenek.',
+    ],
+  },
+  {
     icon: Mail,
     title: 'Adatvédelem és kapcsolat',
     color: 'text-zinc-400',
@@ -212,7 +227,7 @@ export default function RulesPage() {
             <h1 className="text-2xl font-bold text-zinc-100">Felhasználási szabályzat</h1>
             <p className="text-zinc-400 text-sm mt-2 leading-relaxed">
               A PiacPro egy komplex közösségi piactér: hirdetések, árverések, adománygyűjtés, felajánlások,
-              webshopok, termelők, álláspiác és közösségi üzenetrendszer egy helyen.
+              webshopok, termelők, álláspiác, pénzügyi Védelem modul és közösségi üzenetrendszer egy helyen.
               Kérjük, olvasd el az alábbi szabályokat.
             </p>
             <p className="text-zinc-600 text-xs mt-3">Utolsó frissítés: 2026. május</p>
@@ -235,6 +250,7 @@ export default function RulesPage() {
             { icon: Store,       label: 'Webshopok',         color: 'text-orange-400',  bg: 'bg-orange-500/8' },
             { icon: Tractor,     label: 'Termelők',          color: 'text-lime-400',    bg: 'bg-lime-500/8' },
             { icon: Megaphone,   label: 'Álláspiac',         color: 'text-sky-400',     bg: 'bg-sky-500/8' },
+            { icon: Shield,      label: 'Védelem',           color: 'text-emerald-400', bg: 'bg-emerald-500/8' },
             { icon: MessageCircle, label: 'Chat',            color: 'text-cyan-400',    bg: 'bg-cyan-500/8' },
             { icon: Trophy,      label: 'Rangrendszer',      color: 'text-amber-400',   bg: 'bg-amber-500/8' },
           ].map(({ icon: Icon, label, color, bg }) => (

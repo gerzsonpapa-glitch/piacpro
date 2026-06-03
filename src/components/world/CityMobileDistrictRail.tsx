@@ -1,6 +1,6 @@
 import { useRouter } from '../../lib/router';
 import { useLiveWorldStats } from '../../hooks/useLiveWorldStats';
-import { CITY_BUILDINGS, applyCityMapOverrides, type CityBuilding } from '../../lib/cityMapBuildings';
+import { buildCityMapBuildings, type CityBuilding } from '../../lib/cityMapBuildings';
 import { useSiteCustomization } from '../../contexts/SiteCustomizationContext';
 
 function getCount(building: CityBuilding, counts: Record<string, number>): number | undefined {
@@ -14,7 +14,7 @@ export default function CityMobileDistrictRail() {
   const { config } = useSiteCustomization();
   const { stats } = useLiveWorldStats();
 
-  const buildings = applyCityMapOverrides(CITY_BUILDINGS, config.cityMapHotspots ?? []);
+  const buildings = buildCityMapBuildings(config.cityMapHotspots ?? [], config.cityMapDefaults);
   const counts = {
     listing: stats.listings,
     auction: stats.auctions,

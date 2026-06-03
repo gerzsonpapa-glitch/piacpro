@@ -279,6 +279,7 @@ export default function AdminPage() {
   const [shops, setShops] = useState<any[]>([]);
   const [pendingDonations, setPendingDonations] = useState<any[]>([]);
   const [pendingJobs, setPendingJobs] = useState<any[]>([]);
+  const [pendingSeekers, setPendingSeekers] = useState<any[]>([]);
   const [forumThreads, setForumThreads] = useState<ForumThread[]>([]);
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -471,12 +472,14 @@ export default function AdminPage() {
   }
 
   async function loadPendingModeration() {
-    const [{ data: donationData }, { data: jobData }] = await Promise.all([
+    const [{ data: donationData }, { data: jobData }, { data: seekerData }] = await Promise.all([
       supabase.from('donations').select('*, creator:profiles(id, username, full_name, trust_level)').eq('moderation_status', 'pending').order('created_at', { ascending: false }),
       supabase.from('jobs').select('*, poster:profiles(id, username, full_name, trust_level)').eq('moderation_status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('job_seeker_ads').select('*, user:profiles(id, username, full_name, trust_level)').eq('moderation_status', 'pending').order('created_at', { ascending: false }),
     ]);
     setPendingDonations(donationData || []);
     setPendingJobs(jobData || []);
+    setPendingSeekers(seekerData || []);
   }
 
   async function moderateDonation(id: string, status: 'active' | 'rejected') {
@@ -492,6 +495,14 @@ export default function AdminPage() {
     const { error } = await supabase.rpc('admin_moderate_job', { job_id: id, new_status: status });
     if (error) { showToast('error', 'Hiba', error.message); }
     else { showToast('success', status === 'active' ? 'Állás jóváhagyva' : 'Állás elutasítva'); loadPendingModeration(); }
+    setActionLoading(null);
+  }
+
+  async function moderateSeekerAd(id: string, status: 'active' | 'rejected') {
+    setActionLoading(id);
+    const { error } = await supabase.rpc('admin_moderate_seeker_ad', { seeker_ad_id: id, new_status: status });
+    if (error) { showToast('error', 'Hiba', error.message); }
+    else { showToast('success', status === 'active' ? 'Álláskereső hirdetés jóváhagyva' : 'Álláskereső hirdetés elutasítva'); loadPendingModeration(); }
     setActionLoading(null);
   }
 
@@ -646,7 +657,7 @@ export default function AdminPage() {
     { id: 'scam', label: 'Csalásfigyelő', icon: ShieldAlert },
     { id: 'producers', label: 'Termelők', icon: Leaf, badge: pendingProducerApps.length || undefined },
     { id: 'shops', label: 'Boltok', icon: Store },
-    { id: 'moderation', label: 'Moderáció', icon: ShieldCheck, badge: (pendingDonations.length + pendingJobs.length) || undefined },
+    { id: 'moderation', label: 'Moderáció', icon: ShieldCheck, badge: (pendingDonations.length + pendingJobs.length + pendingSeekers.length) || undefined },
     { id: 'forum', label: 'Fórum', icon: MessageCircle },
     { id: 'bugreports', label: 'Hibajelentések', icon: Bug, badge: bugReports.filter((r) => r.status === 'open').length || undefined },
     ...(isDeveloper ? [{ id: 'developer' as const, label: 'Weboldal szerkesztő', icon: Code2 }] : []),
@@ -1451,6 +1462,56 @@ export default function AdminPage() {
                           <button
                             onClick={() => moderateJob(j.id, 'rejected')}
                             disabled={actionLoading === j.id}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/25 transition-all disabled:opacity-50"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />Elutasít
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pending seeker ads */}
+              <div>
+                <h3 className="text-sm font-bold text-zinc-300 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-teal-400" />
+                  Jóváhagyásra váró álláskereső hirdetések
+                  {pendingSeekers.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-400 text-xs font-bold border border-teal-500/20">
+                      {pendingSeekers.length}
+                    </span>
+                  )}
+                </h3>
+                {pendingSeekers.length === 0 ? (
+                  <div className="glass-bubble rounded-2xl p-8 text-center text-zinc-500 text-sm">
+                    Nincs jóváhagyásra váró álláskereső hirdetés
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingSeekers.map((s: any) => (
+                      <div key={s.id} className="glass-bubble rounded-2xl p-4 flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-zinc-200 text-sm">{s.title}</p>
+                          <p className="text-xs text-zinc-500 mt-0.5">{s.location} — {s.category}</p>
+                          <p className="text-xs text-zinc-600 mt-1 line-clamp-2">{s.description}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-zinc-600">
+                            <span>Feladó: <strong className="text-zinc-400">{s.user?.full_name || s.user?.username}</strong></span>
+                            <span>Trust szint: <strong className="text-zinc-400">{s.user?.trust_level ?? 1}</strong></span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => moderateSeekerAd(s.id, 'active')}
+                            disabled={actionLoading === s.id}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 transition-all disabled:opacity-50"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />Jóváhagy
+                          </button>
+                          <button
+                            onClick={() => moderateSeekerAd(s.id, 'rejected')}
+                            disabled={actionLoading === s.id}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/25 transition-all disabled:opacity-50"
                           >
                             <XCircle className="w-3.5 h-3.5" />Elutasít

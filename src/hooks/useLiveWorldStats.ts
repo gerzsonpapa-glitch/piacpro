@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface LiveWorldStats {
@@ -38,7 +38,11 @@ function startOfTodayIso(): string {
   return d.toISOString();
 }
 
-export function useLiveWorldStats(pollMs = 60000) {
+export type LiveWorldStatsContextValue = ReturnType<typeof useLiveWorldStatsPolling>;
+
+export const LiveWorldStatsContext = createContext<LiveWorldStatsContextValue | null>(null);
+
+export function useLiveWorldStatsPolling(pollMs = 60000) {
   const [stats, setStats] = useState<LiveWorldStats>(EMPTY);
   const [activity, setActivity] = useState<LiveActivityItem[]>([]);
 
@@ -116,4 +120,10 @@ export function useLiveWorldStats(pollMs = 60000) {
   }, [refresh, pollMs]);
 
   return { stats, activity, refresh };
+}
+
+export function useLiveWorldStats(pollMs = 60000) {
+  const ctx = useContext(LiveWorldStatsContext);
+  if (ctx) return ctx;
+  return useLiveWorldStatsPolling(pollMs);
 }

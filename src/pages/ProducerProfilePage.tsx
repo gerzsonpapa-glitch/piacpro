@@ -7,6 +7,8 @@ import type { Producer, ProducerProduct } from '../lib/types';
 import { MapPin, Star, CheckCircle2, Leaf, MessageCircle, Phone, Mail, Award, Clock, Package, Plus, Trash2, X, Save, ToggleLeft, ToggleRight, ChevronLeft, Sprout, Sun, Apple, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, Tag, User, Camera, ImagePlus, CreditCard as Edit2, ChevronRight, ChevronLeft as ChevLeft, ShoppingCart, Minus, Send, Search, Loader2, Lock } from 'lucide-react';
 import { useSEO } from '../lib/seo';
 import { findOrCreateConversation, openConversationWithMessage } from '../lib/conversations';
+import Breadcrumb from '../components/navigation/Breadcrumb';
+import FlowInfoBar from '../components/navigation/FlowInfoBar';
 
 // ── Hungarian counties ─────────────────────────────────────────────────────────
 const HU_COUNTIES = [
@@ -1069,9 +1071,11 @@ export default function ProducerProfilePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <button onClick={() => navigate('/producers')} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
-        <ChevronLeft className="w-4 h-4" /> Vissza a termelőkhöz
-      </button>
+      <Breadcrumb items={[
+        { label: 'Főoldal', path: '/' },
+        { label: 'Termelők', path: '/producers' },
+        { label: producer.name },
+      ]} />
 
       {/* ── Cover + header ── */}
       <div className="glass rounded-3xl overflow-hidden">
@@ -1180,6 +1184,7 @@ export default function ProducerProfilePage() {
 
       {/* ── Products ── */}
       <div className="space-y-4">
+        {!isOwner && products.length > 0 && <FlowInfoBar variant="producer" />}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
             <Package className="w-5 h-5 text-emerald-400" /> Termékek

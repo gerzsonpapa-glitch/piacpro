@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Home, Palette, Code, Wrench, Save, RotateCcw, ExternalLink,
-  LayoutGrid, Sparkles, Globe, Image as ImageIcon, Layers, Navigation,
+  LayoutGrid, Sparkles, Globe, Image as ImageIcon, Layers, Navigation, MapPin,
 } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
@@ -11,10 +11,30 @@ import {
   type QuarterOverride,
   type SiteCustomizationConfig,
   type PageSkinConfig,
+  type HomeMenuStyleId,
+  HOME_VARIANTS,
+  normalizeHomeVariant,
+  homeVariantSupportsMenuStyle,
   WORLD_BACKGROUND_4K,
+  DEFAULT_HOME_WOW,
 } from '../lib/siteCustomization';
+import { resetWowSessionExperience } from '../lib/homeWow';
 import { ZONE_ASSETS } from '../lib/zoneAssets';
 import { ImageUrlField, Field, inputCls } from '../components/developer/ImageUrlField';
+import {
+  CITY_CARD_STYLES,
+  CITY_PIN_SIZES,
+  CITY_PIN_VARIANTS,
+  DEFAULT_CITY_MAP_DEFAULTS,
+  type CityCardStyle,
+  type CityPinSize,
+  type CityPinVariant,
+} from '../lib/cityMapPages';
+import { DevSizePickerGrid, DevStylePickerGrid } from '../components/dev/DevStylePickerGrid';
+import CityPinVisual from '../components/world/CityPinVisual';
+import { resolveCityIcon } from '../lib/cityMapIcons';
+import { colorGlow } from '../lib/cityMapCardStyles';
+import { Store } from 'lucide-react';
 
 const QUARTER_META: { id: QuarterId; name: string }[] = [
   { id: 'piac-ter', name: 'Piac tér' },
@@ -26,7 +46,7 @@ const QUARTER_META: { id: QuarterId; name: string }[] = [
   { id: 'termelok-piaca', name: 'Termelők piaca' },
 ];
 
-type StudioSection = 'world' | 'hero' | 'zones' | 'quarters' | 'pages' | 'theme' | 'media' | 'css' | 'extra';
+type StudioSection = 'world' | 'wow' | 'hero' | 'hotspots' | 'zones' | 'quarters' | 'pages' | 'theme' | 'media' | 'css' | 'extra';
 
 function Toggle({
   checked,
@@ -53,7 +73,7 @@ function Toggle({
 }
 
 export default function DeveloperStudioTab() {
-  const { config, saveConfig } = useSiteCustomization();
+  const { config, saveConfig, setDevPreviewConfig } = useSiteCustomization();
   const { showToast } = useNotification();
   const [draft, setDraft] = useState<SiteCustomizationConfig>(config);
   const [section, setSection] = useState<StudioSection>('world');
@@ -62,6 +82,11 @@ export default function DeveloperStudioTab() {
   useEffect(() => {
     setDraft(config);
   }, [config]);
+
+  /** Élő előnézet: főoldal és többi oldal azonnal látja a piszkozatot (mentés nélkül is). */
+  useEffect(() => {
+    setDevPreviewConfig(draft);
+  }, [draft, setDevPreviewConfig]);
 
   function patch<K extends keyof SiteCustomizationConfig>(key: K, value: SiteCustomizationConfig[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -109,7 +134,9 @@ export default function DeveloperStudioTab() {
 
   const sections: { id: StudioSection; label: string; icon: React.ElementType }[] = [
     { id: 'world', label: 'Digitális világ', icon: Sparkles },
+    { id: 'wow', label: 'Wow élmény', icon: Sparkles },
     { id: 'hero', label: 'Főoldal hero', icon: Home },
+    { id: 'hotspots', label: 'Pin / kártya Pro', icon: MapPin },
     { id: 'zones', label: 'Zóna képernyők', icon: Globe },
     { id: 'quarters', label: '7 negyed', icon: LayoutGrid },
     { id: 'pages', label: 'Oldal hátterek', icon: Layers },
@@ -129,8 +156,10 @@ export default function DeveloperStudioTab() {
               Teljes weboldal-szerkesztő
             </h3>
             <p className="text-zinc-500 text-sm mt-1 max-w-2xl leading-relaxed">
-              Fejlesztői jog: minden szöveg, kép, szín, animáció és oldal-háttér. Képeket feltölthetsz
-              vagy URL-t adhatsz meg. Mentés után az egész PiacPro élőben frissül.
+              Fejlesztői jog: minden szöveg, kép, szín, animáció és oldal-háttér. A módosítások azonnal
+              látszanak előnézetben (pl. főoldal ugyanabban az ablakban). A{' '}
+              <strong className="text-zinc-400 font-semibold">Mentés az élő oldalra</strong> gomb kell,
+              hogy minden látogató is lássa — és hogy frissítés után se vesszen el.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -215,9 +244,117 @@ export default function DeveloperStudioTab() {
             </>
           )}
 
+          {section === 'wow' && (
+            <>
+              <p className="text-[11px] uppercase tracking-widest text-emerald-400/80 font-semibold">
+                Főoldali wow élmény — egyenként kikapcsolható
+              </p>
+              <Toggle
+                checked={draft.homeWow?.enabled ?? DEFAULT_HOME_WOW.enabled}
+                onChange={(v) => patch('homeWow', { ...DEFAULT_HOME_WOW, ...draft.homeWow, enabled: v })}
+                label="Wow élmény főkapcsoló (minden effekt)"
+              />
+              <div className="grid sm:grid-cols-2 gap-2 pt-2">
+                <Toggle
+                  checked={draft.homeWow?.cinematicEntry ?? DEFAULT_HOME_WOW.cinematicEntry}
+                  onChange={(v) => patch('homeWow', { ...DEFAULT_HOME_WOW, ...draft.homeWow, cinematicEntry: v })}
+                  label="1. Cinematic belépés"
+                />
+                <Toggle
+                  checked={draft.homeWow?.livePulse ?? DEFAULT_HOME_WOW.livePulse}
+                  onChange={(v) => patch('homeWow', { ...DEFAULT_HOME_WOW, ...draft.homeWow, livePulse: v })}
+                  label="2. Élő város pulse"
+                />
+                <Toggle
+                  checked={draft.homeWow?.ambientMotion ?? DEFAULT_HOME_WOW.ambientMotion}
+                  onChange={(v) => patch('homeWow', { ...DEFAULT_HOME_WOW, ...draft.homeWow, ambientMotion: v })}
+                  label="3. Parallax + ambient"
+                />
+                <Toggle
+                  checked={draft.homeWow?.pinHoverPreview ?? DEFAULT_HOME_WOW.pinHoverPreview}
+                  onChange={(v) => patch('homeWow', { ...DEFAULT_HOME_WOW, ...draft.homeWow, pinHoverPreview: v })}
+                  label="4. Pin hover előnézet"
+                />
+                <Toggle
+                  checked={draft.homeWow?.dayNightCycle ?? DEFAULT_HOME_WOW.dayNightCycle}
+                  onChange={(v) => patch('homeWow', { ...DEFAULT_HOME_WOW, ...draft.homeWow, dayNightCycle: v })}
+                  label="5. Nappal / éjszaka (Budapest)"
+                />
+                <Toggle
+                  checked={draft.homeWow?.firstClickReward ?? DEFAULT_HOME_WOW.firstClickReward}
+                  onChange={(v) => patch('homeWow', { ...DEFAULT_HOME_WOW, ...draft.homeWow, firstClickReward: v })}
+                  label="Első pin-kattintás üdvözlés"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  resetWowSessionExperience();
+                  showToast('success', 'Belépés reset', 'Frissítsd a főoldalt — újra látod a belépés animációt.');
+                }}
+                className="mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass-pill text-amber-300 text-xs font-medium border border-amber-500/30"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Belépés animáció reset (session)
+              </button>
+            </>
+          )}
+
           {section === 'hero' && (
             <>
-              <p className="text-[11px] uppercase tracking-widest text-zinc-600 font-semibold">Kezdőképernyő</p>
+              <p className="text-[11px] uppercase tracking-widest text-violet-400/80 font-semibold">
+                Főoldal skin — A/B (URL marad: /)
+              </p>
+              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  8 különböző kezdőlap — mindegyik ugyanazokra a zónákra visz, csak a kinézet más.
+                  Az épület-skin-eknél a gomb maga az épület (zóna kép a homlokzaton).
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {HOME_VARIANTS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => patch('home', { ...(draft.home ?? DEFAULT_SITE_CONFIG.home), variant: opt.id })}
+                      className={`px-3 py-2.5 rounded-xl text-xs font-semibold border transition-colors text-left ${
+                        normalizeHomeVariant(draft.home?.variant) === opt.id
+                          ? 'bg-violet-500/25 text-violet-100 border-violet-400/40'
+                          : 'border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <span className="block font-bold">{opt.short}</span>
+                      <span className="block text-[10px] font-normal opacity-70 mt-0.5 leading-snug">{opt.description}</span>
+                    </button>
+                  ))}
+                </div>
+                {homeVariantSupportsMenuStyle(normalizeHomeVariant(draft.home?.variant)) && (
+                  <div className="pt-2 border-t border-white/5">
+                    <p className="text-[10px] uppercase tracking-widest text-cyan-400/70 font-semibold mb-2">
+                      Fantasy navigáció
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        { id: 'rail' as HomeMenuStyleId, label: 'Listás panel' },
+                        { id: 'floating' as HomeMenuStyleId, label: 'Kihelyezett blipek' },
+                      ]).map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => patch('home', { ...(draft.home ?? DEFAULT_SITE_CONFIG.home), menuStyle: opt.id })}
+                          className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+                            (draft.home?.menuStyle ?? 'rail') === opt.id
+                              ? 'bg-cyan-500/20 text-cyan-100 border-cyan-400/35'
+                              : 'border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[11px] uppercase tracking-widest text-zinc-600 font-semibold pt-2">Kezdőképernyő szövegek</p>
               <Field label="Főcím">
                 <input className={inputCls()} value={draft.hero.title}
                   onChange={(e) => patch('hero', { ...draft.hero, title: e.target.value })} />
@@ -266,6 +403,91 @@ export default function DeveloperStudioTab() {
                     onChange={(e) => patch('hero', { ...draft.hero, badgeBottom: e.target.value })} />
                 </Field>
               </div>
+            </>
+          )}
+
+          {section === 'hotspots' && (
+            <>
+              <p className="text-[11px] uppercase tracking-widest text-amber-400/80 font-semibold">
+                Prémium fejlesztői katalógus — 10 pin · 10 kártya · 10 méret
+              </p>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Globális pin/kártya alapértékek minden zónára (kivéve, ha egy zónát külön felülírsz a főoldalon).
+                Mentett egyedi zónák: {draft.cityMapHotspots?.length ?? 0} db.
+              </p>
+
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-4">
+                <p className="text-xs font-bold text-amber-100">Új zóna alapértelmezései</p>
+                <DevSizePickerGrid
+                  label="Alap pin méret"
+                  options={CITY_PIN_SIZES}
+                  value={(draft.cityMapDefaults?.pinSize ?? DEFAULT_CITY_MAP_DEFAULTS.pinSize!) as CityPinSize}
+                  onChange={(v) => patch('cityMapDefaults', { ...DEFAULT_CITY_MAP_DEFAULTS, ...draft.cityMapDefaults, pinSize: v })}
+                />
+                <Field label={`Finom skála (${Math.round((draft.cityMapDefaults?.pinScale ?? 1) * 100)}%)`}>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2}
+                    step={0.05}
+                    value={draft.cityMapDefaults?.pinScale ?? 1}
+                    onChange={(e) => patch('cityMapDefaults', { ...DEFAULT_CITY_MAP_DEFAULTS, ...draft.cityMapDefaults, pinScale: Number(e.target.value) })}
+                    className="w-full accent-amber-400"
+                  />
+                </Field>
+                <DevStylePickerGrid
+                  label="Alap pin stílus"
+                  options={CITY_PIN_VARIANTS}
+                  value={(draft.cityMapDefaults?.pinVariant ?? DEFAULT_CITY_MAP_DEFAULTS.pinVariant!) as CityPinVariant}
+                  onChange={(v) => patch('cityMapDefaults', { ...DEFAULT_CITY_MAP_DEFAULTS, ...draft.cityMapDefaults, pinVariant: v })}
+                  columns={2}
+                />
+                <DevStylePickerGrid
+                  label="Alap kártya stílus"
+                  options={CITY_CARD_STYLES}
+                  value={(draft.cityMapDefaults?.cardStyle ?? DEFAULT_CITY_MAP_DEFAULTS.cardStyle!) as CityCardStyle}
+                  onChange={(v) => patch('cityMapDefaults', { ...DEFAULT_CITY_MAP_DEFAULTS, ...draft.cityMapDefaults, cardStyle: v })}
+                  columns={2}
+                />
+                <Toggle
+                  checked={draft.cityMapDefaults?.showLabel !== false}
+                  onChange={(v) => patch('cityMapDefaults', { ...DEFAULT_CITY_MAP_DEFAULTS, ...draft.cityMapDefaults, showLabel: v })}
+                  label="Címke megjelenítése alapból"
+                />
+              </div>
+
+              <div className="rounded-xl border border-white/8 bg-black/20 p-4">
+                <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-3">Élő minta (Piac tér színnel)</p>
+                <div className="flex flex-wrap justify-center gap-6 py-4">
+                  {(['icon-card', 'card', 'portal', 'ribbon'] as CityPinVariant[]).map((variant) => (
+                    <div key={variant} className="flex flex-col items-center gap-1">
+                      <CityPinVisual
+                        Icon={resolveCityIcon('shopping', Store)}
+                        label="Piac tér"
+                        sublabel="Böngéssz · vásárolj"
+                        color="#00C896"
+                        glow={colorGlow('#00C896')}
+                        cardStyle={(draft.cityMapDefaults?.cardStyle ?? 'glass') as CityCardStyle}
+                        pinSize={(draft.cityMapDefaults?.pinSize ?? 'sm') as CityPinSize}
+                        pinVariant={variant}
+                        pinScale={draft.cityMapDefaults?.pinScale ?? 1}
+                      />
+                      <span className="text-[9px] text-zinc-600">{variant}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#07111f]"
+                style={{ background: 'linear-gradient(135deg, #00E676, #00C853)' }}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                Várostérkép szerkesztése (főoldal)
+              </a>
             </>
           )}
 

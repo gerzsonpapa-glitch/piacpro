@@ -6,10 +6,11 @@ import { useRouter } from '../lib/router';
 import type { Listing, AuctionBid } from '../lib/types';
 import { formatPrice, formatRelativeTime, getOnlineStatus, getOnlineLabel, normalizeListingAuction } from '../lib/utils';
 import ReportModal from '../components/ReportModal';
+import { findOrCreateConversation } from '../lib/conversations';
 import {
   Gavel, Timer, TrendingUp, User, MapPin, ArrowLeft,
   ChevronLeft, ChevronRight, Crown, AlertCircle, Tag, Clock,
-  CheckCircle, XCircle, Zap, Flag, RefreshCw, Undo2, ShieldCheck
+  CheckCircle, XCircle, Zap, Flag, RefreshCw, Undo2, ShieldCheck, MessageCircle
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import { useSEO } from '../lib/seo';
@@ -205,6 +206,32 @@ export default function AuctionDetailPage() {
     return () => { supabase.removeChannel(channel); };
   }, [listing?.auction?.id, user, fetchBids, fetchListing, showToast]);
 
+  // Azonnali lezárás, ha lejárt (cron mellett)
+  useEffect(() => {
+    if (!listing?.auction) return;
+    const a = listing.auction;
+    if (a.status !== 'active' || !a.ends_at) return;
+
+    const expired =
+      (a.timer_started && new Date(a.ends_at) <= new Date()) ||
+      (!a.timer_started && (a.bid_count ?? 0) === 0 && new Date(a.ends_at) <= new Date());
+
+    if (!expired) return;
+
+    void supabase.rpc('finalize_auction_if_expired', { p_auction_id: a.id }).then(() => {
+      void fetchListing();
+      void fetchBids(a.id);
+    });
+  }, [
+    listing?.auction?.id,
+    listing?.auction?.status,
+    listing?.auction?.ends_at,
+    listing?.auction?.timer_started,
+    listing?.auction?.bid_count,
+    fetchListing,
+    fetchBids,
+  ]);
+
   // Realtime subscription for auction status change (ended/sold → notify winner and seller)
   useEffect(() => {
     if (!listing?.auction?.id) return;
@@ -311,12 +338,38 @@ export default function AuctionDetailPage() {
       return;
     }
     setUndoLoading(true);
-    await supabase.from('auction_bids').delete().eq('id', undoBid.bidId);
-    await supabase.from('auctions').update({ current_price: undoBid.prevPrice }).eq('id', undoBid.auctionId);
+    const { data, error } = await supabase.rpc('undo_last_bid', { p_auction_id: undoBid.auctionId });
+    if (error || !data?.success) {
+      setBidError(data?.error || 'A licit visszavonása sikertelen.');
+      setUndoLoading(false);
+      return;
+    }
     setUndoBid(null);
     await fetchListing();
     await fetchBids(undoBid.auctionId);
     setUndoLoading(false);
+  }
+
+  async function openAuctionChat() {
+    if (!user || !listing?.auction) return;
+    const winnerId = listing.auction.winner_id;
+    const isAuctionOwner = user.id === listing.seller_id;
+    if (!winnerId) return;
+
+    const buyerId = isAuctionOwner ? winnerId : user.id;
+    const sellerId = listing.seller_id;
+    if (buyerId === sellerId) return;
+
+    const { id: convId, error } = await findOrCreateConversation({
+      buyerId,
+      sellerId,
+      context: { kind: 'listing', listingId: listing.id },
+    });
+    if (error || !convId) {
+      setBidError(error || 'Nem sikerült megnyitni a beszélgetést.');
+      return;
+    }
+    navigate(`/chat/${convId}`);
   }
 
   async function handleBidSubmit(e: React.FormEvent) {
@@ -378,7 +431,7 @@ export default function AuctionDetailPage() {
       {showReport && (
         <ReportModal
           listingId={listing.id}
-          reportedUserId={listing.seller_id}
+          userId={listing.seller_id}
           onClose={() => setShowReport(false)}
         />
       )}
@@ -523,6 +576,19 @@ export default function AuctionDetailPage() {
                 <CheckCircle className="w-4 h-4" />
                 {auction.winner_id ? 'Az aukció lezárult — vedd fel a kapcsolatot a nyertessel.' : 'Az aukció lejárt — nem volt nyertes.'}
               </div>
+            )}
+
+            {(auction.status === 'ended' || auction.status === 'sold') && auction.winner_id && user && (
+              (isOwner || auction.winner_id === user.id) && (
+                <button
+                  type="button"
+                  onClick={openAuctionChat}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {isOwner ? 'Üzenet a nyertesnek' : 'Üzenet az eladónak'}
+                </button>
+              )
             )}
 
             {/* Current price */}

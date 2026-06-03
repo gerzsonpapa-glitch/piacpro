@@ -111,8 +111,8 @@ export const SEO_PAGES = {
     noindex: true,
   },
   messages: {
-    title: 'Üzenetek',
-    description: undefined,
+    title: 'PiacPro Chat',
+    description: 'Üzenetváltás vásárlókkal és eladókkal a PiacPro piactéren.',
     noindex: true,
   },
   admin: {

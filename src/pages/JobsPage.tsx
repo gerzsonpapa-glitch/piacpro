@@ -9,11 +9,14 @@ import {
   Briefcase, MapPin, Search, PlusCircle, Building2, Clock,
   Wifi, ChevronRight, SlidersHorizontal, X, Banknote, Pencil,
   Trash2, Camera, Save, Phone, Mail, ArrowLeft, CheckCircle, AlertCircle,
-  UserSearch, Send, User, GraduationCap, MessageCircle, Lock, Sparkles, TrendingUp
+  UserSearch, Send, User, GraduationCap, MessageCircle, Lock, Sparkles, TrendingUp, Flag
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import { openConversationWithMessage } from '../lib/conversations';
 import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
+import Breadcrumb from '../components/navigation/Breadcrumb';
+import FlowInfoBar from '../components/navigation/FlowInfoBar';
+import ReportModal from '../components/ReportModal';
 
 const DEFAULT_JOB_CATEGORY = 'Egyéb';
 
@@ -245,7 +248,7 @@ function ApplyJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
             disabled={!message.trim() || sending || !user}
             className="flex-1 py-3 glass-pill-active text-emerald-300 rounded-xl font-medium text-sm hover:scale-[1.01] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <Send className="w-4 h-4" />{sending ? 'Küldés...' : 'Jelentkezés elküldése'}
+            <Send className="w-4 h-4" />{sending ? 'Küldés...' : 'Jelentkezem'}
           </button>
           <button onClick={onClose}
             className="px-5 py-3 glass-pill text-zinc-400 rounded-xl font-medium text-sm hover:text-zinc-200 transition-colors">
@@ -576,12 +579,13 @@ type View = 'list' | 'detail' | 'create' | 'edit' | 'seeker-create' | 'seeker-de
 
 export default function JobsPage() {
   useSEO(SEO_PAGES.jobs);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { showToast } = useNotification();
-  const { navigate, params } = useRouter();
+  const { navigate, params, path } = useRouter();
 
   // Tab
   const [mainTab, setMainTab] = useState<MainTab>('offers');
+  const [reportUserId, setReportUserId] = useState<string | null>(null);
 
   // Job offers state
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -619,6 +623,18 @@ export default function JobsPage() {
   useEffect(() => { fetchJobs(); fetchSeekerAds(); }, []);
 
   useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get('create') === '1' && user) {
+      setMainTab('offers');
+      setView('create');
+    } else if (sp.get('create') === 'seeker' && user) {
+      setMainTab('seekers');
+      setView('seeker-create');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (path.startsWith('/jobs/seeker/')) return;
     const jobId = params.id;
     if (!jobId || jobsLoading) return;
 
@@ -638,6 +654,7 @@ export default function JobsPage() {
         .eq('id', jobId)
         .eq('status', 'active')
         .eq('moderation_status', 'active')
+        .gt('expires_at', new Date().toISOString())
         .maybeSingle();
       if (cancelled) return;
       if (data) {
@@ -651,7 +668,42 @@ export default function JobsPage() {
     })();
 
     return () => { cancelled = true; };
-  }, [params.id, jobs, jobsLoading]);
+  }, [params.id, path, jobs, jobsLoading]);
+
+  useEffect(() => {
+    const seekerId = params.seekerId;
+    if (!path.startsWith('/jobs/seeker/') || !seekerId || seekersLoading) return;
+
+    const fromList = seekerAds.find((s) => s.id === seekerId);
+    if (fromList) {
+      setSelectedSeekerAd(fromList);
+      setView('seeker-detail');
+      setMainTab('seekers');
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('job_seeker_ads')
+        .select('*, user:profiles(id, username, full_name, avatar_url)')
+        .eq('id', seekerId)
+        .eq('status', 'active')
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        setSelectedSeekerAd(data);
+        setView('seeker-detail');
+        setMainTab('seekers');
+      } else {
+        showToast('error', 'Nem található', 'Az álláskereső hirdetés nem elérhető.');
+        navigate('/jobs');
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [params.seekerId, path, seekerAds, seekersLoading]);
   useEffect(() => { if (user) loadUserInteractions(); }, [user]);
 
   // Track search queries with debounce
@@ -684,13 +736,19 @@ export default function JobsPage() {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
+  function isHighTrustUser() {
+    return (profile?.trust_level ?? 1) >= 3 || !!profile?.is_admin || !!profile?.is_super_admin;
+  }
+
   async function fetchJobs() {
     setJobsLoading(true);
+    const now = new Date().toISOString();
     const { data } = await supabase
       .from('jobs')
       .select('*, poster:profiles(id, username, full_name, avatar_url)')
       .eq('status', 'active')
       .eq('moderation_status', 'active')
+      .gt('expires_at', now)
       .order('created_at', { ascending: false })
       .limit(200);
     setJobs(data || []);
@@ -699,10 +757,13 @@ export default function JobsPage() {
 
   async function fetchSeekerAds() {
     setSeekersLoading(true);
+    const now = new Date().toISOString();
     const { data } = await supabase
       .from('job_seeker_ads')
       .select('*, user:profiles(id, username, full_name, avatar_url)')
       .eq('status', 'active')
+      .eq('moderation_status', 'active')
+      .gt('expires_at', now)
       .order('created_at', { ascending: false })
       .limit(200);
     setSeekerAds(data || []);
@@ -828,13 +889,17 @@ export default function JobsPage() {
   async function handleJobCreate(d: JobFormState, logoFile: File | null) {
     if (!user) return;
     setUploadingLogo(true);
+    const isHighTrust = isHighTrustUser();
     const { data: newJob, error } = await supabase.from('jobs').insert({
       poster_id: user.id,
       title: d.title.trim(), company: d.company.trim(), description: d.description.trim(),
       category: d.category, type: d.type, location: d.location.trim(), remote: d.remote,
       salary_min: d.salaryMin ? parseInt(d.salaryMin) : null,
       salary_max: d.salaryMax ? parseInt(d.salaryMax) : null,
-      contact_email: d.contactEmail.trim(), contact_phone: d.contactPhone.trim(), status: 'active',
+      contact_email: d.contactEmail.trim(), contact_phone: d.contactPhone.trim(),
+      status: 'active',
+      moderation_status: isHighTrust ? 'active' : 'pending',
+      poster_trust_level: profile?.trust_level ?? 1,
     }).select().single();
     if (error || !newJob) { setUploadingLogo(false); showToast('error', 'Hiba', 'A hirdetés feladása sikertelen.'); return; }
     if (logoFile) {
@@ -842,7 +907,11 @@ export default function JobsPage() {
       if (url) await supabase.from('jobs').update({ logo_url: url }).eq('id', newJob.id);
     }
     setUploadingLogo(false);
-    showToast('success', 'Hirdetés feladva', 'Az állás sikeresen megjelent.');
+    if (isHighTrust) {
+      showToast('success', 'Hirdetés feladva', 'Az állás sikeresen megjelent.');
+    } else {
+      showToast('success', 'Beküldve', 'Admin jóváhagyás után jelenik meg nyilvánosan.');
+    }
     await fetchJobs();
     setView('list');
   }
@@ -875,10 +944,19 @@ export default function JobsPage() {
     if (selectedJob?.id === id) { setSelectedJob(null); setView('list'); navigate('/jobs'); }
   }
 
+  async function handleJobClose(id: string) {
+    const { error } = await supabase.from('jobs').update({ status: 'closed' }).eq('id', id);
+    if (error) { showToast('error', 'Hiba', error.message); return; }
+    showToast('success', 'Lezárva', 'Az álláshirdetés lezárult — a pozíció betelt.');
+    await fetchJobs();
+    if (selectedJob?.id === id) { setSelectedJob(null); setView('list'); navigate('/jobs'); }
+  }
+
   // ── Job seeker ad CRUD ─────────────────────────────────────────────────────
 
   async function handleSeekerCreate(d: SeekerFormState) {
     if (!user) return;
+    const isHighTrust = isHighTrustUser();
     const { error } = await supabase.from('job_seeker_ads').insert({
       user_id: user.id,
       title: d.title.trim(), description: d.description.trim(),
@@ -887,9 +965,14 @@ export default function JobsPage() {
       expected_salary_max: d.salaryMax ? parseInt(d.salaryMax) : null,
       contact_email: d.contactEmail.trim(), contact_phone: d.contactPhone.trim(),
       experience: d.experience, status: 'active',
+      moderation_status: isHighTrust ? 'active' : 'pending',
     });
     if (error) { showToast('error', 'Hiba', 'A hirdetés feladása sikertelen.'); return; }
-    showToast('success', 'Hirdetés feladva', 'Álláskeresési hirdetésed megjelent.');
+    if (isHighTrust) {
+      showToast('success', 'Hirdetés feladva', 'Álláskeresési hirdetésed megjelent.');
+    } else {
+      showToast('success', 'Beküldve', 'Admin jóváhagyás után jelenik meg nyilvánosan.');
+    }
     await fetchSeekerAds();
     setView('list');
   }
@@ -929,6 +1012,8 @@ export default function JobsPage() {
   function openSeekerAd(ad: JobSeekerAd) {
     setSelectedSeekerAd(ad);
     setView('seeker-detail');
+    setMainTab('seekers');
+    navigate(`/jobs/seeker/${ad.id}`);
     if (user) trackInteraction('view_seeker', { category: ad.category, location: ad.location, seekerAdId: ad.id });
   }
 
@@ -952,8 +1037,14 @@ export default function JobsPage() {
 
   const filteredJobs = jobs
     .filter((j) => {
-      if (search && !j.title.toLowerCase().includes(search.toLowerCase()) &&
-          !j.company.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const inText =
+          j.title.toLowerCase().includes(q) ||
+          j.company.toLowerCase().includes(q) ||
+          j.description.toLowerCase().includes(q);
+        if (!inText) return false;
+      }
       if (category !== 'Összes' && j.category !== category) return false;
       if (typeFilter && j.type !== typeFilter) return false;
       if (remoteOnly && !j.remote) return false;
@@ -1093,12 +1184,23 @@ export default function JobsPage() {
     const isOwn = user?.id === selectedJob.poster_id;
     return (
       <div className="max-w-3xl mx-auto">
+        {reportUserId && (
+          <ReportModal userId={reportUserId} onClose={() => setReportUserId(null)} />
+        )}
+        <Breadcrumb items={[
+          { label: 'Főoldal', path: '/' },
+          { label: 'Állások', path: '/jobs' },
+          { label: selectedJob.title },
+        ]} />
         <div className="flex items-center justify-between mb-6">
           <button onClick={() => { setView('list'); setSelectedJob(null); navigate('/jobs'); }} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" />Vissza
           </button>
           {isOwn && (
             <div className="flex gap-2">
+              <button onClick={() => handleJobClose(selectedJob.id)} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-amber-300 transition-colors text-sm">
+                <CheckCircle className="w-3.5 h-3.5" />Lezárom
+              </button>
               <button onClick={() => { setEditingJob(selectedJob); setView('edit'); }} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-emerald-300 transition-colors text-sm">
                 <Pencil className="w-3.5 h-3.5" />Szerkesztés
               </button>
@@ -1106,6 +1208,11 @@ export default function JobsPage() {
                 <Trash2 className="w-3.5 h-3.5" />Törlés
               </button>
             </div>
+          )}
+          {!isOwn && user && (
+            <button onClick={() => setReportUserId(selectedJob.poster_id)} className="flex items-center gap-2 glass-pill px-3 py-2 rounded-xl text-zinc-500 hover:text-zinc-300 text-sm">
+              <Flag className="w-3.5 h-3.5" />Bejelentés
+            </button>
           )}
         </div>
         <div className="glass rounded-3xl p-6 md:p-8 space-y-6">
@@ -1145,13 +1252,14 @@ export default function JobsPage() {
             <div className="text-zinc-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedJob.description}</div>
           </div>
           {!isOwn && (
-            <div className="border-t border-white/5 pt-5">
+            <div className="border-t border-white/5 pt-5 space-y-4">
+              <FlowInfoBar variant="job" />
               {user ? (
                 <button
                   onClick={() => setApplyingJob(selectedJob)}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 glass-pill-active text-emerald-300 px-5 py-3 rounded-xl font-medium text-sm hover:scale-[1.01] transition-all"
                 >
-                  <Send className="w-4 h-4" />Jelentkezés üzenettel
+                  <Send className="w-4 h-4" />Jelentkezem
                 </button>
               ) : (
                 <button
@@ -1300,11 +1408,14 @@ export default function JobsPage() {
 
     return (
       <div className="max-w-3xl mx-auto">
+        {reportUserId && (
+          <ReportModal userId={reportUserId} onClose={() => setReportUserId(null)} />
+        )}
         {contactSeekerAd && (
           <ContactSeekerModal seekerAd={contactSeekerAd} onClose={() => setContactSeekerAd(null)} />
         )}
         <div className="flex items-center justify-between mb-6">
-          <button onClick={() => { setView('list'); setSelectedSeekerAd(null); }} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors text-sm">
+          <button onClick={() => { setView('list'); setSelectedSeekerAd(null); navigate('/jobs'); }} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" />Vissza
           </button>
           {isOwn && (
@@ -1316,6 +1427,11 @@ export default function JobsPage() {
                 <Trash2 className="w-3.5 h-3.5" />Törlés
               </button>
             </div>
+          )}
+          {!isOwn && user && (
+            <button onClick={() => setReportUserId(selectedSeekerAd.user_id)} className="flex items-center gap-2 glass-pill px-3 py-2 rounded-xl text-zinc-500 hover:text-zinc-300 text-sm">
+              <Flag className="w-3.5 h-3.5" />Bejelentés
+            </button>
           )}
         </div>
         <div className="glass rounded-3xl p-6 md:p-8 space-y-6">
@@ -1358,14 +1474,20 @@ export default function JobsPage() {
             <h2 className="font-semibold text-zinc-200 mb-3 text-sm">Bemutatkozás</h2>
             <div className="text-zinc-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedSeekerAd.description}</div>
           </div>
-          {!isOwn && user && (
+          {!isOwn && (
             <div className="border-t border-white/5 pt-5">
               <h2 className="font-semibold text-zinc-200 text-sm mb-3">Jelzés küldése</h2>
               <p className="text-xs text-zinc-500 mb-3">Ha megfelel a profilja, küldj üzenetet az álláskeresőnek a platformon keresztül.</p>
-              <button onClick={() => setContactSeekerAd(selectedSeekerAd)}
-                className="flex items-center gap-2 glass-pill-active text-emerald-300 px-5 py-3 rounded-xl font-medium text-sm hover:scale-[1.02] transition-all">
-                <MessageCircle className="w-4 h-4" />Üzenet / Jelzés küldése
-              </button>
+              {user ? (
+                <button onClick={() => setContactSeekerAd(selectedSeekerAd)}
+                  className="flex items-center gap-2 glass-pill-active text-emerald-300 px-5 py-3 rounded-xl font-medium text-sm hover:scale-[1.02] transition-all">
+                  <MessageCircle className="w-4 h-4" />Üzenet / Jelzés küldése
+                </button>
+              ) : (
+                <button onClick={() => navigate('/login')} className="flex items-center gap-2 glass-pill-active text-emerald-300 px-5 py-3 rounded-xl font-medium text-sm">
+                  <Lock className="w-4 h-4" />Bejelentkezés a jelzéshez
+                </button>
+              )}
             </div>
           )}
           {(selectedSeekerAd.contact_email || selectedSeekerAd.contact_phone) && !isOwn && (

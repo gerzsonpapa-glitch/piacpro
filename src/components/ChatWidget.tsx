@@ -5,18 +5,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useRouter } from '../lib/router';
-import { getChatMountNode, pinChatToViewport, computeChatBottomPx } from '../lib/chatPortalRoot';
+import { ensureChatMount, syncChatViewportOffset, computeChatBottomPx } from '../lib/chatPortalRoot';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import type { Conversation, Message, Profile } from '../lib/types';
 import { formatRelativeTime } from '../lib/utils';
-import { X, Send, ArrowLeft, Minimize2, Store } from 'lucide-react';
+import { X, Send, ArrowLeft, Minimize2, MessageCircle, ExternalLink } from 'lucide-react';
 import Avatar from './Avatar';
+import PiacChatBrand from './chat/PiacChatBrand';
 
 export default function ChatWidget() {
   const { user, unreadCount, refreshUnread } = useAuth();
   const { devModeActive } = useSiteCustomization();
   const { showToast } = useNotification();
-  const { path } = useRouter();
+  const { path, navigate } = useRouter();
   const [mounted, setMounted] = useState(false);
   const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -34,7 +35,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     setMounted(true);
-    setMountNode(getChatMountNode());
+    setMountNode(ensureChatMount());
   }, []);
 
   const isMessagesPage = path === '/messages' || path.startsWith('/chat/');
@@ -42,22 +43,10 @@ export default function ChatWidget() {
   const bottomPx = computeChatBottomPx({ path, devModeActive, isMobile });
 
   useLayoutEffect(() => {
-    const node = anchorRef.current;
-    if (!node || !user || isMessagesPage) return;
-
-    const apply = () => pinChatToViewport(node, bottomPx);
-
-    apply();
-    window.addEventListener('scroll', apply, { passive: true, capture: true });
-    window.addEventListener('resize', apply, { passive: true });
-    document.addEventListener('scroll', apply, { passive: true, capture: true });
-
-    return () => {
-      window.removeEventListener('scroll', apply, true);
-      window.removeEventListener('resize', apply);
-      document.removeEventListener('scroll', apply, true);
-    };
-  }, [bottomPx, user, isMessagesPage, mounted, open, minimized, path]);
+    if (!user || isMessagesPage) return;
+    syncChatViewportOffset(bottomPx);
+    ensureChatMount();
+  }, [bottomPx, user, isMessagesPage, path, open, minimized]);
 
   const anchorStyle = useMemo(
     (): CSSProperties => ({
@@ -139,7 +128,7 @@ export default function ChatWidget() {
             const sender = conv
               ? (user.id === conv.buyer_id ? conv.seller : conv.buyer)
               : null;
-            showToast('message', 'Új üzenet érkezett', sender?.full_name || sender?.username || 'Valakitől');
+            showToast('message', 'Új üzenet — PiacPro Chat', sender?.full_name || sender?.username || 'Valakitől');
           }
         }
       })
@@ -187,11 +176,22 @@ export default function ChatWidget() {
     setSending(false);
   }
 
+  function openFullMessages() {
+    setOpen(false);
+    setActiveConv(null);
+    if (activeConv) navigate(`/chat/${activeConv.id}`);
+    else navigate('/messages');
+  }
+
   if (!mounted || !mountNode || !user || isMessagesPage) return null;
 
   const otherUser = activeConv
     ? (user.id === activeConv.buyer_id ? activeConv.seller : activeConv.buyer)
     : null;
+
+  const headerSubtitle = activeConv && !minimized
+    ? (otherUser?.full_name || otherUser?.username || 'Partner')
+    : 'Gyors üzenetek';
 
   const ui = (
     <div ref={anchorRef} className="piac-chat-anchor" style={anchorStyle} data-piac-chat-anchor>
@@ -200,10 +200,10 @@ export default function ChatWidget() {
           type="button"
           onClick={() => { setOpen(true); setMinimized(false); }}
           className="piac-chat-launcher"
-          aria-label="PiacPro üzenetek megnyitása"
+          aria-label="PiacPro Chat megnyitása"
         >
-          <span className="piac-chat-launcher__awning" aria-hidden />
-          <Store className="w-5 h-5 text-amber-300 relative z-[1]" />
+          <MessageCircle className="piac-chat-launcher__icon" strokeWidth={2.25} />
+          <span className="piac-chat-launcher__label">Chat</span>
           {unreadCount > 0 && (
             <span className="piac-chat-launcher__badge">
               {unreadCount > 9 ? '9+' : unreadCount}
@@ -214,27 +214,30 @@ export default function ChatWidget() {
 
       {open && (
         <div className={`piac-chat-panel ${minimized ? 'piac-chat-panel--min' : ''}`}>
-          <div className="piac-chat-panel__awning" aria-hidden />
           <header className="piac-chat-header">
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               {activeConv && !minimized && (
                 <button type="button" onClick={() => setActiveConv(null)} className="piac-chat-icon-btn" aria-label="Vissza">
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               )}
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-400/90">PiacPro Csengő</p>
-                <p className="text-sm font-bold text-zinc-100 truncate">
-                  {activeConv && !minimized
-                    ? (otherUser?.full_name || otherUser?.username || 'Partner')
-                    : 'Kapcsolataid'}
-                </p>
-              </div>
-              {unreadCount > 0 && !activeConv && (
+              <PiacChatBrand size="sm" subtitle={minimized ? undefined : headerSubtitle} />
+              {unreadCount > 0 && !activeConv && !minimized && (
                 <span className="piac-chat-launcher__badge piac-chat-launcher__badge--inline">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {!minimized && (
+                <button
+                  type="button"
+                  onClick={openFullMessages}
+                  className="piac-chat-icon-btn piac-chat-icon-btn--accent hidden sm:flex"
+                  title="Teljes PiacPro Chat"
+                  aria-label="Teljes nézet megnyitása"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button type="button" onClick={() => setMinimized(!minimized)} className="piac-chat-icon-btn" aria-label="Minimalizálás">
                 <Minimize2 className="w-3.5 h-3.5" />
               </button>
@@ -248,11 +251,21 @@ export default function ChatWidget() {
             <>
               {!activeConv && (
                 <div className="piac-chat-list">
+                  <div className="piac-chat-list__toolbar">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Beszélgetések</p>
+                    <button type="button" onClick={openFullMessages} className="piac-chat-link-btn">
+                      Teljes nézet
+                    </button>
+                  </div>
                   {conversations.length === 0 ? (
                     <div className="piac-chat-empty">
-                      <Store className="w-10 h-10 text-amber-500/40 mb-3" />
-                      <p className="text-zinc-400 text-sm font-medium">Még nincs beszélgetésed</p>
-                      <p className="text-zinc-600 text-xs mt-1">Csak meglévő kapcsolataid jelennek meg itt.</p>
+                      <div className="piac-chat-empty__icon">
+                        <MessageCircle className="w-8 h-8 text-[#00E676]/70" />
+                      </div>
+                      <p className="text-zinc-300 text-sm font-semibold">Még nincs üzeneted</p>
+                      <p className="text-zinc-500 text-xs mt-1 max-w-[14rem] leading-relaxed">
+                        Ha valaki ír neked egy hirdetésről, itt jelenik meg a beszélgetés.
+                      </p>
                     </div>
                   ) : (
                     conversations.map((conv) => {
@@ -264,7 +277,9 @@ export default function ChatWidget() {
                             <p className="font-semibold text-zinc-100 text-sm truncate">
                               {other?.full_name || other?.username || 'Felhasználó'}
                             </p>
-                            <p className="text-[11px] text-amber-400/70 truncate">{conv.listing?.title || 'Általános üzenet'}</p>
+                            <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                              {conv.listing?.title || 'Általános üzenet'}
+                            </p>
                           </div>
                           <span className="text-[10px] text-zinc-600 flex-shrink-0 tabular-nums">
                             {formatRelativeTime(conv.last_message_at)}
@@ -280,13 +295,15 @@ export default function ChatWidget() {
                 <div className="piac-chat-thread">
                   {activeConv.listing?.title && (
                     <div className="piac-chat-listing-tag">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#00C896]">Hirdetés</span>
-                      <p className="text-xs text-zinc-300 truncate">{activeConv.listing.title}</p>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#00E676]">Kapcsolódó hirdetés</span>
+                      <p className="text-xs text-zinc-300 truncate mt-0.5">{activeConv.listing.title}</p>
                     </div>
                   )}
                   <div className="piac-chat-messages">
                     {messages.length === 0 && (
-                      <p className="text-center text-zinc-600 text-xs py-6">Írd meg az első sort a standon!</p>
+                      <p className="text-center text-zinc-500 text-xs py-8 px-4 leading-relaxed">
+                        Írd meg az első üzeneted — a partner azonnal értesítést kap.
+                      </p>
                     )}
                     {messages.map((msg) => {
                       const isOwn = msg.sender_id === user.id;
@@ -300,9 +317,9 @@ export default function ChatWidget() {
                               rounded="full"
                             />
                           )}
-                          <div className="piac-chat-ticket">
-                            <p className="text-sm text-zinc-100 leading-snug">{msg.content}</p>
-                            <time className="piac-chat-ticket__time">{formatRelativeTime(msg.created_at)}</time>
+                          <div className="piac-chat-bubble">
+                            <p className="text-sm text-zinc-100 leading-snug whitespace-pre-wrap">{msg.content}</p>
+                            <time className="piac-chat-bubble__time">{formatRelativeTime(msg.created_at)}</time>
                           </div>
                         </div>
                       );
@@ -314,7 +331,7 @@ export default function ChatWidget() {
                       type="text"
                       value={newMsg}
                       onChange={(e) => setNewMsg(e.target.value)}
-                      placeholder="Üzenet a piaci standra…"
+                      placeholder="Írj üzenetet…"
                       className="piac-chat-compose__input"
                     />
                     <button type="submit" disabled={sending || !newMsg.trim()} className="piac-chat-compose__send" aria-label="Küldés">

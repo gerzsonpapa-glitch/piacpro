@@ -115,6 +115,10 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
     if (!canEdit && devModeActive) setDevModeActiveState(false);
   }, [canEdit, devModeActive]);
 
+  useEffect(() => {
+    applySiteTheme(effectiveConfig);
+  }, [effectiveConfig]);
+
   async function saveConfig(
     next: SiteCustomizationConfig,
   ): Promise<{ error: string | null; usedLocalFallback?: boolean }> {

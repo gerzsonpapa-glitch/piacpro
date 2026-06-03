@@ -1,10 +1,10 @@
 import { Compass, MessageCircle, Heart, User, PenLine } from 'lucide-react';
 import { useRouter } from '../../lib/router';
 import { useAuth } from '../../contexts/AuthContext';
-import { ALL_WORLD_ZONES } from '../../lib/worldZones';
+import { PRIMARY_WORLD_ZONES, SECONDARY_WORLD_ZONES } from '../../lib/worldZones';
 
 const EXTRA_LINKS = [
-  { label: 'Felfedezés', path: '/discover', icon: Compass, color: '#06B6D4', desc: 'Globális keresés' },
+  { label: 'Keresés mindenhol', path: '/discover', icon: Compass, color: '#06B6D4', desc: 'Hirdetés, állás, bolt, termelő' },
   { label: 'Hirdetés AI', path: '/create?mode=ai', icon: PenLine, color: '#00C896', desc: 'PiacAI hirdetés (90 nap)' },
   { label: 'Üzenetek', path: '/messages', icon: MessageCircle, color: '#22D3EE', desc: 'Chat és kapcsolat' },
   { label: 'Kedvencek', path: '/favorites', icon: Heart, color: '#F472B6', desc: 'Mentett hirdetések' },
@@ -14,7 +14,7 @@ export default function HomeQuickNavGrid({ compact = false }: { compact?: boolea
   const { navigate } = useRouter();
   const { user } = useAuth();
 
-  const zones = ALL_WORLD_ZONES;
+  const zones = [...PRIMARY_WORLD_ZONES, ...SECONDARY_WORLD_ZONES];
   const extras = [
     ...EXTRA_LINKS,
     ...(user

@@ -7,6 +7,7 @@ import type { Profile, Listing, SellerBadge, ListingRating } from '../lib/types'
 import ListingCard from '../components/ListingCard';
 import { formatRelativeTime, HUNGARIAN_COUNTIES, getOnlineStatus, getOnlineLabel, RANK_CONFIG } from '../lib/utils';
 import { User, MapPin, Calendar, Save, X, Phone, Mail, Star, Shield, ShieldCheck, Award, MessageCircle, TrendingUp, Package, CheckCircle, AlertTriangle, UserX, Camera, CreditCard as Edit3, FileText, Gavel, Settings, ThumbsUp, Heart } from 'lucide-react';
+import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -360,6 +361,7 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {isOwnProfile && <OnboardingChecklist />}
 
       {/* ── PROFILE HEADER ─────────────────────────────────────────── */}
       <div className="world-identity-card glass rounded-3xl overflow-hidden">

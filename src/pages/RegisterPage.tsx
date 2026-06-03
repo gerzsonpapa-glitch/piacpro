@@ -31,7 +31,7 @@ export default function RegisterPage() {
       setConfirming(true);
       setLoading(false);
     } else {
-      navigate('/');
+      navigate('/onboarding');
     }
   }
 

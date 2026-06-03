@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
+import PiacChatBrand from '../components/chat/PiacChatBrand';
 
 // ── Parsed order item ─────────────────────────────────────────────────────────
 interface OrderItem {
@@ -639,18 +640,18 @@ export default function MessagesPage() {
     <div className="piac-page-content max-w-[1440px] mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
       <WorldZonePageHeader
         zoneId="community"
-        title="Üzenetek"
-        subtitle="Beszélgetések a Közösségi Térben"
+        title="PiacPro Chat"
+        subtitle="Biztonságos üzenetváltás vásárlókkal és eladókkal"
         count={conversations.length}
         countLabel="beszélgetés"
         showLiveCount={false}
         compact
       />
-    <div className="flex gap-4 h-[calc(100vh-18rem)] md:h-[calc(100vh-16rem)]">
+    <div className="piac-chat-page flex gap-4 h-[calc(100dvh-14rem)] md:h-[calc(100dvh-13rem)] min-h-[420px]">
       {/* Conversation list */}
-      <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 glass rounded-3xl overflow-hidden flex-shrink-0`}>
-        <div className="p-4 border-b border-white/5">
-          <h2 className="font-bold text-lg">Üzenetek</h2>
+      <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 piac-chat-page__sidebar overflow-hidden flex-shrink-0`}>
+        <div className="p-4 border-b border-white/8 bg-black/20">
+          <PiacChatBrand subtitle="Összes beszélgetésed" />
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
@@ -700,20 +701,25 @@ export default function MessagesPage() {
               );
             })
           ) : (
-            <div className="p-8 text-center">
-              <MessageCircle className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-zinc-500 text-sm">Még nincs beszélgetésed</p>
+            <div className="p-10 text-center">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-[#00E676]/10 border border-[#00E676]/20 flex items-center justify-center mb-4">
+                <MessageCircle className="w-7 h-7 text-[#00E676]/80" />
+              </div>
+              <p className="text-zinc-300 text-sm font-semibold">Még nincs beszélgetésed</p>
+              <p className="text-zinc-500 text-xs mt-2 max-w-[16rem] mx-auto leading-relaxed">
+                Hirdetésnél vagy boltban a „Üzenet küldése” gombbal indíthatsz chatet.
+              </p>
             </div>
           )}
         </div>
       </div>
 
       {/* Chat area */}
-      <div className={`${activeConversation ? 'flex' : 'hidden md:flex'} flex-col flex-1 glass rounded-3xl overflow-hidden min-w-0`}>
+      <div className={`${activeConversation ? 'flex' : 'hidden md:flex'} flex-col flex-1 piac-chat-page__main overflow-hidden min-w-0`}>
         {activeConversation ? (
           <>
             {/* Chat header */}
-            <div className="flex items-center gap-3 p-4 border-b border-white/5 flex-shrink-0">
+            <div className="flex items-center gap-3 p-4 border-b border-white/8 bg-black/15 flex-shrink-0">
               <button onClick={() => { setActiveConversation(null); navigate('/messages'); }}
                 className="md:hidden p-1 glass-pill rounded-lg text-zinc-400 hover:text-zinc-200">
                 <ArrowLeft className="w-5 h-5" />
@@ -998,10 +1004,13 @@ export default function MessagesPage() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <MessageCircle className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-              <p className="text-zinc-500">Válassz egy beszélgetést</p>
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-sm">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-[#00E676]/10 border border-[#00E676]/15 flex items-center justify-center mb-4">
+                <MessageCircle className="w-8 h-8 text-[#00E676]/75" />
+              </div>
+              <p className="text-zinc-200 font-semibold">PiacPro Chat</p>
+              <p className="text-zinc-500 text-sm mt-2 leading-relaxed">Válassz egy beszélgetést bal oldalon, vagy írj valakinek egy hirdetésről.</p>
             </div>
           </div>
         )}

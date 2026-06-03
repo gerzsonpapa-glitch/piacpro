@@ -343,7 +343,9 @@ export interface Job {
   contact_phone: string;
   logo_url: string | null;
   remote: boolean;
-  status: 'active' | 'closed' | 'deleted';
+  status: 'active' | 'closed' | 'deleted' | 'expired';
+  moderation_status?: 'pending' | 'active' | 'rejected' | 'hidden';
+  poster_trust_level?: number;
   expires_at: string;
   created_at: string;
   updated_at: string;
@@ -365,7 +367,8 @@ export interface JobSeekerAd {
   contact_email: string;
   contact_phone: string;
   experience: string;
-  status: 'active' | 'deleted';
+  status: 'active' | 'deleted' | 'expired';
+  moderation_status?: 'pending' | 'active' | 'rejected' | 'hidden';
   expires_at: string;
   created_at: string;
   updated_at: string;

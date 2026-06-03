@@ -86,9 +86,37 @@ export interface SiteMediaConfig {
   ogImageUrl: string;
 }
 
-import type { CityMapHotspotOverride } from './cityMapPages';
+import type { CityMapHotspotOverride, CityMapDefaults } from './cityMapPages';
+import { DEFAULT_CITY_MAP_DEFAULTS } from './cityMapPages';
+import { DEFAULT_HOME_WOW } from './homeWow';
+import {
+  normalizeHomeVariant,
+  HOME_VARIANTS,
+  getHomeVariantMeta,
+  isImmersiveHomeVariant,
+  isBuildingSceneVariant,
+  homeVariantSupportsMenuStyle,
+  type HomeVariantId,
+  type HomeMenuStyleId,
+} from './homeVariants';
 
-export type { CityMapHotspotOverride };
+export type { CityMapHotspotOverride, CityMapDefaults };
+export type { HomeVariantId, HomeMenuStyleId };
+export type { SiteHomeWowConfig };
+export { DEFAULT_HOME_WOW };
+export {
+  HOME_VARIANTS,
+  normalizeHomeVariant,
+  getHomeVariantMeta,
+  isImmersiveHomeVariant,
+  isBuildingSceneVariant,
+  homeVariantSupportsMenuStyle,
+};
+
+export interface SiteHomeConfig {
+  variant: HomeVariantId;
+  menuStyle: HomeMenuStyleId;
+}
 
 export interface SiteCustomizationConfig {
   version: number;
@@ -107,6 +135,8 @@ export interface SiteCustomizationConfig {
   pages: PageSkinConfig[];
   quickAccess: QuickAccessOverride[];
   cityMapHotspots: CityMapHotspotOverride[];
+  /** Új zónák alapértelmezett pin/kártya stílusa (fejlesztői prémium) */
+  cityMapDefaults: CityMapDefaults;
   nav: {
     brandSubtitle: string;
     searchPlaceholder: string;
@@ -114,13 +144,16 @@ export interface SiteCustomizationConfig {
   media: SiteMediaConfig;
   footer: { tagline: string };
   maintenance: { enabled: boolean; message: string };
+  home: SiteHomeConfig;
+  /** Főoldali „wow” élmény — egyenként kikapcsolható */
+  homeWow: SiteHomeWowConfig;
 }
 
 export const WORLD_BACKGROUND_4K = '/zones/hub.jpg';
 export const WORLD_BACKGROUND_4K_WEBP = '/zones/hub.webp';
 export const WORLD_HUB_LOOP = '/zones/hub-loop.webp';
 /** Cache-bust — új hub kép után növeld */
-export const WORLD_HUB_ASSET_VERSION = '20260602v3';
+export const WORLD_HUB_ASSET_VERSION = '20260602v5';
 
 const LEGACY_WORLD_BACKGROUNDS = new Set([
   '',
@@ -236,6 +269,7 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   pages: PAGE_SKIN_DEFAULTS,
   quickAccess: [],
   cityMapHotspots: [],
+  cityMapDefaults: { ...DEFAULT_CITY_MAP_DEFAULTS },
   nav: {
     brandSubtitle: 'Magyar Közösségi Piactér',
     searchPlaceholder: 'Mit keresel a városban?',
@@ -252,6 +286,11 @@ export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
     enabled: false,
     message: 'A weboldal karbantartás alatt áll. Hamarosan visszatérünk.',
   },
+  home: {
+    variant: 'city',
+    menuStyle: 'rail',
+  },
+  homeWow: { ...DEFAULT_HOME_WOW },
 };
 
 const LOCAL_STORAGE_KEY = 'piacpro_site_config_v2';
@@ -311,6 +350,22 @@ export function mergeSiteConfig(raw: unknown): SiteCustomizationConfig {
   if (!merged.media.ogImageUrl || LEGACY_WORLD_BACKGROUNDS.has(merged.media.ogImageUrl)) {
     merged.media.ogImageUrl = WORLD_BACKGROUND_4K;
   }
+  if (!merged.home || typeof merged.home !== 'object') {
+    merged.home = { ...DEFAULT_SITE_CONFIG.home };
+  } else {
+    merged.home = {
+      variant: normalizeHomeVariant(merged.home.variant),
+      menuStyle: merged.home.menuStyle === 'floating' ? 'floating' : 'rail',
+    };
+  }
+  merged.cityMapDefaults = {
+    ...DEFAULT_CITY_MAP_DEFAULTS,
+    ...(merged.cityMapDefaults && typeof merged.cityMapDefaults === 'object' ? merged.cityMapDefaults : {}),
+  };
+  merged.homeWow = {
+    ...DEFAULT_HOME_WOW,
+    ...(merged.homeWow && typeof merged.homeWow === 'object' ? merged.homeWow : {}),
+  };
   return merged;
 }
 
@@ -387,9 +442,17 @@ export function applySiteTheme(config: SiteCustomizationConfig) {
   root.style.setProperty('--piac-particle-color', w.particleColor);
 
   document.body.style.backgroundColor = t.background;
-  document.body.style.filter = w.enabled
-    ? `saturate(${w.globalSaturation}) contrast(${w.globalContrast})`
-    : '';
+  document.body.style.filter = '';
+  const appRoot = document.getElementById('root');
+  if (appRoot) {
+    // NE filter a #root-on — position:fixed gyerekek az oldal aljára kerülnek, nem a viewportra.
+    appRoot.style.filter = '';
+  }
+
+  const homeVariant = normalizeHomeVariant(config.home?.variant);
+  const homeMenu = config.home?.menuStyle === 'floating' ? 'floating' : 'rail';
+  root.dataset.piacHomeVariant = homeVariant;
+  root.dataset.piacHomeMenu = homeMenu;
 
   root.dataset.piacWorld = w.enabled ? '1' : '0';
   root.dataset.piacParticles = w.enabled && w.particles ? '1' : '0';

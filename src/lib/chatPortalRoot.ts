@@ -1,5 +1,5 @@
-/** Chat mount — mindig a body utolsó gyereke, a #root-on kívül. */
-export function getChatMountNode(): HTMLElement | null {
+/** Chat mount — mindig a body utolsó gyereke, a #root-on kívül (filter/transform nélkül). */
+export function ensureChatMount(): HTMLElement | null {
   if (typeof document === 'undefined') return null;
 
   let el = document.getElementById('piac-chat-mount');
@@ -8,16 +8,19 @@ export function getChatMountNode(): HTMLElement | null {
     el.id = 'piac-chat-mount';
     el.setAttribute('data-piac-chat-mount', 'true');
     document.body.appendChild(el);
-  } else if (el.parentElement !== document.body) {
-    document.body.appendChild(el);
-  } else {
+  } else if (el.parentElement !== document.body || el !== document.body.lastElementChild) {
     document.body.appendChild(el);
   }
 
   return el;
 }
 
-/** Mobil dock + dev sáv figyelembevétele. */
+/** @deprecated use ensureChatMount */
+export function getChatMountNode(): HTMLElement | null {
+  return ensureChatMount();
+}
+
+/** Mobil dock + dev sáv figyelembevétele (px). */
 export function computeChatBottomPx(options: {
   path: string;
   devModeActive: boolean;
@@ -34,18 +37,14 @@ export function computeChatBottomPx(options: {
   return base;
 }
 
-export function pinChatToViewport(node: HTMLElement, bottomPx: number) {
-  node.style.setProperty('position', 'fixed', 'important');
-  node.style.setProperty('top', 'auto', 'important');
-  node.style.setProperty('left', 'auto', 'important');
-  node.style.setProperty('right', 'max(1rem, env(safe-area-inset-right, 0px))', 'important');
-  node.style.setProperty(
-    'bottom',
-    `calc(${bottomPx}px + env(safe-area-inset-bottom, 0px))`,
-    'important',
-  );
-  node.style.setProperty('transform', 'none', 'important');
-  node.style.setProperty('z-index', '2147483647', 'important');
-  node.style.setProperty('pointer-events', 'auto', 'important');
-  node.style.setProperty('margin', '0', 'important');
+/** CSS változó szinkron — a mount fixed pozíciója ebből számolódik. */
+export function syncChatViewportOffset(bottomPx: number) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.style.setProperty('--piac-chat-bottom', `${bottomPx}px`);
+  ensureChatMount();
+}
+
+/** @deprecated scroll-listener helyett CSS var + body filter fix */
+export function pinChatToViewport(_node: HTMLElement, bottomPx: number) {
+  syncChatViewportOffset(bottomPx);
 }

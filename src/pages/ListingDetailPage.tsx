@@ -9,11 +9,15 @@ import {
   Heart, MessageCircle, MapPin, Tag, Clock, ChevronLeft, ChevronRight,
   Share2, Shield, ArrowLeft, Phone, Mail, Pencil, Trash2,
   Star, CheckCircle, XCircle, ShieldCheck, ZoomIn, X, Play,
-  Handshake, RefreshCw, Facebook, Copy, Check
+  Handshake, RefreshCw, Facebook, Copy, Check, Flag
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import ReportModal from '../components/ReportModal';
 import { useSEO } from '../lib/seo';
 import { findOrCreateConversation } from '../lib/conversations';
+import Breadcrumb from '../components/navigation/Breadcrumb';
+import FlowInfoBar from '../components/navigation/FlowInfoBar';
+import { markChecklistItem } from '../lib/userOnboarding';
 
 const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
 const MAX_RECENTLY_VIEWED = 10;
@@ -162,6 +166,7 @@ export default function ListingDetailPage() {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
 
@@ -194,6 +199,7 @@ export default function ListingDetailPage() {
 
     if (data) {
       setListing(data);
+      markChecklistItem('browsedListings');
       supabase.from('listings').update({ views: data.views + 1 }).eq('id', id).then(() => {});
 
       // Fetch seller badge
@@ -253,6 +259,7 @@ export default function ListingDetailPage() {
       await supabase.from('favorites').insert({ user_id: user.id, listing_id: listing.id });
     }
     setIsFavorited(!isFavorited);
+    if (!isFavorited) markChecklistItem('savedFavorite');
   }
 
   async function startConversation() {
@@ -319,6 +326,13 @@ export default function ListingDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
+      {showReport && (
+        <ReportModal
+          listingId={listing.id}
+          userId={listing.seller_id}
+          onClose={() => setShowReport(false)}
+        />
+      )}
       {showRatingModal && listing.seller && (
         <RatingModal
           listingId={listing.id}
@@ -370,10 +384,11 @@ export default function ListingDetailPage() {
         </div>
       )}
 
-      <button onClick={() => window.history.back()}
-        className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 mb-4 transition-colors">
-        <ArrowLeft className="w-4 h-4" />Vissza
-      </button>
+      <Breadcrumb items={[
+        { label: 'Főoldal', path: '/' },
+        { label: 'Hirdetések', path: '/search' },
+        { label: listing.title },
+      ]} />
 
       {/* Sold / Ended overlay banner */}
       {listing.status !== 'active' && (
@@ -506,23 +521,24 @@ export default function ListingDetailPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 mt-5 flex-wrap">
+            <FlowInfoBar variant="listing" />
+            <div className="flex gap-2 mt-3 flex-wrap">
               {canBuy && (
                 <button onClick={() => navigate(`/checkout/${listing.id}`)}
                   className="flex items-center gap-2 px-5 py-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold rounded-xl transition-all hover:scale-[1.02]">
-                  <MessageCircle className="w-4 h-4" />Érdekel, felveszem a kapcsolatot
+                  <MessageCircle className="w-4 h-4" />Üzenet az eladónak
                 </button>
               )}
               {!isOwner && listing.status === 'active' && user && (
                 <button onClick={startConversation}
                   className="flex items-center gap-2 px-4 py-3 glass-pill text-zinc-300 rounded-xl transition-all hover:bg-white/10">
-                  <MessageCircle className="w-4 h-4" />Üzenet
+                  <MessageCircle className="w-4 h-4" />Meglévő beszélgetés
                 </button>
               )}
               {!isOwner && listing.status === 'active' && !user && (
                 <button onClick={() => navigate('/login')}
                   className="flex items-center gap-2 px-5 py-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold rounded-xl transition-all hover:scale-[1.02]">
-                  <MessageCircle className="w-4 h-4" />Érdekel, felveszem a kapcsolatot
+                  <MessageCircle className="w-4 h-4" />Üzenet az eladónak
                 </button>
               )}
               <button onClick={toggleFavorite} disabled={!user}
@@ -579,6 +595,15 @@ export default function ListingDetailPage() {
                   </div>
                 )}
               </div>
+              {!isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setShowReport(true)}
+                  className="flex items-center gap-2 px-4 py-3 glass-pill rounded-xl text-zinc-500 hover:text-zinc-300 text-sm transition-colors"
+                >
+                  <Flag className="w-4 h-4" />Bejelentés
+                </button>
+              )}
             </div>
 
             {/* Owner controls */}

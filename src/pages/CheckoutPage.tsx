@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
 import { findOrCreateConversation, sendConversationMessage } from '../lib/conversations';
+import Breadcrumb from '../components/navigation/Breadcrumb';
+import FlowInfoBar from '../components/navigation/FlowInfoBar';
 import Avatar from '../components/Avatar';
 
 const DELIVERY_OPTIONS = [
@@ -142,12 +144,15 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <button onClick={() => navigate(`/listing/${id}`)}
-        className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 mb-6 transition-colors text-sm">
-        <ArrowLeft className="w-4 h-4" />Vissza a hirdetéshez
-      </button>
+      <Breadcrumb items={[
+        { label: 'Főoldal', path: '/' },
+        { label: 'Hirdetések', path: '/search' },
+        { label: listing.title, path: `/listing/${listing.id}` },
+        { label: 'Üzenet az eladónak' },
+      ]} />
 
-      <h1 className="text-2xl font-bold mb-6">Érdeklődés / Vásárlás</h1>
+      <h1 className="text-2xl font-bold mb-4">Üzenet az eladónak</h1>
+      <FlowInfoBar variant="checkout" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Main */}
@@ -219,7 +224,7 @@ export default function CheckoutPage() {
           <button onClick={confirmAndContact} disabled={!canProceed || loading}
             className="w-full py-4 glass-pill-active text-emerald-300 font-semibold rounded-2xl transition-all hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
             <MessageCircle className="w-5 h-5" />
-            {loading ? 'Küldés...' : 'Kapcsolatfelvétel az eladóval'}
+            {loading ? 'Küldés...' : 'Üzenet elküldése'}
           </button>
         </div>
 

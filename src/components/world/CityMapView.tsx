@@ -9,7 +9,7 @@ import { CityMapBoundsProvider } from '../../contexts/CityMapBoundsContext';
 import { uploadSiteAsset } from '../../lib/uploadSiteAsset';
 import {
   CITY_BUILDINGS,
-  applyCityMapOverrides,
+  buildCityMapBuildings,
   mergeCityBuildingPreview,
   type CityBuilding,
 } from '../../lib/cityMapBuildings';
@@ -31,15 +31,23 @@ function getCount(
 export default function CityMapView({
   ready = true,
   devModeActive = false,
+  pinIgnition = false,
+  livePulse = false,
+  pinHoverPreview = false,
+  onPinNavigate,
 }: {
   ready?: boolean;
   devModeActive?: boolean;
   bottomDock?: React.ReactNode;
+  pinIgnition?: boolean;
+  livePulse?: boolean;
+  pinHoverPreview?: boolean;
+  onPinNavigate?: (path: string) => void;
 }) {
   const { navigate } = useRouter();
   const { config, canEdit, saveConfig } = useSiteCustomization();
   const { showToast } = useNotification();
-  const { stats } = useLiveWorldStats();
+  const { stats, activity } = useLiveWorldStats();
   const [editBuilding, setEditBuilding] = useState<CityBuilding | null>(null);
   const [editorPreview, setEditorPreview] = useState<CityMapHotspotOverride | null>(null);
   const [addMode, setAddMode] = useState(false);
@@ -56,7 +64,7 @@ export default function CityMapView({
   const editMode = devModeActive && canEdit;
 
   const buildings = useMemo(() => {
-    let list = applyCityMapOverrides(CITY_BUILDINGS, config.cityMapHotspots ?? []);
+    let list = buildCityMapBuildings(config.cityMapHotspots ?? [], config.cityMapDefaults);
     if (editorPreview) {
       const idx = list.findIndex((b) => b.id === editorPreview.id);
       if (idx >= 0) {
@@ -66,7 +74,7 @@ export default function CityMapView({
       }
     }
     return list;
-  }, [config.cityMapHotspots, editorPreview, editBuilding]);
+  }, [config.cityMapHotspots, config.cityMapDefaults, editorPreview, editBuilding]);
 
   const legacyPositionIds = useMemo(() => {
     const ids = new Set<string>();
@@ -87,6 +95,27 @@ export default function CityMapView({
     }),
     [stats],
   );
+
+  const livePulseKeys = useMemo(() => {
+    if (!livePulse) return new Set<string>();
+    const keys = new Set<string>();
+    const hourAgo = Date.now() - 60 * 60 * 1000;
+    for (const item of activity) {
+      if (new Date(item.at).getTime() < hourAgo) continue;
+      if (item.type === 'listing') keys.add('listing');
+      if (item.type === 'auction') keys.add('auction');
+      if (item.type === 'job') keys.add('job');
+      if (item.type === 'donation') keys.add('donations');
+    }
+    if (stats.listingsToday > 0) keys.add('listing');
+    if (stats.jobsToday > 0) keys.add('job');
+    return keys;
+  }, [livePulse, activity, stats.listingsToday, stats.jobsToday]);
+
+  function handlePinClick(path: string) {
+    if (onPinNavigate) onPinNavigate(path);
+    else navigate(path);
+  }
 
   const upsertOverride = useCallback(
     async (patch: CityMapHotspotOverride, successMsg = 'Zóna mentve.') => {
@@ -264,8 +293,11 @@ export default function CityMapView({
               addMode={addMode}
               useLegacyPosition={legacyPositionIds.has(b.id)}
               onEdit={() => setEditBuilding(b)}
-              onClick={() => navigate(b.path)}
+              onClick={() => handlePinClick(b.path)}
               isLivePreview={editBuilding?.id === b.id && !!editorPreview}
+              isLivePulse={livePulse && !!b.countKey && livePulseKeys.has(b.countKey)}
+              pinIgnition={pinIgnition}
+              pinHoverPreview={pinHoverPreview && !editMode}
               onPositionChange={
                 editMode
                   ? async (pos) => {

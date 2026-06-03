@@ -4,6 +4,21 @@
       "source": "/sitemap.xml",
       "destination": "https://febwnuzjjlzwchphxzfg.supabase.co/functions/v1/sitemap",
       "permanent": false
+    },
+    {
+      "source": "/job/:id",
+      "destination": "/jobs/:id",
+      "permanent": true
+    },
+    {
+      "source": "/create-job",
+      "destination": "/jobs?create=1",
+      "permanent": false
+    },
+    {
+      "source": "/ai-assistant",
+      "destination": "/create?mode=ai",
+      "permanent": false
     }
   ],
   "rewrites": [
@@ -21,6 +36,15 @@
       "source": "/assets/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self)" }
       ]
     }
   ]

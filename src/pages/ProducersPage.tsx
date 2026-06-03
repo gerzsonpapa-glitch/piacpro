@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
 import type { Producer } from '../lib/types';
-import { MapPin, Star, CheckCircle2, Leaf, Search, Map, Grid2x2 as Grid, Sprout, Apple, Sun, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, MessageCircle, User, Clock, Award, Navigation, LocateFixed, AlertCircle, ChevronRight } from 'lucide-react';
+import { MapPin, Star, CheckCircle2, Leaf, Search, Map, Grid2x2 as Grid, Sprout, Apple, Sun, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, MessageCircle, User, Store, Clock, Award, Navigation, LocateFixed, AlertCircle, ChevronRight } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
 
@@ -101,7 +101,7 @@ function ProducerCard({ producer, onChat }: { producer: Producer; onChat: () => 
             onClick={() => navigate(`/producers/${producer.id}`)}
             className="flex-1 py-2 rounded-xl glass-bubble text-zinc-300 text-xs font-medium hover:text-emerald-400 transition-colors flex items-center justify-center gap-1.5"
           >
-            <User className="w-3.5 h-3.5" /> Profil
+            <Store className="w-3.5 h-3.5" /> Termelő megnyitása
           </button>
           <button
             onClick={onChat}

@@ -35,9 +35,9 @@ export const PRIMARY_WORLD_ZONES: WorldZone[] = [
   {
     id: 'marketplace',
     emoji: '🟢',
-    label: 'Piac',
-    title: 'Piac Tér',
-    subtitle: 'Vásárlás, eladás, hirdetések',
+    label: 'Hirdetések',
+    title: 'Hirdetések',
+    subtitle: 'Vásárlás és eladás',
     path: '/search',
     icon: ShoppingBag,
     color: '#00C896',
@@ -51,9 +51,9 @@ export const PRIMARY_WORLD_ZONES: WorldZone[] = [
   {
     id: 'auction',
     emoji: '🟣',
-    label: 'Licit',
-    title: 'Licit Csarnok',
-    subtitle: 'Élő licitek és aukciók',
+    label: 'Aukciók',
+    title: 'Aukciók',
+    subtitle: 'Élő licitek',
     path: '/auctions',
     icon: Gavel,
     color: '#A855F7',
@@ -67,9 +67,9 @@ export const PRIMARY_WORLD_ZONES: WorldZone[] = [
   {
     id: 'jobs',
     emoji: '🔵',
-    label: 'Állás',
-    title: 'Munka Negyed',
-    subtitle: 'Állások és karrierlehetőségek',
+    label: 'Állások',
+    title: 'Állások',
+    subtitle: 'Munka és jelentkezés',
     path: '/jobs',
     icon: Briefcase,
     color: '#38BDF8',
@@ -83,9 +83,9 @@ export const PRIMARY_WORLD_ZONES: WorldZone[] = [
   {
     id: 'community',
     emoji: '🟡',
-    label: 'Közösség',
-    title: 'Közösségi Tér',
-    subtitle: 'Fórum, beszélgetések, hírek',
+    label: 'Fórum',
+    title: 'Fórum & üzenetek',
+    subtitle: 'Beszélgetések',
     path: '/forum',
     icon: Users,
     color: '#FBBF24',
@@ -99,17 +99,17 @@ export const PRIMARY_WORLD_ZONES: WorldZone[] = [
   {
     id: 'business',
     emoji: '⚪',
-    label: 'Üzleti',
-    title: 'Boltok Utcája',
-    subtitle: 'Helyi boltok és vállalkozások',
-    path: '/helyi-vallalkozasok',
+    label: 'Vállalkozás',
+    title: 'Vállalkozások',
+    subtitle: 'Boltok, termelők, helyi cégek',
+    path: '/uzleti',
     icon: Store,
     color: '#E2E8F0',
     glow: 'rgba(226,232,240,0.25)',
     border: 'rgba(226,232,240,0.22)',
     bg: 'rgba(226,232,240,0.08)',
     gradient: 'linear-gradient(135deg, rgba(148,163,184,0.12), rgba(251,146,60,0.08))',
-    paths: ['/helyi-vallalkozasok', '/shops', '/vallalkozasom', '/vallalkozas-regisztracio', '/producers/apply'],
+    paths: ['/uzleti', '/helyi-vallalkozasok', '/shops', '/vallalkozasom', '/vallalkozas-regisztracio', '/producers/apply'],
     tier: 'primary',
   },
 ];
@@ -120,8 +120,8 @@ export const SECONDARY_WORLD_ZONES: WorldZone[] = [
     id: 'donations',
     emoji: '💛',
     label: 'Adomány',
-    title: 'Adomány Központ',
-    subtitle: 'Segítség és közösségi támogatás',
+    title: 'Adományok',
+    subtitle: 'Kampányok és támogatás',
     path: '/donations',
     icon: Heart,
     color: '#F472B6',
@@ -136,8 +136,8 @@ export const SECONDARY_WORLD_ZONES: WorldZone[] = [
     id: 'producers',
     emoji: '🌿',
     label: 'Termelők',
-    title: 'Termelők Piaca',
-    subtitle: 'Helyi termelők és friss termékek',
+    title: 'Termelők',
+    subtitle: 'Friss helyi termék',
     path: '/producers',
     icon: Leaf,
     color: '#4ADE80',
@@ -193,7 +193,7 @@ export const AI_GUIDE_OPTIONS: AIGuideOption[] = [
   { key: 'producers', label: 'Termelők', desc: 'Helyi termelők piaca', path: '/producers', zone: 'producers', priority: 8, hint: 'Kibővített világ' },
 ];
 
-const SKIP_ZONE_PATHS = ['/', '/login', '/register', '/piac-ai', '/vedelem', '/rules'];
+const SKIP_ZONE_PATHS = ['/', '/login', '/register', '/onboarding', '/piac-ai', '/vedelem', '/rules', '/hogyan-mukodik'];
 
 export function getZoneForPath(path: string): WorldZone | null {
   if (path === '/') return null;

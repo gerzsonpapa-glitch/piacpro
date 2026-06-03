@@ -22,8 +22,8 @@ export default function WorldZoneHub({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-[10px] font-black tracking-[0.2em] uppercase text-cyan-400/80">Fő világok</p>
-        <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Válassz zónát — minden portál élő adatokkal</p>
+        <p className="text-[10px] font-black tracking-[0.2em] uppercase text-cyan-400/80">Fő modulok</p>
+        <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Mindennapi elnevezések — kattints és indulj</p>
       </div>
 
       <div className="grid grid-cols-1 gap-3">
@@ -45,8 +45,7 @@ export default function WorldZoneHub({
         className="world-more-worlds-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold text-zinc-300"
       >
         <Layers className="w-4 h-4 text-purple-400" />
-        További világok
-        <span className="text-[10px] text-zinc-600 font-normal">(Adomány · Termelők)</span>
+        További lehetőségek
       </button>
     </div>
   );

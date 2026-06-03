@@ -2,9 +2,12 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
 import type { CityBuilding } from '../../lib/cityMapBuildings';
+import { DEFAULT_CITY_MAP_DEFAULTS } from '../../lib/cityMapPages';
 import { imagePercentToStagePercent, stagePointToImagePercent } from '../../lib/cityMapImageBounds';
 import { useCityMapBounds } from '../../contexts/CityMapBoundsContext';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { usePinPreview } from '../../hooks/usePinPreview';
+import CityPinHoverPreview from './CityPinHoverPreview';
 import CityPinVisual from './CityPinVisual';
 
 const COUNT_LABELS: Record<string, string> = {
@@ -58,6 +61,9 @@ export default function CityBuildingHotspot({
   onPositionChange,
   useLegacyPosition = false,
   isLivePreview = false,
+  isLivePulse = false,
+  pinIgnition = false,
+  pinHoverPreview = false,
 }: {
   building: CityBuilding;
   count?: number;
@@ -70,11 +76,17 @@ export default function CityBuildingHotspot({
   onPositionChange?: (pos: { top: string; left: string; imageTop?: string; imageLeft?: string }) => void;
   useLegacyPosition?: boolean;
   isLivePreview?: boolean;
+  isLivePulse?: boolean;
+  pinIgnition?: boolean;
+  pinHoverPreview?: boolean;
 }) {
   const Icon = building.icon;
   const rootRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const bounds = useCityMapBounds();
+  const { items: previewItems, loading: previewLoading, showPreview, hidePreview } = usePinPreview();
+  const hoverTimer = useRef<number | null>(null);
+  const [hovering, setHovering] = useState(false);
 
   const anchor = useMemo(
     () => resolvePinPosition(building, bounds, useLegacyPosition),
@@ -193,18 +205,52 @@ export default function CityBuildingHotspot({
   const interactive = !addMode;
   const countLabel = building.countKey ? COUNT_LABELS[building.countKey] : undefined;
   const canDrag = editMode && !addMode && !!onPositionChange;
-  const pinSize = building.pinSize ?? 'sm';
-  const pinVariant = building.pinVariant ?? (isMobile ? 'icon-card' : 'card');
-  const showLabel = building.showLabel !== false;
+  const pinSize = building.pinSize ?? DEFAULT_CITY_MAP_DEFAULTS.pinSize ?? 'sm';
+  const pinVariant = building.pinVariant ?? DEFAULT_CITY_MAP_DEFAULTS.pinVariant ?? 'card';
+  const cardStyle = building.cardStyle ?? DEFAULT_CITY_MAP_DEFAULTS.cardStyle ?? 'glass';
+  const pinScale = building.pinScale ?? DEFAULT_CITY_MAP_DEFAULTS.pinScale ?? 1;
+  const showLabel = building.showLabel ?? DEFAULT_CITY_MAP_DEFAULTS.showLabel ?? true;
+  const ignitionDelay = pinIgnition ? index * 0.09 : index * 0.04;
+
+  function handleMouseEnter() {
+    if (!pinHoverPreview || isMobile || editMode || addMode) return;
+    setHovering(true);
+    hoverTimer.current = window.setTimeout(() => {
+      showPreview(building);
+    }, 280);
+  }
+
+  function handleMouseLeave() {
+    setHovering(false);
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+    hidePreview();
+  }
+
+  useEffect(() => () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+  }, []);
 
   return (
     <motion.div
       ref={rootRef}
-      initial={{ opacity: 0, scale: 0.92 }}
-      animate={ready ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.92 }}
-      transition={{ delay: ready ? index * 0.04 : 0, duration: 0.35 }}
-      className={`city-building-pin absolute z-20 ${interactive ? 'pointer-events-auto' : 'pointer-events-none'} ${canDrag ? 'city-building-pin--edit' : ''} ${isLivePreview ? 'city-building-pin--live-preview' : ''}`}
+      initial={{ opacity: 0, scale: pinIgnition ? 0.4 : 0.92 }}
+      animate={
+        ready
+          ? { opacity: 1, scale: 1 }
+          : { opacity: 0, scale: pinIgnition ? 0.4 : 0.92 }
+      }
+      transition={{
+        delay: ready ? ignitionDelay : 0,
+        duration: pinIgnition ? 0.55 : 0.35,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className={`city-building-pin absolute z-20 ${interactive ? 'pointer-events-auto' : 'pointer-events-none'} ${canDrag ? 'city-building-pin--edit' : ''} ${isLivePreview ? 'city-building-pin--live-preview' : ''} ${isLivePulse ? 'city-building-pin--live-pulse' : ''} ${pinIgnition && ready ? 'city-building-pin--ignited' : ''}`}
       style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {canDrag && (
         <button
@@ -223,9 +269,10 @@ export default function CityBuildingHotspot({
         sublabel={building.sublabel}
         color={building.color}
         glow={building.glow}
-        cardStyle={building.cardStyle}
+        cardStyle={cardStyle}
         pinSize={pinSize}
         pinVariant={pinVariant}
+        pinScale={pinScale}
         showLabel={showLabel}
         count={count}
         countLabel={countLabel}
@@ -234,6 +281,14 @@ export default function CityBuildingHotspot({
         onClick={handleClick}
         onPointerDown={canDrag ? startDrag : undefined}
       />
+      {pinHoverPreview && hovering && !isMobile && (
+        <CityPinHoverPreview
+          items={previewItems}
+          loading={previewLoading}
+          label={building.label}
+          color={building.color}
+        />
+      )}
     </motion.div>
   );
 }

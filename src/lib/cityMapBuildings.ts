@@ -3,7 +3,8 @@ import {
   ShoppingBag, Gavel, Briefcase, Users, Store, Heart, Leaf, Award, HandHeart, Shield,
 } from 'lucide-react';
 import { WORLD_BACKGROUND_4K } from './siteCustomization';
-import type { CityMapHotspotOverride, CityCardStyle, CityPinSize, CityPinVariant } from './cityMapPages';
+import type { CityMapHotspotOverride, CityMapDefaults, CityCardStyle, CityPinSize, CityPinVariant } from './cityMapPages';
+import { DEFAULT_CITY_MAP_DEFAULTS } from './cityMapPages';
 import { resolveCityIcon } from './cityMapIcons';
 import { colorGlow } from './cityMapCardStyles';
 import { HUB_HOTSPOT_DEFAULTS } from './hubHotspotsDefaults';
@@ -27,6 +28,8 @@ export interface CityBuilding {
   cardStyle?: CityCardStyle;
   pinSize?: CityPinSize;
   pinVariant?: CityPinVariant;
+  /** Finom skála 0.5–2.0 */
+  pinScale?: number;
   showLabel?: boolean;
 }
 
@@ -47,8 +50,8 @@ export interface CityQuickPin {
 export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   {
     id: 'piac-ter',
-    label: 'Piacnegyed',
-    sublabel: 'Apróhirdetés · Adás-vétel · Szolgáltatás',
+    label: 'Hirdetések',
+    sublabel: 'Böngéssz és vásárolj · Apróhirdetés',
     path: '/search',
     icon: ShoppingBag,
     iconId: 'shopping',
@@ -64,8 +67,8 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   },
   {
     id: 'munka',
-    label: 'Munkásnegyed',
-    sublabel: 'Állások · Szakemberek · Vállalkozók',
+    label: 'Állások',
+    sublabel: 'Jelentkezz vagy adj fel állást',
     path: '/jobs',
     icon: Briefcase,
     iconId: 'briefcase',
@@ -81,8 +84,8 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   },
   {
     id: 'licit',
-    label: 'Licitközpont',
-    sublabel: 'Élő aukciók · Licitek',
+    label: 'Aukciók',
+    sublabel: 'Licitelj online · Élő aukciók',
     path: '/auctions',
     icon: Gavel,
     iconId: 'gavel',
@@ -98,8 +101,8 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   },
   {
     id: 'termelok',
-    label: 'Termelői Negyed',
-    sublabel: 'Őstermelők · Kézművesek · Helyi termék',
+    label: 'Termelők',
+    sublabel: 'Friss helyi termék · Rendelés üzenetben',
     path: '/producers',
     icon: Leaf,
     iconId: 'leaf',
@@ -115,8 +118,8 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   },
   {
     id: 'boltok',
-    label: 'Boltok Utcája',
-    sublabel: 'Webshopok · Cégek · Üzletek',
+    label: 'Boltok',
+    sublabel: 'Webshopok · Érdeklődés üzenetben',
     path: '/shops',
     icon: Store,
     iconId: 'store',
@@ -132,8 +135,8 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   },
   {
     id: 'kozossegi',
-    label: 'Közösségi Ház',
-    sublabel: 'Fórum · Csoportok · Események',
+    label: 'Fórum',
+    sublabel: 'Beszélgetések · Közösség',
     path: '/forum',
     icon: Users,
     iconId: 'users',
@@ -148,8 +151,8 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   },
   {
     id: 'segitsegkozpont',
-    label: 'Segítségközpont',
-    sublabel: 'Segítségkérés · Felajánlások',
+    label: 'Felajánlások',
+    sublabel: 'Ingyenes segítség · Ajánlatok',
     path: '/donations',
     icon: HandHeart,
     iconId: 'handheart',
@@ -164,8 +167,8 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   },
   {
     id: 'templom-adomany',
-    label: 'Adományközpont',
-    sublabel: 'Adománygyűjtés · Támogatás',
+    label: 'Adomány',
+    sublabel: 'Kampányok · Támogatás',
     path: '/donations/create',
     icon: Heart,
     iconId: 'heart',
@@ -198,7 +201,7 @@ export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   {
     id: 'vedelem',
     label: 'Védelem',
-    sublabel: 'Biztosítás · OVB · Védelem',
+    sublabel: 'Pénzügyi tanácsadás · Biztosítás',
     path: '/vedelem',
     icon: Shield,
     iconId: 'shield',
@@ -225,6 +228,7 @@ function applyHubDefaults(buildings: CityBuilding[]): CityBuilding[] {
       imageLeft: d.imageLeft,
       pinSize: d.pinSize ?? b.pinSize,
       pinVariant: d.pinVariant ?? b.pinVariant ?? 'icon-card',
+      pinScale: d.pinScale ?? b.pinScale,
     };
   });
 }
@@ -247,8 +251,26 @@ export function mergeCityBuildingPreview(
     ...(patch.cardStyle && { cardStyle: patch.cardStyle }),
     ...(patch.pinSize && { pinSize: patch.pinSize }),
     ...(patch.pinVariant && { pinVariant: patch.pinVariant }),
+    ...(patch.pinScale !== undefined && { pinScale: patch.pinScale }),
     ...(patch.showLabel !== undefined && { showLabel: patch.showLabel }),
   };
+}
+
+/** Site-wide pin/kártya alapértékek + egyedi hotspot felülírások. */
+export function buildCityMapBuildings(
+  overrides: CityMapHotspotOverride[],
+  defaults?: CityMapDefaults | null,
+): CityBuilding[] {
+  const d = { ...DEFAULT_CITY_MAP_DEFAULTS, ...(defaults ?? {}) };
+  const base = CITY_BUILDINGS.map((b) => ({
+    ...b,
+    pinSize: d.pinSize,
+    pinVariant: d.pinVariant,
+    cardStyle: d.cardStyle,
+    pinScale: d.pinScale ?? 1,
+    showLabel: d.showLabel ?? true,
+  }));
+  return applyCityMapOverrides(base, overrides);
 }
 
 export function applyCityMapOverrides(
@@ -275,6 +297,7 @@ export function applyCityMapOverrides(
         ...(o.imageLeft && { imageLeft: o.imageLeft }),
         ...(o.pinSize && { pinSize: o.pinSize }),
         ...(o.pinVariant && { pinVariant: o.pinVariant }),
+        ...(o.pinScale !== undefined && { pinScale: o.pinScale }),
         ...(o.showLabel !== undefined && { showLabel: o.showLabel }),
       };
     })

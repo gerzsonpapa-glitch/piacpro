@@ -8,6 +8,7 @@ import Footer from './Footer';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { isSiteDeveloper } from '../lib/developer';
 import { getPageSkin, getWorldBackgroundUrl, isBuiltinHubBackground } from '../lib/siteCustomization';
+import { isImmersiveHomeVariant, normalizeHomeVariant } from '../lib/homeVariants';
 import WorldGlobalBackdrop from './world/WorldGlobalBackdrop';
 import ZoneScreenBackdrop from './world/ZoneScreenBackdrop';
 import { getZoneAssetForPath } from '../lib/zoneAssets';
@@ -28,9 +29,11 @@ import { getZoneForPath } from '../lib/worldZones';
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile } = useAuth();
   const { navigate, path } = useRouter();
-  const isHome = path === '/';
-  const activeZone = getZoneForPath(path);
   const { config, canEdit } = useSiteCustomization();
+  const homeVariant = normalizeHomeVariant(config.home?.variant);
+  const isHome = path === '/';
+  const isImmersiveHome = isHome && isImmersiveHomeVariant(homeVariant);
+  const activeZone = getZoneForPath(path);
   const showDevStudio = canEdit && isSiteDeveloper(user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingApps, setPendingApps] = useState(0);
@@ -58,14 +61,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setPendingApps(count ?? 0);
   }
 
-  const navTransparent = isHome && !scrolled;
+  const navTransparent = (isHome && !scrolled) || isImmersiveHome;
   const pageSkin = getPageSkin(config, path);
-  const hideChrome = path === '/login' || path === '/register';
+  const hideChrome = path === '/login' || path === '/register' || path === '/onboarding' || path === '/reset-password';
   const zoneAsset = hideChrome ? null : getZoneAssetForPath(path);
   const homeBgUrl = getWorldBackgroundUrl(config);
   const useCustomHomeBg = isHome && !isBuiltinHubBackground(homeBgUrl);
   const showZoneScreen = !!zoneAsset && !hideChrome && !useCustomHomeBg;
   const showCustomHomeBg = isHome && useCustomHomeBg;
+  const showInlineQuickNav = user && !hideChrome;
+  const wideNavCenter = isHome || showInlineQuickNav;
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -80,7 +85,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {showZoneScreen && zoneAsset && !isHome && (
         <ZoneScreenBackdrop asset={zoneAsset} dimmed />
       )}
-      <WorldEffects isHome={isHome} />
+      <WorldEffects isHome={isHome && !isImmersiveHome} />
       {!isHome && <WorldAmbientLayer zone={activeZone} />}
 
       {/* Oldal-specifikus háttér — zóna képernyőnél ne duplikáljuk */}
@@ -148,9 +153,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
-          {/* Kereső + gyors linkek (főoldal) */}
-          <div className={`flex-1 min-w-0 mx-1 sm:mx-2 lg:mx-3 flex items-center gap-2 ${isHome ? '' : 'max-w-md hidden sm:flex'}`}>
-            <form onSubmit={handleSearch} className={`min-w-0 ${isHome ? 'flex-1 max-w-sm lg:max-w-md' : 'w-full hidden sm:block'}`}>
+          {/* Kereső + gyors linkek — egy sor, mint a főoldalon */}
+          <div className={`flex-1 min-w-0 mx-1 sm:mx-2 lg:mx-3 flex items-center gap-2 ${wideNavCenter ? '' : 'max-w-md hidden sm:flex'}`}>
+            <form onSubmit={handleSearch} className={`min-w-0 ${wideNavCenter ? 'flex-1 max-w-sm lg:max-w-md' : 'w-full hidden sm:block'}`}>
               <div className={`relative flex items-center rounded-2xl overflow-hidden transition-all duration-300 piac-nav-search ${isHome ? 'piac-nav-search-hero flex' : 'piac-nav-search-compact'}`}
                 style={{
                   background: isHome ? 'rgba(7,17,31,0.72)' : 'rgba(7,17,31,0.6)',
@@ -162,7 +167,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   type="text"
                   value={searchQ}
                   onChange={e => setSearchQ(e.target.value)}
-                  placeholder={isHome ? 'Mit keresel ma?' : config.nav.searchPlaceholder}
+                  placeholder={isHome ? 'Mit keresel ma?' : 'Keresés az egész oldalon…'}
                   data-piac-edit="nav.searchPlaceholder"
                   className={`w-full bg-transparent text-zinc-300 placeholder-zinc-600 focus:outline-none min-w-0 ${isHome ? 'pl-9 sm:pl-11 pr-11 sm:pr-14 py-2 sm:py-3 text-xs sm:text-sm' : 'pl-8 pr-3 py-2 text-xs'}`}
                 />
@@ -178,7 +183,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 )}
               </div>
             </form>
-            {isHome && user && <HomeHeaderQuickNav />}
+            {showInlineQuickNav && <HomeHeaderQuickNav />}
           </div>
 
           {/* Rendszer menü */}
@@ -187,6 +192,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <SystemIdentityMenu pendingApps={pendingApps} />
             ) : (
               <>
+                <button
+                  type="button"
+                  onClick={() => navigate('/hogyan-mukodik')}
+                  className="hidden md:inline-flex text-xs text-zinc-500 hover:text-emerald-300 transition-colors px-2"
+                >
+                  Hogyan működik?
+                </button>
                 <PiacButton variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/register')}>
                   Regisztráció
                 </PiacButton>
@@ -211,8 +223,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         </div>
 
-        {/* Mobil gyors linkek — főoldal */}
-        {isHome && user && !hideChrome && (
+        {/* Mobil gyors linkek — lg alatt (desktopon inline a fejlécben) */}
+        {showInlineQuickNav && (
           <div className="lg:hidden px-3 pb-2">
             <HomeHeaderQuickNav compact />
           </div>
@@ -225,7 +237,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             style={{ background: 'rgba(7,17,31,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <Search className="absolute left-2.5 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
-              placeholder="Keresés..." className="w-full bg-transparent pl-8 pr-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none" />
+              placeholder="Keresés az egész oldalon…" className="w-full bg-transparent pl-8 pr-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none" />
           </form>
         </div>
         )}
@@ -239,6 +251,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 onNavigate={() => setMobileOpen(false)}
                 onOpenSecondary={() => { setSecondaryOpen(true); setMobileOpen(false); }}
               />
+              <button
+                type="button"
+                onClick={() => { navigate('/hogyan-mukodik'); setMobileOpen(false); }}
+                className="w-full mt-4 py-3 rounded-2xl text-sm font-medium text-zinc-400 border border-white/10 hover:text-emerald-300 hover:border-emerald-500/25 transition-colors"
+              >
+                Hogyan működik?
+              </button>
               {!user && (
                 <div className="flex gap-2 pt-6 mt-6 border-t border-white/10">
                   <PiacButton variant="primary" size="md" className="flex-1" onClick={() => { navigate('/register'); setMobileOpen(false); }}>
@@ -287,7 +306,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <main
-        className={`relative z-10 ${isHome ? 'world-home-main pb-0' : 'py-0 pb-40 md:pb-10'} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
+        className={`relative z-10 ${isHome ? 'world-home-main pb-0' : 'py-0 pb-40 md:pb-10'} ${!isHome ? 'piac-page-shell world-page-shell' : ''} ${isImmersiveHome ? 'immersive-home-main' : ''}`}
         data-zone={activeZone?.id}
       >
         <div className={!isHome ? 'piac-page-content' : ''}>
@@ -295,9 +314,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <div className={isHome ? 'home-footer-wrap' : undefined}>
-        <Footer />
-      </div>
+      {!(isHome && isImmersiveHome) && (
+        <div className={isHome ? 'home-footer-wrap' : undefined}>
+          <Footer />
+        </div>
+      )}
 
       {!hideChrome && !isHome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
 

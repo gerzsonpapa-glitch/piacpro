@@ -26,12 +26,15 @@ const ROUTE_PATTERNS = [
   '/profile/:id',
   '/chat/:id',
   '/job/:id',
+  '/jobs/seeker/:seekerId',
   '/jobs/:id',
   '/shops/:slug',
   '/producers/:id',
+  '/donations/edit/:id',
   '/donations/:id',
   '/offers/:id',
   '/helyi-vallalkozasok/:id',
+  '/forum/:slug',
 ];
 
 export function useRouterProvider(): RouterContextType {

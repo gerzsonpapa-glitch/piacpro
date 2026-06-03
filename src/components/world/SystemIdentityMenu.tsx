@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  User, MessageCircle, Shield, LogOut, PlusCircle, ChevronDown, Home,
+  User, MessageCircle, Shield, LogOut, PlusCircle, ChevronDown, Home, HelpCircle,
 } from 'lucide-react';
 import { useRouter } from '../../lib/router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -62,6 +62,7 @@ export default function SystemIdentityMenu({
                 { icon: User, label: 'Profilom', action: () => navigate(profilePath) },
                 { icon: MessageCircle, label: 'Üzenetek', action: () => navigate('/messages'), badge: unreadCount },
                 { icon: PlusCircle, label: 'Hirdetés feladása', action: () => navigate('/create') },
+                { icon: HelpCircle, label: 'Hogyan működik?', action: () => navigate('/hogyan-mukodik') },
                 { icon: Shield, label: 'Védelem', action: () => navigate('/vedelem') },
                 ...(isAdmin ? [{ icon: Shield, label: 'Admin vezérlő', action: () => navigate('/admin'), badge: pendingApps }] : []),
               ].map((item) => (

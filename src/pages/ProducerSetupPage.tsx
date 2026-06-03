@@ -127,9 +127,8 @@ export default function ProducerSetupPage() {
   async function deleteProducer() {
     if (!producerId) return;
     if (!confirm('Biztosan törlöd a termelői profilodat? Ez visszavonhatatlan, és az összes terméked törlődik.')) return;
-    const { error } = await supabase.rpc('admin_delete_producer', { p_producer_id: producerId });
+    const { error } = await supabase.rpc('delete_own_producer', { p_producer_id: producerId });
     if (error) { showToast('error', 'Hiba', error.message); return; }
-    await supabase.from('profiles').update({ is_producer_approved: false }).eq('id', user!.id);
     await refreshProfile();
     showToast('success', 'Termelői profil törölve');
     navigate('/producers');
@@ -186,8 +185,8 @@ export default function ProducerSetupPage() {
             <p className="text-sm font-medium text-zinc-200">Aktív termelői profilod van</p>
             <p className="text-xs text-zinc-500">Szerkesztheted az adatokat lentebb, vagy megnyithatod a profiloldalad.</p>
           </div>
-          <button onClick={() => navigate(`/producers/${producerId}`)} className="ml-auto text-xs px-3 py-1.5 glass-bubble text-zinc-400 hover:text-zinc-200 rounded-xl transition-colors flex-shrink-0">
-            Profil
+          <button type="button" onClick={() => navigate(`/producers/${producerId}`)} className="ml-auto text-xs px-3 py-1.5 glass-bubble text-emerald-300 hover:text-emerald-200 rounded-xl transition-colors flex-shrink-0">
+            Termelő megnyitása
           </button>
         </div>
       )}

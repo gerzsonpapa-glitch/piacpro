@@ -11,6 +11,7 @@ import {
   Image as ImageIcon, Gift, Sparkles, Lock, Clock
 } from 'lucide-react';
 import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
+import { markChecklistItem } from '../lib/userOnboarding';
 
 const DELIVERY_OPTIONS = [
   {
@@ -197,6 +198,7 @@ export default function CreateListingPage() {
     if (error) {
       showToast('error', 'Hiba történt', 'A hirdetés létrehozása sikertelen. Kérjük, próbáld újra.');
     } else if (data) {
+      markChecklistItem('createdListing');
       navigate(`/listing/${data.id}`);
     }
     setLoading(false);

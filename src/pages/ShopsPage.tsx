@@ -24,10 +24,8 @@ function ShopCard({ shop }: { shop: Shop }) {
   const { navigate } = useRouter();
 
   return (
-    <button
-      onClick={() => navigate(`/shops/${shop.slug}`)}
-      className="group text-left w-full glass-bubble rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] border border-transparent hover:border-emerald-500/20"
-    >
+    <div className="group text-left w-full glass-bubble rounded-3xl overflow-hidden transition-all duration-300 border border-transparent hover:border-emerald-500/20 flex flex-col">
+      <button type="button" onClick={() => navigate(`/shops/${shop.slug}`)} className="text-left w-full">
       {/* Image / Banner — same ratio as ListingCard */}
       <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
         {shop.banner_url ? (
@@ -82,7 +80,17 @@ function ShopCard({ shop }: { shop: Shop }) {
           <span className="flex-shrink-0">{formatRelativeTime(shop.created_at)}</span>
         </div>
       </div>
-    </button>
+      </button>
+      <div className="px-4 pb-4">
+        <button
+          type="button"
+          onClick={() => navigate(`/shops/${shop.slug}`)}
+          className="w-full py-2 rounded-xl glass-bubble text-zinc-300 text-xs font-medium hover:text-emerald-400 transition-colors flex items-center justify-center gap-1.5"
+        >
+          <Store className="w-3.5 h-3.5" /> Bolt megnyitása
+        </button>
+      </div>
+    </div>
   );
 }
 

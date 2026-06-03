@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import {
   Code2, ChevronDown, ChevronUp, ExternalLink, Eye, EyeOff, MousePointer2, Save, X, Map, LayoutGrid,
+  List, MapPin,
 } from 'lucide-react';
 import { useRouter } from '../lib/router';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import DevPageStudioDrawer from './dev/DevPageStudioDrawer';
+import type { HomeMenuStyleId, SiteCustomizationConfig } from '../lib/siteCustomization';
+import { applySiteTheme, saveConfigToLocalStorage, HOME_VARIANTS, normalizeHomeVariant, homeVariantSupportsMenuStyle } from '../lib/siteCustomization';
 
 const COLLAPSE_KEY = 'piac_dev_panel_collapsed';
 const HINT_KEY = 'piac_dev_hint_hidden';
 
 export default function DeveloperModeBar() {
   const { navigate, path } = useRouter();
-  const { canEdit, devModeActive, setDevModeActive } = useSiteCustomization();
+  const { canEdit, devModeActive, setDevModeActive, config, setDevPreviewConfig, saveConfig } = useSiteCustomization();
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
   });
@@ -32,6 +35,19 @@ export default function DeveloperModeBar() {
 
   const onAdmin = path.startsWith('/admin');
   const isHome = path === '/';
+  const homeVariant = normalizeHomeVariant(config.home?.variant);
+  const homeMenu: HomeMenuStyleId = config.home?.menuStyle === 'floating' ? 'floating' : 'rail';
+
+  function patchHome(patch: Partial<SiteCustomizationConfig['home']>) {
+    const next: SiteCustomizationConfig = {
+      ...config,
+      home: { ...config.home, ...patch },
+    };
+    setDevPreviewConfig(next);
+    applySiteTheme(next);
+    saveConfigToLocalStorage(next);
+    void saveConfig(next);
+  }
 
   const topOffset = 'top-[52px]';
 
@@ -62,7 +78,9 @@ export default function DeveloperModeBar() {
             <MousePointer2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             <span className="flex-1">
               {isHome
-                ? 'Lila keret = kattintható elem · sárga fogantyú = zóna húzás · alsó sáv = térkép eszközök'
+                ? homeVariant === 'city'
+                  ? 'Lila keret = kattintható elem · sárga fogantyú = zóna húzás · kattintás = 10 pin/kártya stílus Pro'
+                  : 'Főoldal skin: legördülőből váltasz · épületre kattintva lépsz be a zónába'
                 : 'Kattints a lila keretes elemre · jobb felső panel nyílik szerkesztéshez'}
             </span>
             <button type="button" onClick={() => setHintHidden(true)} className="p-0.5 hover:opacity-70" aria-label="Hint elrejtése">
@@ -94,7 +112,59 @@ export default function DeveloperModeBar() {
           </button>
 
           {devModeActive && isHome && (
-            <span className="hidden md:inline text-[10px] text-zinc-500 px-1">|</span>
+            <>
+              <span className="hidden md:inline text-[10px] text-zinc-500 px-1">|</span>
+              <label className="flex items-center gap-1.5 rounded-xl border border-violet-500/25 bg-violet-500/10 px-2 py-1">
+                <span className="text-[10px] text-violet-200/80 hidden sm:inline">Skin</span>
+                <select
+                  value={homeVariant}
+                  onChange={(e) => patchHome({ variant: normalizeHomeVariant(e.target.value) })}
+                  className="bg-transparent text-[10px] sm:text-[11px] font-semibold text-violet-100 border-none outline-none cursor-pointer max-w-[9rem] sm:max-w-[11rem]"
+                  aria-label="Főoldal skin választása"
+                >
+                  {HOME_VARIANTS.map((v) => (
+                    <option key={v.id} value={v.id} className="bg-[#07111f] text-zinc-100">
+                      {v.short}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {homeVariantSupportsMenuStyle(homeVariant) && (
+                <div className="flex items-center gap-1 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => patchHome({ menuStyle: 'rail' })}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold transition-colors ${
+                      homeMenu === 'rail' ? 'bg-cyan-500/30 text-cyan-100' : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    Lista
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => patchHome({ menuStyle: 'floating' })}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold transition-colors ${
+                      homeMenu === 'floating' ? 'bg-cyan-500/30 text-cyan-100' : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    Kihelyezett
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {devModeActive && isHome && homeVariant === 'city' && (
+            <button
+              type="button"
+              onClick={() => document.querySelector('[data-dev-map-tool]')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] sm:text-[11px] text-amber-200 border border-amber-500/30 bg-amber-500/10"
+            >
+              <Map className="w-3.5 h-3.5" />
+              Térkép
+            </button>
           )}
 
           {devModeActive && (
@@ -116,17 +186,6 @@ export default function DeveloperModeBar() {
             >
               <Save className="w-3.5 h-3.5" />
               <span className="hidden xs:inline">Szerkesztő</span>
-            </button>
-          )}
-
-          {devModeActive && isHome && (
-            <button
-              type="button"
-              onClick={() => document.querySelector('[data-dev-map-tool]')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] sm:text-[11px] text-amber-200 border border-amber-500/30 bg-amber-500/10"
-            >
-              <Map className="w-3.5 h-3.5" />
-              Térkép
             </button>
           )}
 

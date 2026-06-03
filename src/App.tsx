@@ -5,6 +5,7 @@ import { SiteCustomizationProvider } from './contexts/SiteCustomizationContext';
 import { RouterContext, useRouterProvider, useRouter } from './lib/router';
 import Layout from './components/Layout';
 import ChatWidget from './components/ChatWidget';
+import { LiveWorldStatsProvider } from './contexts/LiveWorldStatsContext';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -40,6 +41,11 @@ const CreateOfferPage = lazy(() => import('./pages/CreateOfferPage'));
 const OfferDetailPage = lazy(() => import('./pages/OfferDetailPage'));
 const ForumPage = lazy(() => import('./pages/ForumPage'));
 const VedelemPage = lazy(() => import('./pages/VedelemPage'));
+const BusinessHubPage = lazy(() => import('./pages/BusinessHubPage'));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const PiacAIChatPage = lazy(() => import('./pages/PiacAIChatPage'));
 
 function PiacAIRedirect() {
   const { navigate } = useRouter();
@@ -47,6 +53,18 @@ function PiacAIRedirect() {
     navigate('/create?mode=ai');
   }, [navigate]);
   return <PageLoader />;
+}
+
+function PiacAIRoute() {
+  const { search } = useRouter();
+  if (search.includes('mode=ai') || search.includes('redirect=create')) {
+    return <PiacAIRedirect />;
+  }
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <PiacAIChatPage />
+    </Suspense>
+  );
 }
 
 function PageLoader() {
@@ -63,6 +81,23 @@ function PageLoader() {
   );
 }
 
+function JobDetailRedirect() {
+  const { navigate, params } = useRouter();
+  useEffect(() => {
+    if (params.id) navigate(`/jobs/${params.id}`);
+    else navigate('/jobs');
+  }, [navigate, params.id]);
+  return <PageLoader />;
+}
+
+function JobCreateRedirect() {
+  const { navigate } = useRouter();
+  useEffect(() => {
+    navigate('/jobs?create=1');
+  }, [navigate]);
+  return <PageLoader />;
+}
+
 function App() {
   const router = useRouterProvider();
 
@@ -73,6 +108,10 @@ function App() {
     if (path === '/') page = <HomePage />;
     else if (path === '/login') page = <LoginPage />;
     else if (path === '/register') page = <RegisterPage />;
+    else if (path === '/reset-password') page = <ResetPasswordPage />;
+    else if (path === '/onboarding') page = <OnboardingPage />;
+    else if (path === '/hogyan-mukodik') page = <HowItWorksPage />;
+    else if (path === '/uzleti') page = <BusinessHubPage />;
     else if (path === '/create') page = <CreateListingPage />;
     else if (path === '/create-auction') page = <CreateAuctionPage />;
     else if (path === '/auctions') page = <AuctionsPage />;
@@ -88,6 +127,9 @@ function App() {
     else if (path.startsWith('/chat/')) page = <MessagesPage />;
     else if (path === '/admin') page = <AdminPage />;
     else if (path === '/rules') page = <RulesPage />;
+    else if (path.startsWith('/jobs/seeker/')) page = <JobsPage />;
+    else if (path.startsWith('/job/')) page = <JobDetailRedirect />;
+    else if (path === '/create-job') page = <JobCreateRedirect />;
     else if (path.startsWith('/jobs/')) page = <JobsPage />;
     else if (path === '/jobs') page = <JobsPage />;
     else if (path === '/shops') page = <ShopsPage />;
@@ -111,7 +153,8 @@ function App() {
     else if (path === '/forum/hibak') page = <ForumPage />;
     else if (path.startsWith('/forum/')) page = <ForumPage />;
     else if (path === '/vedelem') page = <VedelemPage />;
-    else if (path === '/piac-ai') page = <PiacAIRedirect />;
+    else if (path === '/piac-ai') page = <PiacAIRoute />;
+    else if (path === '/ai-assistant') page = <PiacAIRedirect />;
     else {
       page = (
         <div className="text-center py-20">
@@ -128,8 +171,10 @@ function App() {
       <AuthProvider>
         <SiteCustomizationProvider>
           <NotificationProvider>
+            <LiveWorldStatsProvider>
             <Layout>{renderPage()}</Layout>
             <ChatWidget />
+            </LiveWorldStatsProvider>
           </NotificationProvider>
         </SiteCustomizationProvider>
       </AuthProvider>

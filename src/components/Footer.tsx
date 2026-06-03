@@ -198,6 +198,14 @@ const GUIDE_SECTIONS = [
     title: 'Hogyan ajánlhatok fel valamit ingyen?',
     content: 'Az "Adományok" oldalon kattints a "+ Felajánlok valamit" gombra. Válaszd ki, hogy tárgyat vagy szolgáltatást ajánlasz. Add meg a leírást, helyszínt, feltöltj képet (opcionális). A felajánlást bárki igényelheti, te pedig a saját felajánlásod oldalán kezelheted: teljesítettnek jelölheted, törölheted vagy visszaállíthatod aktívra.',
   },
+  {
+    title: 'Mi a Védelem modul és mire jó?',
+    content: 'A Védelem a piactértől független pénzügyi tanácsadási modul. A főoldali torony pinre vagy a /vedelem oldalra kattintva éred el. Segít nyugdíj-, biztosítási, hitel-, gyermekjövő- és vállalkozói kérdésekben Ákom László Zsolt OVB tanácsadón keresztül. Nem helyettesíti a hirdetés-vásárlást — külön szolgáltatás, ingyenes első kapcsolatfelvétellel.',
+  },
+  {
+    title: 'Hogyan használjam a Védelem modult?',
+    content: '1. Nyisd meg a Védelem oldalt (főoldali pin vagy menü). 2. Válaszd ki élethelyzeted (pl. „Lakást vennék”) VAGY kattints egy kategóriára (nyugdíj, KGFB, életbiztosítás stb.). 3. A „Tovább” gomb az OVB tanácsadó oldalára visz. 4. Kérdésedet az oldal alján lévő űrlapon is elküldheted — telefonon vagy e-mailben válaszol a tanácsadó. Nincs kötelezettség, nincs nyomás.',
+  },
 ];
 
 function GuideAccordion({ title, content }: { title: string; content: string }) {
@@ -406,6 +414,12 @@ export default function Footer() {
                 <button onClick={() => navigate('/rules')}
                   className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-sm transition-colors">
                   <Shield className="w-3.5 h-3.5" aria-hidden="true" />Adatvédelem
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate('/hogyan-mukodik')}
+                  className="flex items-center gap-1.5 text-zinc-400 hover:text-emerald-400 text-sm transition-colors">
+                  <ScrollText className="w-3.5 h-3.5" aria-hidden="true" />Hogyan működik?
                 </button>
               </li>
               <li>

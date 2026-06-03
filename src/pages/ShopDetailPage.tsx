@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,7 +7,13 @@ import type { Shop, ShopProduct, ShopPromotion } from '../lib/types';
 import { formatPrice } from '../lib/utils';
 import { useSEO } from '../lib/seo';
 import { openConversationWithMessage } from '../lib/conversations';
-import { Store, Search, MapPin, ShieldCheck, Mail, Phone, Globe, Tag, Package, Percent, Clock, ArrowLeft, ExternalLink, Star, Sparkles, Settings, X, ChevronLeft, ChevronRight, Save, Trash2, MessageCircle, Percent as PercentIcon } from 'lucide-react';
+import FlowInfoBar from '../components/navigation/FlowInfoBar';
+import Breadcrumb from '../components/navigation/Breadcrumb';
+import {
+  Store, Search, MapPin, ShieldCheck, Mail, Phone, Globe, Tag, Package, Percent, Clock,
+  ArrowLeft, ExternalLink, Star, Sparkles, Settings, X, ChevronLeft, ChevronRight, Save, Trash2,
+  MessageCircle, Percent as PercentIcon, Plus, Minus, Send, ShoppingCart,
+} from 'lucide-react';
 
 const CAT_LABELS: Record<string, string> = {
   electronics: 'Elektronika', fashion: 'Ruha / Divat', food: 'Élelmiszer',
@@ -16,17 +22,152 @@ const CAT_LABELS: Record<string, string> = {
   beauty: 'Szépség / Egészség', services: 'Szolgáltatás', other: 'Egyéb',
 };
 
+interface ShopCartItem {
+  product: ShopProduct;
+  quantity: number;
+}
+
+interface StoredShopCartItem {
+  productId: string;
+  quantity: number;
+}
+
+function shopCartStorageKey(shopId: string) {
+  return `piacpro_shop_cart_${shopId}`;
+}
+
+function loadStoredShopCart(shopId: string): StoredShopCartItem[] {
+  try {
+    const raw = localStorage.getItem(shopCartStorageKey(shopId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredShopCart(shopId: string, items: StoredShopCartItem[]) {
+  if (items.length === 0) {
+    localStorage.removeItem(shopCartStorageKey(shopId));
+    return;
+  }
+  localStorage.setItem(shopCartStorageKey(shopId), JSON.stringify(items));
+}
+
+function maxShopOrderQty(product: ShopProduct, currentQty: number) {
+  if (product.stock == null) return Infinity;
+  return Math.max(0, product.stock - currentQty);
+}
+
+function ShopOrderModal({
+  cart,
+  shop,
+  onClose,
+  onSent,
+}: {
+  cart: ShopCartItem[];
+  shop: Shop;
+  onClose: () => void;
+  onSent: (convId: string) => void;
+}) {
+  const { user } = useAuth();
+  const { showToast } = useNotification();
+  const [note, setNote] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+
+  async function send() {
+    if (!user) return;
+    setSending(true);
+
+    const lines = cart.map((item) =>
+      `• ${item.product.name}: ${item.quantity} db — ${formatPrice(item.product.price * item.quantity)}`,
+    );
+    const noteText = note.trim() ? `\n\nMegjegyzés: ${note.trim()}` : '';
+    const msgText = `Szia! Szeretnék rendelni:\n\n${lines.join('\n')}\n\nBecsült összeg: ${formatPrice(total)}${noteText}`;
+
+    const { conversationId, error } = await openConversationWithMessage({
+      buyerId: user.id,
+      sellerId: shop.owner_id,
+      context: { kind: 'shop', shopId: shop.id },
+      message: msgText,
+    });
+
+    setSending(false);
+    if (error || !conversationId) {
+      showToast('error', 'Hiba', error ?? 'Nem sikerült elküldeni a megrendelést');
+      return;
+    }
+    showToast('success', 'Megrendelés elküldve!', 'A bolt hamarosan válaszol.');
+    onSent(conversationId);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="relative w-full sm:max-w-md glass rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 glass-bubble rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-100">
+          <X className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-3">
+          <ShoppingCart className="w-5 h-5 text-emerald-400" />
+          <h3 className="font-bold text-zinc-100 text-lg">Megrendelés</h3>
+        </div>
+        <p className="text-xs text-zinc-500">Elküldöd a(z) {shop.name} boltnak:</p>
+        <div className="space-y-2">
+          {cart.map(({ product, quantity }) => (
+            <div key={product.id} className="flex items-center justify-between gap-3 py-2 border-b border-white/5">
+              <div className="min-w-0">
+                <p className="text-sm text-zinc-200 truncate">{product.name}</p>
+                <p className="text-[10px] text-zinc-500">{formatPrice(product.price)} / db</p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-sm font-semibold text-emerald-300">{quantity} db</p>
+                <p className="text-xs text-zinc-500">{formatPrice(product.price * quantity)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-sm text-zinc-400">Becsült összeg</span>
+          <span className="font-bold text-emerald-300">{formatPrice(total)}</span>
+        </div>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Megjegyzés (átvétel, szállítás, egyéb kérés...)"
+          rows={3}
+          className="w-full px-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none resize-none"
+        />
+        <button
+          onClick={send}
+          disabled={sending}
+          className="w-full py-3 glass-pill-active text-emerald-300 rounded-xl font-medium text-sm hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <Send className="w-4 h-4" />
+          {sending ? 'Küldés...' : 'Megrendelés elküldése'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Product Detail Modal ──────────────────────────────────────────────────────
 function ProductModal({
   product,
   isOwner,
   shopOwnerId,
+  cartQty,
+  onAddToCart,
   onClose,
   onUpdated,
 }: {
   product: ShopProduct;
   isOwner: boolean;
   shopOwnerId: string;
+  cartQty: number;
+  onAddToCart: () => void;
   onClose: () => void;
   onUpdated: (p: ShopProduct) => void;
 }) {
@@ -38,7 +179,6 @@ function ProductModal({
   const [newPrice, setNewPrice] = useState(String(product.price));
   const [newCompare, setNewCompare] = useState(product.compare_at_price != null ? String(product.compare_at_price) : '');
   const [saving, setSaving] = useState(false);
-  const [msgLoading, setMsgLoading] = useState(false);
 
   const images = product.images ?? [];
   const hasDiscount = product.compare_at_price != null && product.compare_at_price > product.price;
@@ -76,43 +216,6 @@ function ProductModal({
     }
   }
 
-  async function startChat() {
-    if (!user) { navigate('/login'); return; }
-    if (user.id === shopOwnerId) return;
-    setMsgLoading(true);
-
-    const prefilled = `Szia! Érdeklődöm a(z) "${product.name}" termék iránt${product.price ? ` (${formatPrice(product.price)})` : ''}. Megvan még?`;
-
-    const { data: existing } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('buyer_id', user.id)
-      .eq('seller_id', shopOwnerId)
-      .eq('shop_product_id', product.id)
-      .maybeSingle();
-
-    if (existing?.id) {
-      navigate(`/chat/${existing.id}`);
-      setMsgLoading(false);
-      onClose();
-      return;
-    }
-
-    const { conversationId, error } = await openConversationWithMessage({
-      buyerId: user.id,
-      sellerId: shopOwnerId,
-      context: { kind: 'shop_product', shopProductId: product.id },
-      message: prefilled,
-    });
-
-    setMsgLoading(false);
-    if (error || !conversationId) {
-      showToast('error', 'Hiba', error ?? 'A beszélgetés megnyitása sikertelen.');
-      return;
-    }
-    navigate(`/chat/${conversationId}`);
-    onClose();
-  }
 
   return (
     <div
@@ -281,23 +384,25 @@ function ProductModal({
           )}
 
           {/* Message button — only for non-owner logged-in users */}
-          {!isOwner && user?.id !== shopOwnerId && (
+          <FlowInfoBar variant="shop" />
+          {!isOwner && user?.id !== shopOwnerId && product.stock !== 0 && (
             <button
-              onClick={startChat}
-              disabled={msgLoading || product.stock === 0}
-              className="w-full flex items-center justify-center gap-2 py-3 glass-pill-active text-emerald-300 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              onClick={() => { onAddToCart(); onClose(); }}
+              className="w-full flex items-center justify-center gap-2 py-3 glass-pill-active text-emerald-300 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.01]"
             >
-              <MessageCircle className="w-4 h-4" />
-              {msgLoading ? 'Megnyitás...' : 'Üzenet az eladónak'}
+              <Plus className="w-4 h-4" />
+              {cartQty > 0 ? `Kosárban: ${cartQty} db — még egy?` : 'Kosárba teszem'}
             </button>
           )}
-          {!user && (
+          {!user && product.stock !== 0 && (
             <button
+              type="button"
               onClick={() => { navigate('/login'); onClose(); }}
               className="w-full flex items-center justify-center gap-2 py-3 glass-pill text-zinc-400 hover:text-emerald-300 rounded-2xl font-semibold text-sm transition-all"
             >
-              <MessageCircle className="w-4 h-4" />
-              Bejelentkezés az üzenetküldéshez
+              <ShoppingCart className="w-4 h-4" />
+              Bejelentkezés a rendeléshez
             </button>
           )}
         </div>
@@ -307,68 +412,89 @@ function ProductModal({
 }
 
 // ── Product Card ──────────────────────────────────────────────────────────────
-function ProductCard({ product, onClick }: { product: ShopProduct; onClick: () => void }) {
+function ProductCard({
+  product,
+  cartQty,
+  isOwner,
+  onOpen,
+  onAddToCart,
+  onChangeQty,
+}: {
+  product: ShopProduct;
+  cartQty: number;
+  isOwner: boolean;
+  onOpen: () => void;
+  onAddToCart: () => void;
+  onChangeQty: (delta: number) => void;
+}) {
   const hasDiscount = product.compare_at_price != null && product.compare_at_price > product.price;
   const discountPct = hasDiscount
     ? Math.round(((product.compare_at_price! - product.price) / product.compare_at_price!) * 100)
     : 0;
+  const inCart = cartQty > 0;
+  const outOfStock = product.stock === 0;
 
   return (
-    <button
-      onClick={onClick}
-      className="group text-left w-full glass-bubble rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] border border-transparent hover:border-emerald-500/15"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
-        {product.images?.[0] ? (
-          <img
-            src={product.images[0]}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package className="w-10 h-10 text-zinc-700" />
-          </div>
-        )}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-        {hasDiscount && (
-          <span className="absolute top-2.5 left-2.5 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-lg">
-            -{discountPct}%
-          </span>
-        )}
-        {product.is_featured && (
-          <span className="absolute top-2.5 right-2.5 flex items-center gap-1 glass-strong text-amber-300 text-[10px] font-semibold px-2 py-1 rounded-lg">
-            <Star className="w-2.5 h-2.5" />Kiemelt
-          </span>
-        )}
-        {product.stock === 0 && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <span className="glass-strong text-zinc-400 text-sm font-medium px-4 py-2 rounded-xl">Elfogyott</span>
-          </div>
-        )}
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-zinc-100 truncate group-hover:text-emerald-300 transition-colors">
-          {product.name}
-        </h3>
-        {product.category_tag && (
-          <p className="text-[10px] text-zinc-600 mt-0.5 flex items-center gap-1">
-            <Tag className="w-2.5 h-2.5" />{product.category_tag}
-          </p>
-        )}
-        <div className="flex items-baseline gap-2 mt-1.5">
-          <span className={`font-bold text-lg ${product.stock === 0 ? 'text-zinc-500' : 'text-emerald-400'}`}>
-            {formatPrice(product.price)}
-          </span>
+    <div className={`glass-bubble rounded-3xl overflow-hidden transition-all duration-300 border border-transparent hover:border-emerald-500/15 flex flex-col ${inCart ? 'ring-1 ring-emerald-500/40' : ''}`}>
+      <button type="button" onClick={onOpen} className="text-left w-full group">
+        <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
+          {product.images?.[0] ? (
+            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center"><Package className="w-10 h-10 text-zinc-700" /></div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
           {hasDiscount && (
-            <span className="text-zinc-600 text-xs line-through">{formatPrice(product.compare_at_price!)}</span>
+            <span className="absolute top-2.5 left-2.5 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-lg">-{discountPct}%</span>
+          )}
+          {product.is_featured && (
+            <span className="absolute top-2.5 right-2.5 flex items-center gap-1 glass-strong text-amber-300 text-[10px] font-semibold px-2 py-1 rounded-lg">
+              <Star className="w-2.5 h-2.5" />Kiemelt
+            </span>
+          )}
+          {outOfStock && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <span className="glass-strong text-zinc-400 text-sm font-medium px-4 py-2 rounded-xl">Elfogyott</span>
+            </div>
           )}
         </div>
-        {product.stock !== null && product.stock > 0 && product.stock <= 5 && (
-          <p className="text-[10px] text-amber-400 mt-1">Csak {product.stock} db maradt</p>
-        )}
-      </div>
-    </button>
+        <div className="p-4">
+          <h3 className="font-semibold text-zinc-100 truncate group-hover:text-emerald-300 transition-colors">{product.name}</h3>
+          {product.category_tag && (
+            <p className="text-[10px] text-zinc-600 mt-0.5 flex items-center gap-1"><Tag className="w-2.5 h-2.5" />{product.category_tag}</p>
+          )}
+          <div className="flex items-baseline gap-2 mt-1.5">
+            <span className={`font-bold text-lg ${outOfStock ? 'text-zinc-500' : 'text-emerald-400'}`}>{formatPrice(product.price)}</span>
+            {hasDiscount && <span className="text-zinc-600 text-xs line-through">{formatPrice(product.compare_at_price!)}</span>}
+          </div>
+          {product.stock !== null && product.stock > 0 && product.stock <= 5 && (
+            <p className="text-[10px] text-amber-400 mt-1">Csak {product.stock} db maradt</p>
+          )}
+        </div>
+      </button>
+      {!isOwner && !outOfStock && (
+        <div className="px-4 pb-4 mt-auto">
+          {!inCart ? (
+            <button type="button" onClick={onAddToCart} className="w-full py-2 rounded-xl glass text-zinc-300 hover:text-emerald-300 hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 text-xs font-medium transition-all flex items-center justify-center gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Kosárba
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => onChangeQty(-1)} className="w-8 h-8 rounded-xl glass flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors flex-shrink-0">
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+              <div className="flex-1 text-center">
+                <span className="font-bold text-emerald-300 text-sm">{cartQty}</span>
+                <span className="text-zinc-500 text-xs ml-1">db</span>
+              </div>
+              <button type="button" onClick={() => onChangeQty(1)} className="w-8 h-8 rounded-xl glass flex items-center justify-center text-zinc-400 hover:text-emerald-400 transition-colors flex-shrink-0">
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -376,6 +502,7 @@ function ProductCard({ product, onClick }: { product: ShopProduct; onClick: () =
 export default function ShopDetailPage() {
   const { params, navigate } = useRouter();
   const { user, profile } = useAuth();
+  const { showToast } = useNotification();
   const slug = params.slug as string;
 
   const [shop, setShop] = useState<Shop | null>(null);
@@ -394,15 +521,74 @@ export default function ShopDetailPage() {
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<ShopProduct | null>(null);
+  const [cart, setCart] = useState<ShopCartItem[]>([]);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const cartHydratedRef = useRef(false);
+
+  const isOwner = user?.id === shop?.owner_id || profile?.is_admin;
+
+  function getCartQty(productId: string) {
+    return cart.find((c) => c.product.id === productId)?.quantity ?? 0;
+  }
+
+  function addToCart(product: ShopProduct) {
+    if (product.stock === 0) {
+      showToast('error', 'Elfogyott', 'Ez a termék jelenleg nincs készleten.');
+      return;
+    }
+    setCart((prev) => {
+      const exists = prev.find((c) => c.product.id === product.id);
+      const currentQty = exists?.quantity ?? 0;
+      if (maxShopOrderQty(product, currentQty) <= 0) {
+        showToast('error', 'Készlet limit', product.stock != null ? `Maximum ${product.stock} db rendelhető.` : 'Nincs több készlet.');
+        return prev;
+      }
+      if (exists) {
+        return prev.map((c) => c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+  }
+
+  function changeQty(productId: string, delta: number) {
+    setCart((prev) => {
+      const item = prev.find((c) => c.product.id === productId);
+      if (!item) return prev;
+      if (delta > 0 && maxShopOrderQty(item.product, item.quantity) <= 0) {
+        showToast('error', 'Készlet limit', item.product.stock != null ? `Maximum ${item.product.stock} db rendelhető.` : 'Nincs több készlet.');
+        return prev;
+      }
+      const updated = prev.map((c) => c.product.id === productId ? { ...c, quantity: Math.max(0, c.quantity + delta) } : c);
+      return updated.filter((c) => c.quantity > 0);
+    });
+  }
+
+  const cartCount = cart.reduce((s, c) => s + c.quantity, 0);
+
+  useEffect(() => {
+    if (!shop?.id || isOwner) return;
+    const stored = loadStoredShopCart(shop.id);
+    const hydrated: ShopCartItem[] = [];
+    for (const row of stored) {
+      const product = products.find((p) => p.id === row.productId);
+      if (product && row.quantity > 0) hydrated.push({ product, quantity: row.quantity });
+    }
+    setCart(hydrated);
+    cartHydratedRef.current = true;
+  }, [shop?.id, isOwner, products]);
+
+  useEffect(() => {
+    if (!shop?.id || isOwner || !cartHydratedRef.current) return;
+    saveStoredShopCart(shop.id, cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })));
+  }, [cart, shop?.id, isOwner]);
 
   useEffect(() => { if (slug) loadShop(); }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadShop() {
-    const { data: shopData } = await supabase
-      .from('shops')
-      .select('*')
-      .eq('slug', slug)
-      .maybeSingle();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+    let shopQuery = supabase.from('shops').select('*');
+    shopQuery = isUuid ? shopQuery.eq('id', slug) : shopQuery.eq('slug', slug);
+    const { data: shopData } = await shopQuery.maybeSingle();
 
     if (!shopData) { setLoading(false); return; }
     setShop(shopData);
@@ -429,8 +615,6 @@ export default function ShopDetailPage() {
     const matchTag = !selectedTag || p.category_tag === selectedTag;
     return matchSearch && matchTag;
   });
-
-  const isOwner = user?.id === shop?.owner_id || profile?.is_admin;
 
   if (loading) {
     return (
@@ -465,6 +649,11 @@ export default function ShopDetailPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[
+        { label: 'Főoldal', path: '/' },
+        { label: 'Boltok', path: '/shops' },
+        { label: shop.name },
+      ]} />
 
       {/* Product modal */}
       {selectedProduct && shop && (
@@ -472,6 +661,8 @@ export default function ShopDetailPage() {
           product={selectedProduct}
           isOwner={!!isOwner}
           shopOwnerId={shop.owner_id}
+          cartQty={getCartQty(selectedProduct.id)}
+          onAddToCart={() => addToCart(selectedProduct)}
           onClose={() => setSelectedProduct(null)}
           onUpdated={(updated) => {
             setProducts((prev) => prev.map((p) => p.id === updated.id ? updated : p));
@@ -480,14 +671,22 @@ export default function ShopDetailPage() {
         />
       )}
 
-      {/* Back + manage */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate('/shops')}
-          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />Boltok
-        </button>
+      {showOrderModal && shop && (
+        <ShopOrderModal
+          cart={cart}
+          shop={shop}
+          onClose={() => setShowOrderModal(false)}
+          onSent={(convId) => {
+            setShowOrderModal(false);
+            setCart([]);
+            if (shop.id) saveStoredShopCart(shop.id, []);
+            navigate(`/chat/${convId}`);
+          }}
+        />
+      )}
+
+      {/* Manage */}
+      <div className="flex items-center justify-end">
         {isOwner && (
           <button
             onClick={() => navigate('/my-shop')}
@@ -651,10 +850,40 @@ export default function ShopDetailPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} onClick={() => setSelectedProduct(p)} />
-          ))}
+        <>
+          {!isOwner && filtered.length > 0 && <FlowInfoBar variant="shop" />}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-28">
+            {filtered.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                cartQty={getCartQty(p.id)}
+                isOwner={!!isOwner}
+                onOpen={() => setSelectedProduct(p)}
+                onAddToCart={() => addToCart(p)}
+                onChangeQty={(delta) => changeQty(p.id, delta)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {!isOwner && cartCount > 0 && shop && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-sm px-4">
+          <button
+            type="button"
+            onClick={() => {
+              if (!user) { navigate('/login'); return; }
+              setShowOrderModal(true);
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm shadow-2xl shadow-emerald-900/50 transition-all hover:scale-[1.02] flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5" />
+              <span>Megrendelés küldése</span>
+            </div>
+            <span className="bg-white/20 rounded-xl px-2.5 py-0.5 text-sm font-bold">{cartCount} tétel</span>
+          </button>
         </div>
       )}
     </div>

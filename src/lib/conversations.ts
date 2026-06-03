@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 export type ConversationContext =
   | { kind: 'listing'; listingId: string }
   | { kind: 'shop_product'; shopProductId: string }
+  | { kind: 'shop'; shopId: string }
   | { kind: 'producer'; producerId: string }
   | { kind: 'job'; jobId: string }
   | { kind: 'seeker'; seekerAdId: string }
@@ -13,7 +14,9 @@ function contextKey(ctx: ConversationContext): string | null {
     case 'listing':
       return null;
     case 'shop_product':
-      return null;
+      return `shop_product:${ctx.shopProductId}`;
+    case 'shop':
+      return `shop:${ctx.shopId}`;
     case 'producer':
       return `producer:${ctx.producerId}`;
     case 'job':
@@ -22,6 +25,25 @@ function contextKey(ctx: ConversationContext): string | null {
       return `seeker:${ctx.seekerAdId}`;
     case 'general':
       return `general:${ctx.tag}`;
+  }
+}
+
+function contextToRpcParams(context: ConversationContext): {
+  p_listing_id: string | null;
+  p_shop_product_id: string | null;
+  p_context_key: string | null;
+} {
+  switch (context.kind) {
+    case 'listing':
+      return { p_listing_id: context.listingId, p_shop_product_id: null, p_context_key: null };
+    case 'shop_product':
+      return { p_listing_id: null, p_shop_product_id: context.shopProductId, p_context_key: contextKey(context) };
+    case 'shop':
+    case 'producer':
+    case 'job':
+    case 'seeker':
+    case 'general':
+      return { p_listing_id: null, p_shop_product_id: null, p_context_key: contextKey(context) };
   }
 }
 
@@ -63,22 +85,7 @@ export async function findOrCreateConversation(options: {
       .eq('shop_product_id', context.shopProductId)
       .maybeSingle();
     if (existing?.id) return { id: existing.id, error: null };
-
-    const { data, error } = await supabase
-      .from('conversations')
-      .insert({
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        listing_id: null,
-        shop_product_id: context.shopProductId,
-        context_key: key,
-      })
-      .select('id')
-      .single();
-    return { id: data?.id ?? null, error: error?.message ?? null };
-  }
-
-  if (key) {
+  } else if (key) {
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
@@ -94,6 +101,9 @@ export async function findOrCreateConversation(options: {
     seller_id: sellerId,
     listing_id: null,
   };
+  if (context.kind === 'shop_product') {
+    insertPayload.shop_product_id = context.shopProductId;
+  }
   if (key) insertPayload.context_key = key;
 
   const { data, error } = await supabase
@@ -131,26 +141,55 @@ export async function sendConversationMessage(options: {
   return { error: null };
 }
 
-/** Meglévő beszélgetés + első üzenet egy lépésben. */
+/** Meglévő beszélgetés + első üzenet — RPC-vel (megbízható). */
 export async function openConversationWithMessage(options: {
   buyerId: string;
   sellerId: string;
   context: ConversationContext;
   message: string;
 }): Promise<{ conversationId: string | null; error: string | null }> {
-  const { id, error: convError } = await findOrCreateConversation({
-    buyerId: options.buyerId,
-    sellerId: options.sellerId,
-    context: options.context,
-  });
-  if (!id) return { conversationId: null, error: convError ?? 'Beszélgetés létrehozása sikertelen.' };
+  const rpcParams = contextToRpcParams(options.context);
 
-  const { error: msgError } = await sendConversationMessage({
-    conversationId: id,
-    senderId: options.buyerId,
-    content: options.message,
+  const { data, error } = await supabase.rpc('open_conversation_with_message', {
+    p_seller_id: options.sellerId,
+    p_message: options.message,
+    p_listing_id: rpcParams.p_listing_id,
+    p_shop_product_id: rpcParams.p_shop_product_id,
+    p_context_key: rpcParams.p_context_key,
   });
-  if (msgError) return { conversationId: id, error: msgError };
 
-  return { conversationId: id, error: null };
+  if (error) {
+    return { conversationId: null, error: error.message };
+  }
+
+  if (data?.success && data?.conversation_id) {
+    return { conversationId: data.conversation_id as string, error: null };
+  }
+
+  const rpcError = (data?.error as string | undefined) ?? 'Beszélgetés létrehozása sikertelen.';
+
+  // Fallback: régi kliens út, ha az RPC még nincs telepítve
+  if (
+    rpcError.includes('Could not find the function') ||
+    rpcError.includes('schema cache') ||
+    rpcError.includes('open_conversation_with_message')
+  ) {
+    const { id, error: convError } = await findOrCreateConversation({
+      buyerId: options.buyerId,
+      sellerId: options.sellerId,
+      context: options.context,
+    });
+    if (!id) return { conversationId: null, error: convError ?? 'Beszélgetés létrehozása sikertelen.' };
+
+    const { error: msgError } = await sendConversationMessage({
+      conversationId: id,
+      senderId: options.buyerId,
+      content: options.message,
+    });
+    if (msgError) return { conversationId: id, error: msgError };
+
+    return { conversationId: id, error: null };
+  }
+
+  return { conversationId: null, error: rpcError };
 }
