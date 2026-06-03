@@ -3,9 +3,8 @@ import { useRouter } from '../lib/router';
 import { Search, Menu, X, ShoppingBag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import ChatWidget from './ChatWidget';
-import Footer from './Footer';
 import DeveloperModeBar from './DeveloperModeBar';
+import Footer from './Footer';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { isSiteDeveloper } from '../lib/developer';
 import { getPageSkin, getWorldBackgroundUrl, isBuiltinHubBackground } from '../lib/siteCustomization';
@@ -18,12 +17,12 @@ import PiacEditable from './PiacEditable';
 import PiacButton from './ui/PiacButton';
 import WorldPageTransition from './world/WorldPageTransition';
 import WorldAmbientLayer from './world/WorldAmbientLayer';
-import AIWorldGuide from './world/AIWorldGuide';
 import LiveActivityStrip from './world/LiveActivityStrip';
 import WorldZoneHub from './world/WorldZoneHub';
 import SecondaryWorldsSheet from './world/SecondaryWorldsSheet';
 import SystemIdentityMenu from './world/SystemIdentityMenu';
 import WorldMobileDock from './world/WorldMobileDock';
+import HomeHeaderQuickNav from './world/HomeHeaderQuickNav';
 import { getZoneForPath } from '../lib/worldZones';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -82,7 +81,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <ZoneScreenBackdrop asset={zoneAsset} dimmed />
       )}
       <WorldEffects isHome={isHome} />
-      <WorldAmbientLayer zone={activeZone} />
+      {!isHome && <WorldAmbientLayer zone={activeZone} />}
 
       {/* Oldal-specifikus háttér — zóna képernyőnél ne duplikáljuk */}
       {(pageSkin?.bgImage || pageSkin?.bgColor) && !showZoneScreen && (
@@ -102,8 +101,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Ambient glow (ha nincs WorldEffects orb) */}
-      {!config.world.floatingOrbs && (
+      {/* Ambient glow — nem a főoldalon (tiszta városkép) */}
+      {!isHome && !config.world.floatingOrbs && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute -top-20 left-[10%] w-[800px] h-[500px] rounded-full blur-[180px]" style={{ background: 'rgba(0,208,132,0.032)', transform: 'rotate(-15deg)' }} />
           <div className="absolute top-[30%] right-[5%] w-[600px] h-[400px] rounded-full blur-[160px]" style={{ background: 'rgba(59,130,246,0.025)' }} />
@@ -122,7 +121,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           WebkitBackdropFilter: 'blur(48px) saturate(200%) brightness(1.02)',
           boxShadow: '0 4px 40px rgba(0,0,0,0.55), 0 1px 0 rgba(0,208,132,0.06) inset',
         }}>
-        {/* Neon accent line at very top of navbar */}
         {!navTransparent && (
           <div className="absolute top-0 left-0 right-0 h-[1px]"
             style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(0,208,132,0.5) 30%, rgba(0,208,132,0.9) 50%, rgba(0,208,132,0.5) 70%, transparent 100%)' }} />
@@ -150,35 +148,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
-          {/* Kereső — főoldalon nagy, máshol kompakt */}
-          <form onSubmit={handleSearch} className={`flex-1 min-w-0 mx-2 lg:mx-4 ${isHome ? 'max-w-xl hidden lg:block' : 'max-w-md hidden sm:block'}`}>
-            <div className={`relative flex items-center rounded-2xl overflow-hidden transition-all duration-300 piac-nav-search ${isHome ? 'piac-nav-search-hero flex' : 'piac-nav-search-compact'}`}
-              style={{
-                background: isHome ? 'rgba(7,17,31,0.72)' : 'rgba(7,17,31,0.6)',
-                border: `1px solid ${isHome ? 'rgba(0,230,118,0.22)' : 'rgba(255,255,255,0.08)'}`,
-                backdropFilter: 'blur(24px)',
-              }}>
-              <Search className={`absolute text-zinc-500 pointer-events-none ${isHome ? 'left-4 w-4 h-4' : 'left-2.5 w-3.5 h-3.5'}`} />
-              <input
-                type="text"
-                value={searchQ}
-                onChange={e => setSearchQ(e.target.value)}
-                placeholder={isHome ? 'Mit keresel ma?' : config.nav.searchPlaceholder}
-                data-piac-edit="nav.searchPlaceholder"
-                className={`w-full bg-transparent text-zinc-300 placeholder-zinc-600 focus:outline-none min-w-0 ${isHome ? 'pl-11 pr-14 py-3 text-sm' : 'pl-8 pr-3 py-2 text-xs'}`}
-              />
-              {isHome && (
-                <button
-                  type="submit"
-                  className="absolute right-2 w-9 h-9 rounded-xl flex items-center justify-center text-[#07111f] hover:scale-105 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 16px rgba(0,230,118,0.45)' }}
-                  aria-label="Keresés"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </form>
+          {/* Kereső + gyors linkek (főoldal) */}
+          <div className={`flex-1 min-w-0 mx-1 sm:mx-2 lg:mx-3 flex items-center gap-2 ${isHome ? '' : 'max-w-md hidden sm:flex'}`}>
+            <form onSubmit={handleSearch} className={`min-w-0 ${isHome ? 'flex-1 max-w-sm lg:max-w-md' : 'w-full hidden sm:block'}`}>
+              <div className={`relative flex items-center rounded-2xl overflow-hidden transition-all duration-300 piac-nav-search ${isHome ? 'piac-nav-search-hero flex' : 'piac-nav-search-compact'}`}
+                style={{
+                  background: isHome ? 'rgba(7,17,31,0.72)' : 'rgba(7,17,31,0.6)',
+                  border: `1px solid ${isHome ? 'rgba(0,230,118,0.22)' : 'rgba(255,255,255,0.08)'}`,
+                  backdropFilter: 'blur(24px)',
+                }}>
+                <Search className={`absolute text-zinc-500 pointer-events-none ${isHome ? 'left-3 sm:left-4 w-4 h-4' : 'left-2.5 w-3.5 h-3.5'}`} />
+                <input
+                  type="text"
+                  value={searchQ}
+                  onChange={e => setSearchQ(e.target.value)}
+                  placeholder={isHome ? 'Mit keresel ma?' : config.nav.searchPlaceholder}
+                  data-piac-edit="nav.searchPlaceholder"
+                  className={`w-full bg-transparent text-zinc-300 placeholder-zinc-600 focus:outline-none min-w-0 ${isHome ? 'pl-9 sm:pl-11 pr-11 sm:pr-14 py-2 sm:py-3 text-xs sm:text-sm' : 'pl-8 pr-3 py-2 text-xs'}`}
+                />
+                {isHome && (
+                  <button
+                    type="submit"
+                    className="absolute right-1.5 sm:right-2 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-[#07111f] hover:scale-105 transition-transform"
+                    style={{ background: 'linear-gradient(135deg, #00E676, #00C853)', boxShadow: '0 0 16px rgba(0,230,118,0.45)' }}
+                    aria-label="Keresés"
+                  >
+                    <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+                )}
+              </div>
+            </form>
+            {isHome && user && <HomeHeaderQuickNav />}
+          </div>
 
           {/* Rendszer menü */}
           <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
@@ -192,6 +193,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <PiacButton variant="primary" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/login')}>
                   Bejelentkezés
                 </PiacButton>
+                <PiacButton variant="outline" size="sm" className="sm:hidden px-2.5 min-h-[40px]" onClick={() => navigate('/register')} aria-label="Regisztráció">
+                  Reg.
+                </PiacButton>
+                <PiacButton variant="primary" size="sm" className="sm:hidden px-2.5 min-h-[40px]" onClick={() => navigate('/login')} aria-label="Bejelentkezés">
+                  Belépés
+                </PiacButton>
               </>
             )}
 
@@ -204,7 +211,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         </div>
 
-        {/* Mobil kereső — nem a főoldalon (ott a világ közepén van) */}
+        {/* Mobil gyors linkek — főoldal */}
+        {isHome && user && !hideChrome && (
+          <div className="lg:hidden px-3 pb-2">
+            <HomeHeaderQuickNav compact />
+          </div>
+        )}
+
+        {/* Mobil kereső — nem a főoldalon */}
         {!isHome && (
         <div className="md:hidden px-3 pb-2">
           <form onSubmit={handleSearch} className="relative flex items-center rounded-xl"
@@ -240,6 +254,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
+      {showDevStudio && !hideChrome && <DeveloperModeBar />}
+
       <SecondaryWorldsSheet open={secondaryOpen} onClose={() => setSecondaryOpen(false)} />
 
       {!isHome && path !== '/login' && path !== '/register' && <LiveActivityStrip />}
@@ -271,7 +287,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <main
-        className={`relative z-10 ${isHome ? 'world-home-main pb-0' : 'py-0 pb-36 md:pb-10'} ${showDevStudio ? (isHome ? 'pb-36' : 'pb-44 md:pb-32') : ''} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
+        className={`relative z-10 ${isHome ? 'world-home-main pb-0' : 'py-0 pb-40 md:pb-10'} ${!isHome ? 'piac-page-shell world-page-shell' : ''}`}
         data-zone={activeZone?.id}
       >
         <div className={!isHome ? 'piac-page-content' : ''}>
@@ -285,10 +301,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {!hideChrome && !isHome && <WorldMobileDock onOpenSecondary={() => setSecondaryOpen(true)} />}
 
-      <ChatWidget />
-      <DeveloperModeBar />
       <InlineDevEditor />
-      <AIWorldGuide />
     </div>
   );
 }

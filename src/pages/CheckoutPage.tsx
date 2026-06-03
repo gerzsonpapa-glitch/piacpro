@@ -9,6 +9,7 @@ import {
   MessageCircle, Phone, Mail, Handshake
 } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
+import { findOrCreateConversation, sendConversationMessage } from '../lib/conversations';
 import Avatar from '../components/Avatar';
 
 const DELIVERY_OPTIONS = [
@@ -74,22 +75,14 @@ export default function CheckoutPage() {
     if (!listing || !user || !canProceed) return;
     setLoading(true);
 
-    // Find or create conversation
-    const { data: existing } = await supabase
-      .from('conversations').select('id')
-      .eq('listing_id', listing.id).eq('buyer_id', user.id).maybeSingle();
-
-    let cid = existing?.id;
-    if (!cid) {
-      const { data: newConv } = await supabase
-        .from('conversations')
-        .insert({ listing_id: listing.id, buyer_id: user.id, seller_id: listing.seller_id })
-        .select().single();
-      cid = newConv?.id;
-    }
+    const { id: cid, error: convError } = await findOrCreateConversation({
+      buyerId: user.id,
+      sellerId: listing.seller_id,
+      context: { kind: 'listing', listingId: listing.id },
+    });
 
     if (!cid) {
-      showToast('error', 'Hiba történt', 'A kapcsolatfelvétel sikertelen. Kérjük, próbáld újra.');
+      showToast('error', 'Hiba történt', convError ?? 'A kapcsolatfelvétel sikertelen. Kérjük, próbáld újra.');
       setLoading(false);
       return;
     }
@@ -100,22 +93,17 @@ export default function CheckoutPage() {
 
     const fullMessage = `${message}\n\n${deliveryInfo}`;
 
-    const { error: msgError } = await supabase.from('messages').insert({
-      conversation_id: cid,
-      sender_id: user.id,
+    const { error: msgError } = await sendConversationMessage({
+      conversationId: cid,
+      senderId: user.id,
       content: fullMessage,
-      is_read: false,
     });
 
     if (msgError) {
-      showToast('error', 'Hiba történt', 'Az üzenet küldése sikertelen. Kérjük, próbáld újra.');
+      showToast('error', 'Hiba történt', msgError);
       setLoading(false);
       return;
     }
-
-    await supabase.from('conversations').update({
-      last_message_at: new Date().toISOString(),
-    }).eq('id', cid);
 
     setConvId(cid);
     setLoading(false);

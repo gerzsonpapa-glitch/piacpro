@@ -12,7 +12,10 @@ import {
   UserSearch, Send, User, GraduationCap, MessageCircle, Lock, Sparkles, TrendingUp
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
+import { openConversationWithMessage } from '../lib/conversations';
 import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
+
+const DEFAULT_JOB_CATEGORY = 'Egyéb';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -107,6 +110,7 @@ function DeleteModal({ title, onConfirm, onCancel }: { title: string; onConfirm:
 function ContactSeekerModal({ seekerAd, onClose }: { seekerAd: JobSeekerAd; onClose: () => void }) {
   const { user } = useAuth();
   const { showToast } = useNotification();
+  const { navigate } = useRouter();
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -114,47 +118,23 @@ function ContactSeekerModal({ seekerAd, onClose }: { seekerAd: JobSeekerAd; onCl
     if (!user || !message.trim()) return;
     setSending(true);
 
-    // Find or create a conversation — we use a pseudo-listing approach via direct message
-    // Since conversations require a listing_id, we'll use the existing messages infra
-    // by checking if a direct message conversation exists. Here we send via supabase directly.
-    const senderName = 'Munkáltató';
     const fullMsg = `Üzenet állást kereső hirdetésedre ("${seekerAd.title}"):\n\n${message.trim()}`;
 
-    // Create a conversation record with listing_id = null workaround: we'll use a special
-    // system message approach. Instead, open a new conversation linked to seekerAd user.
-    // We reuse the conversations table with a NULL listing_id by casting.
-    const { data: existingConv } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('buyer_id', user.id)
-      .eq('seller_id', seekerAd.user_id)
-      .is('listing_id', null)
-      .maybeSingle();
-
-    let convId: string | null = existingConv?.id ?? null;
-
-    if (!convId) {
-      const { data: newConv } = await supabase
-        .from('conversations')
-        .insert({ buyer_id: user.id, seller_id: seekerAd.user_id, listing_id: null })
-        .select('id')
-        .single();
-      convId = newConv?.id ?? null;
-    }
-
-    if (convId) {
-      await supabase.from('messages').insert({
-        conversation_id: convId,
-        sender_id: user.id,
-        content: fullMsg,
-      });
-      showToast('success', 'Üzenet elküldve', 'Az álláskeresőnek értesítést küldtünk.');
-    } else {
-      showToast('error', 'Hiba', 'Az üzenet küldése sikertelen.');
-    }
+    const { conversationId, error } = await openConversationWithMessage({
+      buyerId: user.id,
+      sellerId: seekerAd.user_id,
+      context: { kind: 'seeker', seekerAdId: seekerAd.id },
+      message: fullMsg,
+    });
 
     setSending(false);
+    if (error || !conversationId) {
+      showToast('error', 'Hiba', error ?? 'Az üzenet küldése sikertelen.');
+      return;
+    }
+    showToast('success', 'Üzenet elküldve', 'Az álláskeresőnek értesítést küldtünk.');
     onClose();
+    navigate(`/chat/${conversationId}`);
   }
 
   return (
@@ -197,6 +177,81 @@ function ContactSeekerModal({ seekerAd, onClose }: { seekerAd: JobSeekerAd; onCl
           </button>
         </div>
         {!user && <p className="text-xs text-zinc-500 text-center">Be kell jelentkezni az üzenet küldéséhez.</p>}
+      </div>
+    </div>
+  );
+}
+
+function ApplyJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
+  const { user } = useAuth();
+  const { showToast } = useNotification();
+  const { navigate } = useRouter();
+  const [message, setMessage] = useState(
+    `Szia! Érdekel a(z) "${job.title}" állásajánlatod (${job.company}). Szeretnék jelentkezni.`
+  );
+  const [sending, setSending] = useState(false);
+
+  async function handleApply() {
+    if (!user || !message.trim()) return;
+    setSending(true);
+
+    const fullMsg = `Jelentkezés az állásra: "${job.title}" (${job.company})\n\n${message.trim()}`;
+
+    const { conversationId, error } = await openConversationWithMessage({
+      buyerId: user.id,
+      sellerId: job.poster_id,
+      context: { kind: 'job', jobId: job.id },
+      message: fullMsg,
+    });
+
+    setSending(false);
+    if (error || !conversationId) {
+      showToast('error', 'Hiba', error ?? 'A jelentkezés elküldése sikertelen.');
+      return;
+    }
+    showToast('success', 'Jelentkezés elküldve', 'A munkáltató hamarosan válaszol.');
+    onClose();
+    navigate(`/chat/${conversationId}`);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="glass rounded-3xl p-6 w-full max-w-md space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-zinc-100 flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-emerald-400" />Jelentkezés
+          </h3>
+          <button onClick={onClose} className="w-8 h-8 glass-pill rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="glass-bubble rounded-2xl p-4">
+          <p className="text-sm font-medium text-zinc-200">{job.title}</p>
+          <p className="text-xs text-zinc-500 mt-0.5">{job.company}</p>
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1.5">Bemutatkozás / üzenet *</label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={5}
+            placeholder="Írd le röviden, miért érdekel ez az állás, és mi a tapasztalatod..."
+            className="w-full px-4 py-3 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none text-sm leading-relaxed"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleApply}
+            disabled={!message.trim() || sending || !user}
+            className="flex-1 py-3 glass-pill-active text-emerald-300 rounded-xl font-medium text-sm hover:scale-[1.01] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Send className="w-4 h-4" />{sending ? 'Küldés...' : 'Jelentkezés elküldése'}
+          </button>
+          <button onClick={onClose}
+            className="px-5 py-3 glass-pill text-zinc-400 rounded-xl font-medium text-sm hover:text-zinc-200 transition-colors">
+            Mégse
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -523,7 +578,7 @@ export default function JobsPage() {
   useSEO(SEO_PAGES.jobs);
   const { user } = useAuth();
   const { showToast } = useNotification();
-  const { navigate } = useRouter();
+  const { navigate, params } = useRouter();
 
   // Tab
   const [mainTab, setMainTab] = useState<MainTab>('offers');
@@ -552,6 +607,7 @@ export default function JobsPage() {
   const [editingSeekerAd, setEditingSeekerAd] = useState<JobSeekerAd | null>(null);
   const [deletingSeekerAdId, setDeletingSeekerAdId] = useState<string | null>(null);
   const [contactSeekerAd, setContactSeekerAd] = useState<JobSeekerAd | null>(null);
+  const [applyingJob, setApplyingJob] = useState<Job | null>(null);
 
   // Recommendation engine state
   const [userInteractions, setUserInteractions] = useState<{
@@ -561,6 +617,41 @@ export default function JobsPage() {
   }>({ categories: {}, locations: {}, keywords: [] });
 
   useEffect(() => { fetchJobs(); fetchSeekerAds(); }, []);
+
+  useEffect(() => {
+    const jobId = params.id;
+    if (!jobId || jobsLoading) return;
+
+    const fromList = jobs.find((j) => j.id === jobId);
+    if (fromList) {
+      setSelectedJob(fromList);
+      setView('detail');
+      setMainTab('offers');
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('jobs')
+        .select('*, poster:profiles(id, username, full_name, avatar_url)')
+        .eq('id', jobId)
+        .eq('status', 'active')
+        .eq('moderation_status', 'active')
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        setSelectedJob(data);
+        setView('detail');
+        setMainTab('offers');
+      } else {
+        showToast('error', 'Nem található', 'Az álláshirdetés nem elérhető.');
+        navigate('/jobs');
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [params.id, jobs, jobsLoading]);
   useEffect(() => { if (user) loadUserInteractions(); }, [user]);
 
   // Track search queries with debounce
@@ -599,6 +690,7 @@ export default function JobsPage() {
       .from('jobs')
       .select('*, poster:profiles(id, username, full_name, avatar_url)')
       .eq('status', 'active')
+      .eq('moderation_status', 'active')
       .order('created_at', { ascending: false })
       .limit(200);
     setJobs(data || []);
@@ -780,7 +872,7 @@ export default function JobsPage() {
     if (error) { showToast('error', 'Hiba', 'A törlés sikertelen.'); return; }
     showToast('success', 'Törölve', 'Hirdetés eltávolítva.');
     await fetchJobs();
-    if (selectedJob?.id === id) { setSelectedJob(null); setView('list'); }
+    if (selectedJob?.id === id) { setSelectedJob(null); setView('list'); navigate('/jobs'); }
   }
 
   // ── Job seeker ad CRUD ─────────────────────────────────────────────────────
@@ -830,6 +922,7 @@ export default function JobsPage() {
   function openJob(job: Job) {
     setSelectedJob(job);
     setView('detail');
+    navigate(`/jobs/${job.id}`);
     if (user) trackInteraction('view_job', { category: job.category, location: job.location, jobId: job.id });
   }
 
@@ -893,7 +986,7 @@ export default function JobsPage() {
 
   if (view === 'create') {
     const emptyJob: JobFormState = {
-      title: '', company: '', description: '', category: 'Targoncavezető',
+      title: '', company: '', description: '', category: DEFAULT_JOB_CATEGORY,
       type: 'teljes', location: '', remote: false, salaryMin: '', salaryMax: '',
       contactEmail: '', contactPhone: '', logoPreview: null,
     };
@@ -1001,7 +1094,7 @@ export default function JobsPage() {
     return (
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={() => { setView('list'); setSelectedJob(null); }} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors text-sm">
+          <button onClick={() => { setView('list'); setSelectedJob(null); navigate('/jobs'); }} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" />Vissza
           </button>
           {isOwn && (
@@ -1051,6 +1144,25 @@ export default function JobsPage() {
             <h2 className="font-semibold text-zinc-200 mb-3 text-sm">Leírás</h2>
             <div className="text-zinc-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedJob.description}</div>
           </div>
+          {!isOwn && (
+            <div className="border-t border-white/5 pt-5">
+              {user ? (
+                <button
+                  onClick={() => setApplyingJob(selectedJob)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 glass-pill-active text-emerald-300 px-5 py-3 rounded-xl font-medium text-sm hover:scale-[1.01] transition-all"
+                >
+                  <Send className="w-4 h-4" />Jelentkezés üzenettel
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate('/login')}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 glass-pill text-zinc-400 px-5 py-3 rounded-xl font-medium text-sm hover:text-emerald-300 transition-colors"
+                >
+                  <Lock className="w-4 h-4" />Bejelentkezés a jelentkezéshez
+                </button>
+              )}
+            </div>
+          )}
           {(selectedJob.contact_email || selectedJob.contact_phone) && (
             <div className="border-t border-white/5 pt-5 space-y-3">
               <h2 className="font-semibold text-zinc-200 text-sm">Kapcsolat</h2>
@@ -1172,6 +1284,9 @@ export default function JobsPage() {
 
         {contactSeekerAd && (
           <ContactSeekerModal seekerAd={contactSeekerAd} onClose={() => setContactSeekerAd(null)} />
+        )}
+        {applyingJob && (
+          <ApplyJobModal job={applyingJob} onClose={() => setApplyingJob(null)} />
         )}
       </div>
     );

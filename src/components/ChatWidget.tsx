@@ -1,12 +1,15 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, useLayoutEffect, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useRouter } from '../lib/router';
+import { getChatMountNode, pinChatToViewport, computeChatBottomPx } from '../lib/chatPortalRoot';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import type { Conversation, Message, Profile } from '../lib/types';
 import { formatRelativeTime } from '../lib/utils';
-import { MessageCircle, X, Send, ArrowLeft, Minimize2 } from 'lucide-react';
+import { X, Send, ArrowLeft, Minimize2, Store } from 'lucide-react';
 import Avatar from './Avatar';
 
 export default function ChatWidget() {
@@ -14,6 +17,9 @@ export default function ChatWidget() {
   const { devModeActive } = useSiteCustomization();
   const { showToast } = useNotification();
   const { path } = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -26,7 +32,41 @@ export default function ChatWidget() {
 
   activeConvRef.current = activeConv;
 
+  useEffect(() => {
+    setMounted(true);
+    setMountNode(getChatMountNode());
+  }, []);
+
   const isMessagesPage = path === '/messages' || path.startsWith('/chat/');
+  const isMobile = useIsMobile();
+  const bottomPx = computeChatBottomPx({ path, devModeActive, isMobile });
+
+  useLayoutEffect(() => {
+    const node = anchorRef.current;
+    if (!node || !user || isMessagesPage) return;
+
+    const apply = () => pinChatToViewport(node, bottomPx);
+
+    apply();
+    window.addEventListener('scroll', apply, { passive: true, capture: true });
+    window.addEventListener('resize', apply, { passive: true });
+    document.addEventListener('scroll', apply, { passive: true, capture: true });
+
+    return () => {
+      window.removeEventListener('scroll', apply, true);
+      window.removeEventListener('resize', apply);
+      document.removeEventListener('scroll', apply, true);
+    };
+  }, [bottomPx, user, isMessagesPage, mounted, open, minimized, path]);
+
+  const anchorStyle = useMemo(
+    (): CSSProperties => ({
+      display: 'flex',
+      flexDirection: 'column-reverse',
+      alignItems: 'flex-end',
+    }),
+    [],
+  );
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
@@ -53,13 +93,11 @@ export default function ChatWidget() {
     }
   }, [user]);
 
-  // Load conversations when widget opens
   useEffect(() => {
     if (!user || !open) return;
     fetchConversations();
   }, [user, open, fetchConversations]);
 
-  // Realtime subscription for incoming messages
   useEffect(() => {
     if (!user || isMessagesPage) return;
 
@@ -73,7 +111,6 @@ export default function ChatWidget() {
         const msg = payload.new as Message;
         if (msg.sender_id === user.id) return;
 
-        // If widget is open and this is the active conversation, append message
         if (open && activeConvRef.current && msg.conversation_id === activeConvRef.current.id) {
           const { data: full } = await supabase
             .from('messages')
@@ -90,7 +127,6 @@ export default function ChatWidget() {
             await refreshUnread();
           }
         } else {
-          // Show toast notification for message in another conversation
           await refreshUnread();
           setConversations((prev) => prev.map((c) =>
             c.id === msg.conversation_id
@@ -99,7 +135,6 @@ export default function ChatWidget() {
           ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()));
 
           if (!open) {
-            // Find sender name
             const conv = conversations.find((c) => c.id === msg.conversation_id);
             const sender = conv
               ? (user.id === conv.buyer_id ? conv.seller : conv.buyer)
@@ -152,85 +187,86 @@ export default function ChatWidget() {
     setSending(false);
   }
 
-  if (!user || isMessagesPage || devModeActive) return null;
+  if (!mounted || !mountNode || !user || isMessagesPage) return null;
 
   const otherUser = activeConv
     ? (user.id === activeConv.buyer_id ? activeConv.seller : activeConv.buyer)
     : null;
 
-  return (
-    <>
-      {/* Floating button */}
+  const ui = (
+    <div ref={anchorRef} className="piac-chat-anchor" style={anchorStyle} data-piac-chat-anchor>
       {!open && (
         <button
+          type="button"
           onClick={() => { setOpen(true); setMinimized(false); }}
-          className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-50 w-14 h-14 glass-strong rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110"
+          className="piac-chat-launcher"
+          aria-label="PiacPro üzenetek megnyitása"
         >
-          <MessageCircle className="w-6 h-6 text-emerald-400" />
+          <span className="piac-chat-launcher__awning" aria-hidden />
+          <Store className="w-5 h-5 text-amber-300 relative z-[1]" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+            <span className="piac-chat-launcher__badge">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </button>
       )}
 
-      {/* Widget window */}
       {open && (
-        <div className={`fixed bottom-24 md:bottom-6 right-4 md:right-6 z-50 w-[340px] md:w-[380px] glass-strong rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 ${minimized ? 'h-14' : 'h-[520px]'}`}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 h-14 border-b border-white/5 flex-shrink-0">
-            <div className="flex items-center gap-2">
+        <div className={`piac-chat-panel ${minimized ? 'piac-chat-panel--min' : ''}`}>
+          <div className="piac-chat-panel__awning" aria-hidden />
+          <header className="piac-chat-header">
+            <div className="flex items-center gap-2 min-w-0">
               {activeConv && !minimized && (
-                <button onClick={() => setActiveConv(null)} className="p-1 glass-pill rounded-lg text-zinc-400 hover:text-zinc-200 mr-1">
+                <button type="button" onClick={() => setActiveConv(null)} className="piac-chat-icon-btn" aria-label="Vissza">
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               )}
-              <MessageCircle className="w-4 h-4 text-emerald-400" />
-              <span className="font-semibold text-sm">
-                {activeConv && !minimized
-                  ? (otherUser?.full_name || otherUser?.username || 'Üzenet')
-                  : 'Üzenetek'}
-              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-400/90">PiacPro Csengő</p>
+                <p className="text-sm font-bold text-zinc-100 truncate">
+                  {activeConv && !minimized
+                    ? (otherUser?.full_name || otherUser?.username || 'Partner')
+                    : 'Kapcsolataid'}
+                </p>
+              </div>
               {unreadCount > 0 && !activeConv && (
-                <span className="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
+                <span className="piac-chat-launcher__badge piac-chat-launcher__badge--inline">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={() => setMinimized(!minimized)} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors">
+              <button type="button" onClick={() => setMinimized(!minimized)} className="piac-chat-icon-btn" aria-label="Minimalizálás">
                 <Minimize2 className="w-3.5 h-3.5" />
               </button>
-              <button onClick={() => { setOpen(false); setActiveConv(null); }} className="p-1.5 glass-pill rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors">
+              <button type="button" onClick={() => { setOpen(false); setActiveConv(null); }} className="piac-chat-icon-btn" aria-label="Bezárás">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
+          </header>
 
           {!minimized && (
             <>
               {!activeConv && (
-                <div className="flex-1 overflow-y-auto h-[calc(520px-56px)]">
+                <div className="piac-chat-list">
                   {conversations.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                      <MessageCircle className="w-10 h-10 text-zinc-700 mb-3" />
-                      <p className="text-zinc-500 text-sm">Még nincs beszélgetésed</p>
+                    <div className="piac-chat-empty">
+                      <Store className="w-10 h-10 text-amber-500/40 mb-3" />
+                      <p className="text-zinc-400 text-sm font-medium">Még nincs beszélgetésed</p>
+                      <p className="text-zinc-600 text-xs mt-1">Csak meglévő kapcsolataid jelennek meg itt.</p>
                     </div>
                   ) : (
                     conversations.map((conv) => {
                       const other = user.id === conv.buyer_id ? conv.seller : conv.buyer;
                       return (
-                        <button key={conv.id} onClick={() => openConversation(conv)}
-                          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 transition-colors border-b border-white/3 text-left">
+                        <button key={conv.id} type="button" onClick={() => openConversation(conv)} className="piac-chat-conv-row">
                           <Avatar src={other?.avatar_url} name={other?.full_name || other?.username} size="md" rounded="full" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-zinc-200 text-sm truncate">
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-semibold text-zinc-100 text-sm truncate">
                               {other?.full_name || other?.username || 'Felhasználó'}
                             </p>
-                            <p className="text-xs text-zinc-500 truncate">{conv.listing?.title}</p>
+                            <p className="text-[11px] text-amber-400/70 truncate">{conv.listing?.title || 'Általános üzenet'}</p>
                           </div>
-                          <span className="text-xs text-zinc-600 flex-shrink-0">
+                          <span className="text-[10px] text-zinc-600 flex-shrink-0 tabular-nums">
                             {formatRelativeTime(conv.last_message_at)}
                           </span>
                         </button>
@@ -241,32 +277,47 @@ export default function ChatWidget() {
               )}
 
               {activeConv && (
-                <div className="flex flex-col h-[calc(520px-56px)]">
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                <div className="piac-chat-thread">
+                  {activeConv.listing?.title && (
+                    <div className="piac-chat-listing-tag">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#00C896]">Hirdetés</span>
+                      <p className="text-xs text-zinc-300 truncate">{activeConv.listing.title}</p>
+                    </div>
+                  )}
+                  <div className="piac-chat-messages">
                     {messages.length === 0 && (
-                      <p className="text-center text-zinc-600 text-xs py-4">Kezdd el a beszélgetést!</p>
+                      <p className="text-center text-zinc-600 text-xs py-6">Írd meg az első sort a standon!</p>
                     )}
                     {messages.map((msg) => {
                       const isOwn = msg.sender_id === user.id;
                       return (
-                        <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${isOwn ? 'glass-pill-active text-emerald-200 rounded-br-sm' : 'glass-pill text-zinc-200 rounded-bl-sm'}`}>
-                            <p>{msg.content}</p>
-                            <p className={`text-[10px] mt-0.5 ${isOwn ? 'text-emerald-400/60' : 'text-zinc-600'}`}>
-                              {formatRelativeTime(msg.created_at)}
-                            </p>
+                        <div key={msg.id} className={`piac-chat-msg ${isOwn ? 'piac-chat-msg--own' : 'piac-chat-msg--them'}`}>
+                          {!isOwn && (
+                            <Avatar
+                              src={msg.sender?.avatar_url}
+                              name={msg.sender?.full_name || msg.sender?.username}
+                              size="sm"
+                              rounded="full"
+                            />
+                          )}
+                          <div className="piac-chat-ticket">
+                            <p className="text-sm text-zinc-100 leading-snug">{msg.content}</p>
+                            <time className="piac-chat-ticket__time">{formatRelativeTime(msg.created_at)}</time>
                           </div>
                         </div>
                       );
                     })}
                     <div ref={messagesEndRef} />
                   </div>
-                  <form onSubmit={sendMessage} className="p-3 border-t border-white/5 flex gap-2">
-                    <input type="text" value={newMsg} onChange={(e) => setNewMsg(e.target.value)}
-                      placeholder="Írj üzenetet..."
-                      className="flex-1 px-3 py-2.5 glass-input rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none text-sm transition-all" />
-                    <button type="submit" disabled={sending || !newMsg.trim()}
-                      className="px-3 py-2.5 glass-pill-active text-emerald-300 rounded-xl transition-all disabled:opacity-50 hover:scale-105">
+                  <form onSubmit={sendMessage} className="piac-chat-compose">
+                    <input
+                      type="text"
+                      value={newMsg}
+                      onChange={(e) => setNewMsg(e.target.value)}
+                      placeholder="Üzenet a piaci standra…"
+                      className="piac-chat-compose__input"
+                    />
+                    <button type="submit" disabled={sending || !newMsg.trim()} className="piac-chat-compose__send" aria-label="Küldés">
                       <Send className="w-4 h-4" />
                     </button>
                   </form>
@@ -276,6 +327,8 @@ export default function ChatWidget() {
           )}
         </div>
       )}
-    </>
+    </div>
   );
+
+  return createPortal(ui, mountNode);
 }

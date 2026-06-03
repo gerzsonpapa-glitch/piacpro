@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import WorldZonePageHeader from '../components/world/WorldZonePageHeader';
+import SearchKeywordHelper from '../components/SearchKeywordHelper';
 
 // ── Unified result type ───────────────────────────────────────────────────────
 interface UnifiedResult {
@@ -28,7 +29,7 @@ interface UnifiedResult {
 const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; path: (id: string) => string }> = {
   regular:  { label: 'Piactér',    icon: ShoppingBag, color: 'text-emerald-400', bg: 'bg-emerald-500/10', path: (id) => `/listing/${id}` },
   auction:  { label: 'Licit',      icon: Gavel,       color: 'text-amber-400',   bg: 'bg-amber-500/10',   path: (id) => `/auction/${id}` },
-  job:      { label: 'Állás',      icon: Briefcase,   color: 'text-blue-400',    bg: 'bg-blue-500/10',    path: (id) => `/jobs` },
+  job:      { label: 'Állás',      icon: Briefcase,   color: 'text-blue-400',    bg: 'bg-blue-500/10',    path: (id) => `/jobs/${id}` },
   donation: { label: 'Adomány',    icon: Heart,       color: 'text-rose-400',    bg: 'bg-rose-500/10',    path: (id) => `/donations/${id}` },
   shop:     { label: 'Bolt',       icon: Store,       color: 'text-teal-400',    bg: 'bg-teal-500/10',    path: (id) => `/shops/${id}` },
   producer: { label: 'Termelő',    icon: Leaf,        color: 'text-lime-400',    bg: 'bg-lime-500/10',    path: (id) => `/producers/${id}` },
@@ -180,6 +181,7 @@ export default function DiscoverPage() {
         supabase.from('jobs')
           .select('id, title, company, description, location, salary_min, created_at')
           .eq('status', 'active')
+          .eq('moderation_status', 'active')
           .or(q ? `title.ilike.%${q}%,description.ilike.%${q}%,company.ilike.%${q}%` : 'id.neq.00000000-0000-0000-0000-000000000000')
           .limit(15)
           .then(({ data }) => {
@@ -333,6 +335,7 @@ export default function DiscoverPage() {
                 Keresés
               </button>
             </div>
+            <SearchKeywordHelper query={query} onPick={(q) => setQuery(q)} />
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />

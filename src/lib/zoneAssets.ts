@@ -24,7 +24,7 @@ export interface ZoneAsset {
 }
 
 const Z = (name: string) => `/zones/${name}`;
-const HUB_V = '20260602v3';
+const HUB_V = '20260602v4';
 
 /**
  * PiacPro zóna háttérképek — eredeti vizuális világ.

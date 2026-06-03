@@ -6,6 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import type { Producer, ProducerProduct } from '../lib/types';
 import { MapPin, Star, CheckCircle2, Leaf, MessageCircle, Phone, Mail, Award, Clock, Package, Plus, Trash2, X, Save, ToggleLeft, ToggleRight, ChevronLeft, Sprout, Sun, Apple, Egg, Beef, MilkOff, FlaskConical, UtensilsCrossed, Tag, User, Camera, ImagePlus, CreditCard as Edit2, ChevronRight, ChevronLeft as ChevLeft, ShoppingCart, Minus, Send, Search, Loader2, Lock } from 'lucide-react';
 import { useSEO } from '../lib/seo';
+import { findOrCreateConversation, openConversationWithMessage } from '../lib/conversations';
 
 // ── Hungarian counties ─────────────────────────────────────────────────────────
 const HU_COUNTIES = [
@@ -216,6 +217,39 @@ interface CartItem {
   quantity: number;
 }
 
+interface StoredCartItem {
+  productId: string;
+  quantity: number;
+}
+
+function cartStorageKey(producerId: string) {
+  return `piacpro_producer_cart_${producerId}`;
+}
+
+function loadStoredCart(producerId: string): StoredCartItem[] {
+  try {
+    const raw = localStorage.getItem(cartStorageKey(producerId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredCart(producerId: string, items: StoredCartItem[]) {
+  if (items.length === 0) {
+    localStorage.removeItem(cartStorageKey(producerId));
+    return;
+  }
+  localStorage.setItem(cartStorageKey(producerId), JSON.stringify(items));
+}
+
+function maxOrderQty(product: ProducerProduct, currentQty: number) {
+  if (product.stock_quantity == null) return Infinity;
+  return Math.max(0, product.stock_quantity - currentQty);
+}
+
 const CAT_LABELS: Record<string, string> = {
   vegetable: 'Zöldség', fruit: 'Gyümölcs', honey: 'Méz', egg: 'Tojás',
   meat: 'Hús', dairy: 'Tejtermék', bio: 'Bio', homemade: 'Házi készítmény',
@@ -347,7 +381,7 @@ function ProductCard({ product, isOwner, onEdit, onDelete, cartQty, onAddToCart,
         </div>
 
         {/* Cart controls — only for non-owners */}
-        {!isOwner && product.is_available && (
+        {!isOwner && product.is_available && (product.stock_quantity == null || product.stock_quantity > 0) && (
           <div className="mt-auto pt-2">
             {!inCart ? (
               <button
@@ -411,37 +445,20 @@ function OrderModal({ cart, producer, onClose, onSent }: {
     const noteText = note.trim() ? `\n\nMegjegyzés: ${note.trim()}` : '';
     const msgText = `Szia! Szeretnék rendelni:\n\n${lines.join('\n')}${totalLine}${noteText}`;
 
-    // Find or create conversation
-    const { data: existing } = await supabase
-      .from('conversations').select('id')
-      .eq('buyer_id', user.id).eq('seller_id', producer.user_id)
-      .is('listing_id', null).is('shop_product_id', null)
-      .maybeSingle();
-
-    let convId: string | null = null;
-    if (existing) {
-      convId = existing.id;
-    } else {
-      const { data: newConv } = await supabase
-        .from('conversations')
-        .insert({ buyer_id: user.id, seller_id: producer.user_id, listing_id: null })
-        .select('id').maybeSingle();
-      convId = newConv?.id ?? null;
-    }
-
-    if (!convId) { showToast('error', 'Hiba', 'Nem sikerült megnyitni a beszélgetést'); setSending(false); return; }
-
-    // Send message
-    const { error } = await supabase.from('messages').insert({
-      conversation_id: convId,
-      sender_id: user.id,
-      content: msgText,
+    const { conversationId, error } = await openConversationWithMessage({
+      buyerId: user.id,
+      sellerId: producer.user_id,
+      context: { kind: 'producer', producerId: producer.id },
+      message: msgText,
     });
 
     setSending(false);
-    if (error) { showToast('error', 'Hiba', error.message); return; }
+    if (error || !conversationId) {
+      showToast('error', 'Hiba', error ?? 'Nem sikerült elküldeni a megrendelést');
+      return;
+    }
     showToast('success', 'Megrendelés elküldve!', 'A termelő hamarosan válaszol.');
-    onSent(convId);
+    onSent(conversationId);
   }
 
   return (
@@ -911,6 +928,7 @@ export default function ProducerProfilePage() {
   const [showProductModal, setShowProductModal] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const cartHydratedRef = useRef(false);
 
   const isOwner = user?.id === producer?.user_id;
 
@@ -919,15 +937,36 @@ export default function ProducerProfilePage() {
   }
 
   function addToCart(product: ProducerProduct) {
+    if (product.stock_quantity != null && product.stock_quantity <= 0) {
+      showToast('error', 'Elfogyott', 'Ez a termék jelenleg nincs készleten.');
+      return;
+    }
     setCart((prev) => {
       const exists = prev.find((c) => c.product.id === product.id);
-      if (exists) return prev.map((c) => c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
+      const currentQty = exists?.quantity ?? 0;
+      if (maxOrderQty(product, currentQty) <= 0) {
+        showToast('error', 'Készlet limit', product.stock_quantity != null
+          ? `Maximum ${product.stock_quantity} ${product.unit} rendelhető.`
+          : 'Nincs több készlet.');
+        return prev;
+      }
+      if (exists) {
+        return prev.map((c) => c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
+      }
       return [...prev, { product, quantity: 1 }];
     });
   }
 
   function changeQty(productId: string, delta: number) {
     setCart((prev) => {
+      const item = prev.find((c) => c.product.id === productId);
+      if (!item) return prev;
+      if (delta > 0 && maxOrderQty(item.product, item.quantity) <= 0) {
+        showToast('error', 'Készlet limit', item.product.stock_quantity != null
+          ? `Maximum ${item.product.stock_quantity} ${item.product.unit} rendelhető.`
+          : 'Nincs több készlet.');
+        return prev;
+      }
       const updated = prev.map((c) => c.product.id === productId ? { ...c, quantity: Math.max(0, c.quantity + delta) } : c);
       return updated.filter((c) => c.quantity > 0);
     });
@@ -938,6 +977,31 @@ export default function ProducerProfilePage() {
   useEffect(() => {
     if (producerId) fetchProducer();
   }, [producerId]);
+
+  useEffect(() => {
+    cartHydratedRef.current = false;
+  }, [producerId]);
+
+  useEffect(() => {
+    if (!producerId || isOwner || products.length === 0 || cartHydratedRef.current) return;
+    cartHydratedRef.current = true;
+    const stored = loadStoredCart(producerId);
+    if (stored.length === 0) return;
+    const hydrated: CartItem[] = [];
+    for (const row of stored) {
+      const product = products.find((p) => p.id === row.productId);
+      if (!product || !product.is_available) continue;
+      const cap = product.stock_quantity ?? row.quantity;
+      const quantity = Math.min(row.quantity, cap > 0 ? cap : row.quantity);
+      if (quantity > 0) hydrated.push({ product, quantity });
+    }
+    setCart(hydrated);
+  }, [producerId, isOwner, products]);
+
+  useEffect(() => {
+    if (!producerId || isOwner) return;
+    saveStoredCart(producerId, cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })));
+  }, [cart, producerId, isOwner]);
 
   async function fetchProducer() {
     setLoading(true);
@@ -968,20 +1032,16 @@ export default function ProducerProfilePage() {
   async function startChat() {
     if (!user) { navigate('/login'); return; }
     if (!producer || user.id === producer.user_id) return;
-    const { data: existing } = await supabase
-      .from('conversations').select('id')
-      .eq('buyer_id', user.id).eq('seller_id', producer.user_id)
-      .is('listing_id', null).is('shop_product_id', null)
-      .maybeSingle();
-    if (existing) {
-      navigate(`/chat/${existing.id}`);
-    } else {
-      const { data: newConv } = await supabase
-        .from('conversations')
-        .insert({ buyer_id: user.id, seller_id: producer.user_id, listing_id: null })
-        .select('id').maybeSingle();
-      if (newConv) navigate(`/chat/${newConv.id}`);
+    const { id, error } = await findOrCreateConversation({
+      buyerId: user.id,
+      sellerId: producer.user_id,
+      context: { kind: 'general', tag: `producer_contact:${producer.id}` },
+    });
+    if (error || !id) {
+      showToast('error', 'Hiba', error ?? 'A beszélgetés megnyitása sikertelen.');
+      return;
     }
+    navigate(`/chat/${id}`);
   }
 
   if (loading) {
@@ -1208,7 +1268,12 @@ export default function ProducerProfilePage() {
           cart={cart}
           producer={producer}
           onClose={() => setShowOrderModal(false)}
-          onSent={(convId) => { setShowOrderModal(false); setCart([]); navigate(`/chat/${convId}`); }}
+          onSent={(convId) => {
+            setShowOrderModal(false);
+            setCart([]);
+            if (producerId) saveStoredCart(producerId, []);
+            navigate(`/chat/${convId}`);
+          }}
         />
       )}
     </div>

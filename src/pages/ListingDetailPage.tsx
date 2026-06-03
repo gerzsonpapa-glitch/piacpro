@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import { useSEO } from '../lib/seo';
+import { findOrCreateConversation } from '../lib/conversations';
 
 const RECENTLY_VIEWED_KEY = 'recently_viewed_listings';
 const MAX_RECENTLY_VIEWED = 10;
@@ -258,19 +259,17 @@ export default function ListingDetailPage() {
     if (!user || !listing) return;
     if (user.id === listing.seller_id) return;
 
-    const { data } = await supabase
-      .from('conversations').select('id')
-      .eq('listing_id', listing.id).eq('buyer_id', user.id).maybeSingle();
+    const { id, error } = await findOrCreateConversation({
+      buyerId: user.id,
+      sellerId: listing.seller_id,
+      context: { kind: 'listing', listingId: listing.id },
+    });
 
-    if (data) {
-      navigate(`/chat/${data.id}`);
-    } else {
-      const { data: newConv } = await supabase
-        .from('conversations')
-        .insert({ listing_id: listing.id, buyer_id: user.id, seller_id: listing.seller_id })
-        .select().single();
-      if (newConv) navigate(`/chat/${newConv.id}`);
+    if (error || !id) {
+      showToast('error', 'Hiba', error ?? 'A beszélgetés megnyitása sikertelen.');
+      return;
     }
+    navigate(`/chat/${id}`);
   }
 
   async function deleteListing() {

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Upload, Loader2 } from 'lucide-react';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -10,17 +11,20 @@ import {
 import { uploadSiteAsset } from '../lib/uploadSiteAsset';
 
 export default function InlineDevEditor() {
-  const { devModeActive, config, saveConfig } = useSiteCustomization();
+  const { devModeActive, config, persistedConfig, setDevPreviewConfig, saveConfig } = useSiteCustomization();
   const { showToast } = useNotification();
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const baseConfigRef = useRef<typeof config | null>(null);
 
   const close = useCallback(() => {
+    setDevPreviewConfig(null);
+    baseConfigRef.current = null;
     setActiveKey(null);
     setDraft('');
-  }, []);
+  }, [setDevPreviewConfig]);
 
   useEffect(() => {
     if (!devModeActive) {
@@ -32,7 +36,7 @@ export default function InlineDevEditor() {
 
     function onClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      if (target.closest('.piac-inline-editor, .piac-dev-toolbar, .city-map-hotspot-editor')) return;
+      if (target.closest('.piac-inline-editor, .piac-dev-toolbar, .piac-dev-top-bar, .city-map-hotspot-editor')) return;
       if (target.closest('.city-map-hotspot-editor, .city-building-pin')) return;
       if (target.closest('[data-dev-map-tool]') && !target.closest('[data-piac-edit]')) return;
       if (target.closest('input, textarea, select, option, [contenteditable="true"]')) return;
@@ -44,6 +48,7 @@ export default function InlineDevEditor() {
       e.stopPropagation();
       const key = el.getAttribute('data-piac-edit');
       if (!key) return;
+      baseConfigRef.current = persistedConfig;
       setActiveKey(key);
       document.querySelectorAll('.piac-editable-selected').forEach((n) =>
         n.classList.remove('piac-editable-selected'),
@@ -56,11 +61,21 @@ export default function InlineDevEditor() {
       document.removeEventListener('click', onClick, true);
       document.body.classList.remove('piac-dev-edit-active');
     };
-  }, [devModeActive, close]);
+  }, [devModeActive, close, persistedConfig]);
 
   useEffect(() => {
-    if (activeKey) setDraft(getConfigValueByEditKey(config, activeKey));
-  }, [activeKey, config]);
+    if (!activeKey) return;
+    setDraft(getConfigValueByEditKey(baseConfigRef.current ?? persistedConfig, activeKey));
+  }, [activeKey, persistedConfig]);
+
+  useEffect(() => {
+    if (!devModeActive || !activeKey) {
+      setDevPreviewConfig(null);
+      return;
+    }
+    const base = baseConfigRef.current ?? persistedConfig;
+    setDevPreviewConfig(setConfigValueByEditKey(base, activeKey, draft));
+  }, [activeKey, draft, devModeActive, persistedConfig, setDevPreviewConfig]);
 
   async function handleSave() {
     if (!activeKey) return;
@@ -112,8 +127,8 @@ export default function InlineDevEditor() {
   const meta = getEditMeta(activeKey);
   if (!meta) return null;
 
-  return (
-    <div className="piac-inline-editor fixed inset-x-0 bottom-[5.5rem] sm:bottom-[4.75rem] z-[130] px-4 flex justify-center pointer-events-none">
+  return createPortal(
+    <div className="piac-inline-editor fixed top-24 right-3 sm:top-[7.5rem] sm:right-4 z-[9985] w-[min(100vw-1.5rem,22rem)] pointer-events-none">
       <div
         className="w-full max-w-lg rounded-2xl p-4 space-y-3 shadow-2xl pointer-events-auto"
         style={{
@@ -167,6 +182,10 @@ export default function InlineDevEditor() {
           />
         )}
 
+        <p className="text-[10px] text-zinc-500">
+          Az oldalon azonnal látszik az előnézet. Mentés után marad az élő verzió.
+        </p>
+
         <button
           type="button"
           onClick={handleSave}
@@ -178,6 +197,7 @@ export default function InlineDevEditor() {
           {saving ? 'Mentés...' : 'Mentés az élő oldalra'}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

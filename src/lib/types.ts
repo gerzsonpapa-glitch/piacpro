@@ -301,6 +301,7 @@ export interface Conversation {
   id: string;
   listing_id: string | null;
   shop_product_id: string | null;
+  context_key: string | null;
   buyer_id: string;
   seller_id: string;
   last_message_at: string;

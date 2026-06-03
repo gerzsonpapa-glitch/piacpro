@@ -26,6 +26,7 @@ const ROUTE_PATTERNS = [
   '/profile/:id',
   '/chat/:id',
   '/job/:id',
+  '/jobs/:id',
   '/shops/:slug',
   '/producers/:id',
   '/donations/:id',

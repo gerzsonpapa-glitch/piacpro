@@ -4,6 +4,7 @@ import type { Listing } from '../lib/types';
 import { useSEO, SEO_PAGES } from '../lib/seo';
 import { useSiteCustomization } from '../contexts/SiteCustomizationContext';
 import CityMapView from '../components/world/CityMapView';
+import CityMobileDistrictRail from '../components/world/CityMobileDistrictRail';
 import HomeHeroBackdrop from '../components/world/HomeHeroBackdrop';
 import HomeInfoScroll, { HomeScrollHint } from '../components/world/HomeInfoScroll';
 
@@ -40,11 +41,14 @@ export default function HomePage() {
 
   return (
     <div className="world-home-page">
-      <div className="world-home-hero-viewport relative min-h-[100dvh] overflow-hidden isolate">
+      <div className="world-home-hero-viewport relative min-h-[100dvh] overflow-x-hidden">
         <HomeHeroBackdrop />
-        <div className="relative z-10">
+        <div className="relative z-10 min-h-[100dvh]">
           <CityMapView ready={ready} devModeActive={devModeActive} />
           <HomeScrollHint />
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none">
+          <CityMobileDistrictRail />
         </div>
       </div>
 

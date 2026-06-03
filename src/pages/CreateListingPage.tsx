@@ -62,10 +62,15 @@ const SCAM_KEYWORDS = [
 
 export default function CreateListingPage() {
   const { user, profile } = useAuth();
-  const { navigate } = useRouter();
+  const { navigate, search } = useRouter();
   const { showToast } = useNotification();
 
   const [mode, setMode] = useState<Mode>('manual');
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get('mode') === 'ai') setMode('ai');
+  }, [search]);
 
   const accountAgeDays = user?.created_at ? getAccountAgeDays(user.created_at) : 0;
   const aiEligible = (profile?.ai_access === true) || accountAgeDays >= AI_MIN_DAYS;

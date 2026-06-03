@@ -2,10 +2,10 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
 import type { CityBuilding } from '../../lib/cityMapBuildings';
-import { getBuildingCardPresentation } from '../../lib/cityMapCardStyles';
-import { imagePercentToStagePercent } from '../../lib/cityMapImageBounds';
+import { imagePercentToStagePercent, stagePointToImagePercent } from '../../lib/cityMapImageBounds';
 import { useCityMapBounds } from '../../contexts/CityMapBoundsContext';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import CityPinVisual from './CityPinVisual';
 
 const COUNT_LABELS: Record<string, string> = {
   listing: 'aktív hirdetés',
@@ -57,6 +57,7 @@ export default function CityBuildingHotspot({
   onEdit,
   onPositionChange,
   useLegacyPosition = false,
+  isLivePreview = false,
 }: {
   building: CityBuilding;
   count?: number;
@@ -66,8 +67,9 @@ export default function CityBuildingHotspot({
   editMode?: boolean;
   addMode?: boolean;
   onEdit?: () => void;
-  onPositionChange?: (top: string, left: string) => void;
+  onPositionChange?: (pos: { top: string; left: string; imageTop?: string; imageLeft?: string }) => void;
   useLegacyPosition?: boolean;
+  isLivePreview?: boolean;
 }) {
   const Icon = building.icon;
   const rootRef = useRef<HTMLDivElement>(null);
@@ -115,9 +117,27 @@ export default function CityBuildingHotspot({
     captureEl.current = null;
     pointerIdRef.current = null;
     if (moved.current && onPositionChange) {
-      onPositionChange(posRef.current.top, posRef.current.left);
+      const patch: { top: string; left: string; imageTop?: string; imageLeft?: string } = {
+        ...posRef.current,
+      };
+      if (bounds && !useLegacyPosition) {
+        const map = getMapStage(rootRef.current);
+        if (map) {
+          const rect = map.getBoundingClientRect();
+          const topPct = parseFloat(posRef.current.top);
+          const leftPct = parseFloat(posRef.current.left);
+          const img = stagePointToImagePercent(
+            (leftPct / 100) * rect.width,
+            (topPct / 100) * rect.height,
+            bounds,
+          );
+          patch.imageTop = `${Math.round(img.top)}%`;
+          patch.imageLeft = `${Math.round(img.left)}%`;
+        }
+      }
+      onPositionChange(patch);
     }
-  }, [onPositionChange]);
+  }, [onPositionChange, bounds, useLegacyPosition]);
 
   useEffect(() => {
     if (!editMode) return;
@@ -173,15 +193,9 @@ export default function CityBuildingHotspot({
   const interactive = !addMode;
   const countLabel = building.countKey ? COUNT_LABELS[building.countKey] : undefined;
   const canDrag = editMode && !addMode && !!onPositionChange;
-  const card = useMemo(
-    () => getBuildingCardPresentation(building.cardStyle, building.color),
-    [building.cardStyle, building.color],
-  );
-  const iconSize =
-    building.cardStyle === 'minimal' ? 'w-3.5 h-3.5' : building.cardStyle === 'bold' ? 'w-6 h-6' : 'w-5 h-5';
-  const cardPadding =
-    building.cardStyle === 'minimal' ? 'px-2 py-2 gap-2' : building.cardStyle === 'bold' ? 'px-4 py-4 gap-3.5' : 'px-3.5 py-3 gap-3';
-  const showIconPin = isMobile && !editMode;
+  const pinSize = building.pinSize ?? 'sm';
+  const pinVariant = building.pinVariant ?? (isMobile ? 'icon-card' : 'card');
+  const showLabel = building.showLabel !== false;
 
   return (
     <motion.div
@@ -189,78 +203,37 @@ export default function CityBuildingHotspot({
       initial={{ opacity: 0, scale: 0.92 }}
       animate={ready ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.92 }}
       transition={{ delay: ready ? index * 0.04 : 0, duration: 0.35 }}
-      className={`city-building-pin absolute z-20 ${interactive ? 'pointer-events-auto' : 'pointer-events-none'} ${canDrag ? 'city-building-pin--edit' : ''} ${showIconPin ? 'city-building-pin--icon' : ''}`}
-      style={{
-        top: pos.top,
-        left: pos.left,
-        transform: 'translate(-50%, -50%)',
-      }}
+      className={`city-building-pin absolute z-20 ${interactive ? 'pointer-events-auto' : 'pointer-events-none'} ${canDrag ? 'city-building-pin--edit' : ''} ${isLivePreview ? 'city-building-pin--live-preview' : ''}`}
+      style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}
     >
       {canDrag && (
         <button
           type="button"
           onPointerDown={startDrag}
-          className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 h-6 rounded-lg bg-amber-400 text-[#07111f] cursor-grab active:cursor-grabbing z-30 shadow-lg border border-amber-200/50"
+          className="city-building-pin__drag-handle"
           title="Húzd a zóna gombot"
           aria-label="Zóna mozgatása"
         >
-          <GripVertical className="w-3.5 h-3.5" />
-          <span className="text-[9px] font-black uppercase tracking-wide">Húzd</span>
+          <GripVertical className="w-3 h-3" />
         </button>
       )}
-
-      {showIconPin ? (
-        <motion.button
-          type="button"
-          onClick={handleClick}
-          whileTap={interactive ? { scale: 0.92 } : undefined}
-          className="city-map-icon-pin group"
-          style={{
-            ['--pin-color' as string]: building.color,
-            ['--pin-glow' as string]: building.glow,
-          }}
-          aria-label={`${building.label} — ${building.sublabel}`}
-        >
-          <Icon className="city-map-icon-pin__svg" style={{ color: building.color }} />
-        </motion.button>
-      ) : (
-        <motion.button
-          type="button"
-          onClick={handleClick}
-          onPointerDown={canDrag ? startDrag : undefined}
-          whileHover={interactive && !canDrag ? { scale: 1.04, y: -2 } : undefined}
-          whileTap={interactive && !canDrag ? { scale: 0.98 } : undefined}
-          className={`world-zone-card group flex items-start rounded-2xl text-left border-0 ${card.cardClass} ${cardPadding} ${canDrag ? 'cursor-grab active:cursor-grabbing ring-2 ring-amber-400/50' : ''}`}
-          style={card.buttonStyle}
-          aria-label={`${building.label} — ${building.sublabel}`}
-        >
-          <span
-            className={`flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 ${card.iconWrapClass}`}
-            style={card.iconWrapStyle}
-          >
-            <Icon className={iconSize} style={{ color: building.color }} />
-          </span>
-          <span className="flex flex-col min-w-0 pt-0.5">
-            <span
-              className={card.labelClass}
-              style={{ color: building.color, '--neon-color': building.glow } as React.CSSProperties}
-            >
-              {building.label}
-            </span>
-            <span className={card.sublabelClass}>
-              {building.sublabel}
-            </span>
-            {count !== undefined && countLabel && (
-              <span className="text-[10px] font-semibold text-zinc-500 mt-1">
-                <strong className="text-zinc-300">{count.toLocaleString('hu-HU')}</strong> {countLabel}
-              </span>
-            )}
-          </span>
-          {canDrag && (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 border border-[#07111f] animate-pulse" />
-          )}
-        </motion.button>
-      )}
+      <CityPinVisual
+        Icon={Icon}
+        label={building.label}
+        sublabel={building.sublabel}
+        color={building.color}
+        glow={building.glow}
+        cardStyle={building.cardStyle}
+        pinSize={pinSize}
+        pinVariant={pinVariant}
+        showLabel={showLabel}
+        count={count}
+        countLabel={countLabel}
+        interactive={interactive}
+        editHighlight={canDrag}
+        onClick={handleClick}
+        onPointerDown={canDrag ? startDrag : undefined}
+      />
     </motion.div>
   );
 }

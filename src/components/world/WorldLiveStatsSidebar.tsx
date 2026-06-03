@@ -14,7 +14,7 @@ export default function WorldLiveStatsSidebar() {
   ];
 
   return (
-    <aside className="world-stats-sidebar piac-glass-panel p-4 flex flex-col gap-3 h-fit sticky top-24">
+    <aside className="world-stats-sidebar piac-glass-panel p-4 flex flex-col gap-3 h-fit">
       <div className="flex items-center gap-2 px-1">
         <Activity className="w-4 h-4 text-[#00E676]" />
         <p className="text-[11px] font-black uppercase tracking-wide text-zinc-200">

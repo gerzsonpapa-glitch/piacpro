@@ -6,6 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import type { Shop, ShopProduct, ShopPromotion } from '../lib/types';
 import { formatPrice } from '../lib/utils';
 import { useSEO } from '../lib/seo';
+import { openConversationWithMessage } from '../lib/conversations';
 import { Store, Search, MapPin, ShieldCheck, Mail, Phone, Globe, Tag, Package, Percent, Clock, ArrowLeft, ExternalLink, Star, Sparkles, Settings, X, ChevronLeft, ChevronRight, Save, Trash2, MessageCircle, Percent as PercentIcon } from 'lucide-react';
 
 const CAT_LABELS: Record<string, string> = {
@@ -79,7 +80,9 @@ function ProductModal({
     if (!user) { navigate('/login'); return; }
     if (user.id === shopOwnerId) return;
     setMsgLoading(true);
-    // Look for existing conversation for this specific product
+
+    const prefilled = `Szia! Érdeklődöm a(z) "${product.name}" termék iránt${product.price ? ` (${formatPrice(product.price)})` : ''}. Megvan még?`;
+
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
@@ -87,16 +90,27 @@ function ProductModal({
       .eq('seller_id', shopOwnerId)
       .eq('shop_product_id', product.id)
       .maybeSingle();
-    if (existing) {
+
+    if (existing?.id) {
       navigate(`/chat/${existing.id}`);
-    } else {
-      const { data: newConv } = await supabase
-        .from('conversations')
-        .insert({ buyer_id: user.id, seller_id: shopOwnerId, listing_id: null, shop_product_id: product.id })
-        .select('id').maybeSingle();
-      if (newConv) navigate(`/chat/${newConv.id}`);
+      setMsgLoading(false);
+      onClose();
+      return;
     }
+
+    const { conversationId, error } = await openConversationWithMessage({
+      buyerId: user.id,
+      sellerId: shopOwnerId,
+      context: { kind: 'shop_product', shopProductId: product.id },
+      message: prefilled,
+    });
+
     setMsgLoading(false);
+    if (error || !conversationId) {
+      showToast('error', 'Hiba', error ?? 'A beszélgetés megnyitása sikertelen.');
+      return;
+    }
+    navigate(`/chat/${conversationId}`);
     onClose();
   }
 

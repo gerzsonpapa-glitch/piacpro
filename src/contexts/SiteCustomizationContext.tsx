@@ -21,11 +21,15 @@ import {
 } from '../lib/siteCustomization';
 
 interface SiteCustomizationContextType {
+  /** Megjelenített konfig (élő előnézettel együtt fejlesztői módban). */
   config: SiteCustomizationConfig;
+  /** Utoljára mentett / betöltött konfig (előnézet nélkül). */
+  persistedConfig: SiteCustomizationConfig;
   loading: boolean;
   canEdit: boolean;
   devModeActive: boolean;
   setDevModeActive: (v: boolean) => void;
+  setDevPreviewConfig: (next: SiteCustomizationConfig | null) => void;
   saveConfig: (next: SiteCustomizationConfig) => Promise<{ error: string | null; usedLocalFallback?: boolean }>;
   refresh: () => Promise<void>;
 }
@@ -38,6 +42,7 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
   const { user } = useAuth();
   const canEdit = isSiteDeveloper(user);
   const [config, setConfig] = useState<SiteCustomizationConfig>(DEFAULT_SITE_CONFIG);
+  const [devPreviewConfig, setDevPreviewConfigState] = useState<SiteCustomizationConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [devModeActive, setDevModeActiveState] = useState(() => {
     try {
@@ -64,6 +69,12 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
     setConfig(merged);
     applySiteTheme(merged);
   }, []);
+
+  const setDevPreviewConfig = useCallback((next: SiteCustomizationConfig | null) => {
+    setDevPreviewConfigState(next);
+  }, []);
+
+  const effectiveConfig = devPreviewConfig ?? config;
 
   const refresh = useCallback(async () => {
     const { data, error } = await supabase
@@ -120,6 +131,7 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
 
     if (!rpcError) {
       applyConfig(payload);
+      setDevPreviewConfigState(null);
       saveConfigToLocalStorage(payload);
       return { error: null };
     }
@@ -157,6 +169,7 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
 
       if (!tableError) {
         applyConfig(payload);
+        setDevPreviewConfigState(null);
         saveConfigToLocalStorage(payload);
         return { error: null };
       }
@@ -170,6 +183,7 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
 
     if (isDbMissing || rpcMsg.includes('permission') || rpcMsg.includes('row-level')) {
       applyConfig(payload);
+      setDevPreviewConfigState(null);
       saveConfigToLocalStorage(payload);
       return {
         error: null,
@@ -183,11 +197,13 @@ export function SiteCustomizationProvider({ children }: { children: ReactNode })
   return (
     <SiteCustomizationContext.Provider
       value={{
-        config,
+        config: effectiveConfig,
+        persistedConfig: config,
         loading,
         canEdit,
         devModeActive: canEdit && devModeActive,
         setDevModeActive,
+        setDevPreviewConfig,
         saveConfig,
         refresh,
       }}

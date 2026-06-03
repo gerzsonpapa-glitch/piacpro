@@ -185,8 +185,8 @@ export const PAGE_SKIN_DEFAULTS: PageSkinConfig[] = [
 export const DEFAULT_SITE_CONFIG: SiteCustomizationConfig = {
   version: 2,
   hero: {
-    title: 'Beléptél a PiacPro világába',
-    subtitle: 'Válassz épületet a Főtéren — dolgozz, kereskedj, segíts, építs közösséget.',
+    title: 'Üdv a PiacPro világában',
+    subtitle: 'Eladás · vásárlás · munka · segítség — egy biztonságos magyar piactér.',
     imageUrl: WORLD_BACKGROUND_4K,
     brightness: 1.04,
     saturation: 1.06,

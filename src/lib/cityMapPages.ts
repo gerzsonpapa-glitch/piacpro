@@ -24,6 +24,23 @@ export const APP_PAGE_OPTIONS: { path: string; label: string }[] = [
   { path: '/vallalkozasom', label: 'Vállalkozásom' },
 ];
 
+export type CityPinSize = 'xs' | 'sm' | 'md' | 'lg';
+export type CityPinVariant = 'icon' | 'card' | 'icon-card' | 'compact-card';
+
+export const CITY_PIN_SIZES: { id: CityPinSize; label: string }[] = [
+  { id: 'xs', label: 'XS — 20px' },
+  { id: 'sm', label: 'S — 24px' },
+  { id: 'md', label: 'M — 32px' },
+  { id: 'lg', label: 'L — 40px' },
+];
+
+export const CITY_PIN_VARIANTS: { id: CityPinVariant; label: string; desc: string }[] = [
+  { id: 'icon', label: 'Csak ikon', desc: 'Kis kör gomb' },
+  { id: 'icon-card', label: 'Ikon + címke', desc: 'Mobil ajánlott' },
+  { id: 'compact-card', label: 'Mini kártya', desc: 'Ikon + rövid szöveg' },
+  { id: 'card', label: 'Teljes kártya', desc: 'Asztali nézet' },
+];
+
 export type CityCardStyle = 'glass' | 'neon' | 'minimal' | 'bold';
 
 export const CITY_CARD_STYLES: { id: CityCardStyle; label: string; desc: string }[] = [
@@ -54,8 +71,13 @@ export interface CityMapHotspotOverride {
   path?: string;
   top?: string;
   left?: string;
+  imageTop?: string;
+  imageLeft?: string;
   color?: string;
   iconId?: string;
   cardStyle?: CityCardStyle;
+  pinSize?: CityPinSize;
+  pinVariant?: CityPinVariant;
+  showLabel?: boolean;
   hidden?: boolean;
 }

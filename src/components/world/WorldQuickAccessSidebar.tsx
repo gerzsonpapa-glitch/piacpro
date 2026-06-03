@@ -18,7 +18,7 @@ export default function WorldQuickAccessSidebar() {
   const { user } = useAuth();
 
   return (
-    <aside className="world-quick-sidebar piac-glass-panel p-4 flex flex-col gap-0.5 h-fit sticky top-24">
+    <aside className="world-quick-sidebar piac-glass-panel p-4 flex flex-col gap-0.5 h-fit">
       <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500 mb-3 px-1">
         Gyors elérés
       </p>

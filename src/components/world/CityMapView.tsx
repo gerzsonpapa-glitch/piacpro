@@ -1,26 +1,24 @@
 import { useMemo, useState, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Pencil, ImageUp, Loader2, Search } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Plus, Pencil, ImageUp, Loader2 } from 'lucide-react';
 import { useRouter } from '../../lib/router';
 import { useSiteCustomization } from '../../contexts/SiteCustomizationContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useLiveWorldStats } from '../../hooks/useLiveWorldStats';
-import { useIsMobile } from '../../hooks/useMediaQuery';
 import { CityMapBoundsProvider } from '../../contexts/CityMapBoundsContext';
 import { uploadSiteAsset } from '../../lib/uploadSiteAsset';
-import PiacEditable from '../PiacEditable';
 import {
   CITY_BUILDINGS,
   applyCityMapOverrides,
+  mergeCityBuildingPreview,
   type CityBuilding,
 } from '../../lib/cityMapBuildings';
 import type { CityMapHotspotOverride } from '../../lib/cityMapPages';
 import CityBuildingHotspot from './CityBuildingHotspot';
 import CityMapHotspotEditor from './CityMapHotspotEditor';
-import CityMainSquare from './CityMainSquare';
 import WorldQuickAccessSidebar from './WorldQuickAccessSidebar';
 import WorldLiveStatsSidebar from './WorldLiveStatsSidebar';
-import PiacAIHomeWidget from './PiacAIHomeWidget';
+import HomeMountainEngraving from './HomeMountainEngraving';
 
 function getCount(
   building: CityBuilding,
@@ -43,13 +41,12 @@ export default function CityMapView({
   const { showToast } = useNotification();
   const { stats } = useLiveWorldStats();
   const [editBuilding, setEditBuilding] = useState<CityBuilding | null>(null);
+  const [editorPreview, setEditorPreview] = useState<CityMapHotspotOverride | null>(null);
   const [addMode, setAddMode] = useState(false);
   const [uploadingMap, setUploadingMap] = useState(false);
-  const [searchQ, setSearchQ] = useState('');
   const mapFileRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [stageEl, setStageEl] = useState<HTMLDivElement | null>(null);
-  const isMobile = useIsMobile();
 
   const bindStageRef = useCallback((node: HTMLDivElement | null) => {
     stageRef.current = node;
@@ -58,15 +55,23 @@ export default function CityMapView({
 
   const editMode = devModeActive && canEdit;
 
-  const buildings = useMemo(
-    () => applyCityMapOverrides(CITY_BUILDINGS, config.cityMapHotspots ?? []),
-    [config.cityMapHotspots],
-  );
+  const buildings = useMemo(() => {
+    let list = applyCityMapOverrides(CITY_BUILDINGS, config.cityMapHotspots ?? []);
+    if (editorPreview) {
+      const idx = list.findIndex((b) => b.id === editorPreview.id);
+      if (idx >= 0) {
+        list = list.map((b, i) => (i === idx ? mergeCityBuildingPreview(b, editorPreview) : b));
+      } else if (editBuilding?.id === editorPreview.id) {
+        list = [...list, mergeCityBuildingPreview(editBuilding, editorPreview)];
+      }
+    }
+    return list;
+  }, [config.cityMapHotspots, editorPreview, editBuilding]);
 
   const legacyPositionIds = useMemo(() => {
     const ids = new Set<string>();
     for (const o of config.cityMapHotspots ?? []) {
-      if (o.top || o.left) ids.add(o.id);
+      if ((o.top || o.left) && o.imageTop == null && o.imageLeft == null) ids.add(o.id);
     }
     return ids;
   }, [config.cityMapHotspots]);
@@ -169,17 +174,15 @@ export default function CityMapView({
     }
   }
 
-  function handleWorldSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (searchQ.trim()) navigate(`/discover?q=${encodeURIComponent(searchQ.trim())}`);
-  }
-
   return (
     <section
-      className={`world-home-immersive relative w-full min-h-[100dvh] ${devModeActive ? 'ring-2 ring-[#00E676]/30 ring-inset' : ''}`}
+      className={`world-home-immersive relative w-full min-h-[100dvh] ${devModeActive ? 'dev-mode-active-map' : ''}`}
     >
-      {editMode && (
-        <div className="absolute top-3 inset-x-3 z-[125] flex flex-wrap gap-2 justify-center" data-dev-map-tool>
+      {editMode && createPortal(
+        <div
+          className="fixed bottom-4 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[9980] flex flex-wrap gap-2 justify-center max-w-3xl px-1"
+          data-dev-map-tool
+        >
           <button
             type="button"
             onClick={() => setAddMode((v) => !v)}
@@ -231,61 +234,21 @@ export default function CityMapView({
           <span className="flex items-center gap-1 px-2 py-1 rounded-xl bg-black/50 border border-amber-500/30 text-[10px] text-amber-300 backdrop-blur-md">
             <Pencil className="w-3 h-3" /> Fogantyú = húzás
           </span>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <CityMapBoundsProvider stage={stageEl}>
       <div ref={bindStageRef} className="city-map-stage world-home-stage relative w-full min-h-[100dvh]">
-        <CityMainSquare ready={ready} />
+        <HomeMountainEngraving ready={ready} />
 
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={ready ? { opacity: 1, y: 0 } : {}}
-          className="city-map-hero-head absolute top-2 sm:top-3 md:top-5 left-1/2 -translate-x-1/2 z-30 text-center px-3 sm:px-4 w-full max-w-xl pointer-events-none"
-        >
-          <PiacEditable
-            editKey="hero.title"
-            as="h1"
-            className="text-[10px] sm:text-xs font-black tracking-[0.14em] sm:tracking-[0.18em] uppercase text-white/85 pointer-events-auto line-clamp-2"
-          >
-            {config.hero.title}
-          </PiacEditable>
-          <PiacEditable
-            editKey="hero.subtitle"
-            as="p"
-            className="hidden sm:block text-[10px] sm:text-[11px] text-zinc-400/90 mt-1 pointer-events-auto max-w-md mx-auto leading-relaxed line-clamp-2"
-          >
-            {config.hero.subtitle}
-          </PiacEditable>
-
-          <form onSubmit={handleWorldSearch} className="pointer-events-auto mt-2 sm:mt-3 md:mt-4 max-w-md mx-auto">
-            <div className="piac-city-search relative flex items-center rounded-xl sm:rounded-2xl overflow-hidden">
-              <Search className="absolute left-3 sm:left-3.5 w-3.5 sm:w-4 h-3.5 sm:h-4 text-zinc-500 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQ}
-                onChange={(e) => setSearchQ(e.target.value)}
-                placeholder={config.nav.searchPlaceholder || 'Mit keresel a városban?'}
-                className="w-full bg-transparent text-zinc-200 placeholder-zinc-500 focus:outline-none pl-9 sm:pl-10 pr-11 sm:pr-12 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm min-w-0"
-              />
-              <button
-                type="submit"
-                className="absolute right-1 sm:right-1.5 w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-lg sm:rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform piac-city-search-btn"
-                aria-label="Keresés indítása"
-              >
-                <Search className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
-              </button>
-            </div>
-          </form>
-        </motion.div>
-
-        <div className="absolute left-3 md:left-5 top-16 bottom-36 xl:bottom-32 z-20 hidden lg:flex flex-col justify-start w-[188px] pointer-events-none">
+        <div className="city-map-side-left fixed left-3 xl:left-5 top-[5.5rem] xl:top-24 bottom-28 z-[35] hidden lg:flex flex-col justify-start w-[188px] pointer-events-none">
           <div className="pointer-events-auto max-h-full overflow-y-auto scrollbar-none">
             <WorldQuickAccessSidebar />
           </div>
         </div>
 
-        <div className="absolute right-3 md:right-5 top-16 z-20 hidden lg:block w-[188px] pointer-events-auto">
+        <div className="city-map-side-right fixed right-3 xl:right-5 top-[5.5rem] xl:top-24 z-[35] hidden lg:block w-[188px] pointer-events-auto max-h-[calc(100dvh-8rem)] overflow-y-auto scrollbar-none">
           <WorldLiveStatsSidebar />
         </div>
 
@@ -302,10 +265,11 @@ export default function CityMapView({
               useLegacyPosition={legacyPositionIds.has(b.id)}
               onEdit={() => setEditBuilding(b)}
               onClick={() => navigate(b.path)}
+              isLivePreview={editBuilding?.id === b.id && !!editorPreview}
               onPositionChange={
                 editMode
-                  ? async (top, left) => {
-                      await upsertOverride({ id: b.id, top, left }, 'Pozíció mentve.');
+                  ? async (pos) => {
+                      await upsertOverride({ id: b.id, ...pos }, 'Pozíció mentve.');
                     }
                   : undefined
               }
@@ -316,22 +280,19 @@ export default function CityMapView({
         {addMode && editMode && (
           <div className="absolute inset-0 z-[40] cursor-crosshair" onClick={handleMapClick} />
         )}
-
-        <div className="city-map-ai-slot absolute bottom-5 sm:bottom-6 md:bottom-8 left-3 sm:left-auto sm:right-3 md:right-5 z-20 pointer-events-auto">
-          <PiacAIHomeWidget compact={isMobile} />
-        </div>
       </div>
       </CityMapBoundsProvider>
 
       {editBuilding && editMode && (
         <CityMapHotspotEditor
           building={editBuilding}
-          onSave={async (patch) => {
-            const ok = await upsertOverride(patch);
-            if (ok) setEditBuilding(null);
-          }}
+          onSave={(patch) => upsertOverride(patch)}
           onDelete={() => deleteBuilding(editBuilding.id)}
-          onClose={() => setEditBuilding(null)}
+          onClose={() => {
+            setEditBuilding(null);
+            setEditorPreview(null);
+          }}
+          onPreviewChange={setEditorPreview}
         />
       )}
     </section>

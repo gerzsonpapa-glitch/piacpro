@@ -7,7 +7,6 @@ import {
   ChevronDown, ChevronUp, Gavel, Briefcase, Store, Leaf,
   Star, Award, Zap, MessageCircle, Search, PlusCircle,
   TrendingUp, Lock, CheckCircle, Sparkles, Package, HandHeart,
-  PhoneCall, ExternalLink
 } from 'lucide-react';
 
 const RANK_LEVELS = [
@@ -234,14 +233,14 @@ export default function Footer() {
 
       {/* Guide section toggle banner */}
       <div className="border-b border-white/5 bg-white/2">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-zinc-400 text-sm">
-            <ScrollText className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>Útmutató és funkciók — hogyan használd a PiacPro-t?</span>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start sm:items-center gap-2 text-zinc-400 text-sm min-w-0">
+            <ScrollText className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+            <span className="leading-snug">Útmutató és funkciók — hogyan használd a PiacPro-t?</span>
           </div>
           <button
             onClick={() => setShowGuide(!showGuide)}
-            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="flex items-center justify-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors min-h-[44px] sm:min-h-0 self-start sm:self-auto"
           >
             {showGuide ? 'Bezárás' : 'Megnyitás'}
             {showGuide ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -289,7 +288,7 @@ export default function Footer() {
                 Rang rendszer
               </h2>
               <p className="text-zinc-500 text-xs mb-5">A rangod tükrözi a megbízhatóságodat a közösségben. Minél több sikeres tranzakciód és jó értékelésed van, annál magasabb szintre jutsz.</p>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 {RANK_LEVELS.map((r) => (
                   <div key={r.level} className={`rounded-2xl p-4 border ${r.bg} space-y-2`}>
                     <div className="flex items-center gap-2">

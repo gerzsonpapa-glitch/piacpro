@@ -1,9 +1,10 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SiteCustomizationProvider } from './contexts/SiteCustomizationContext';
-import { RouterContext, useRouterProvider } from './lib/router';
+import { RouterContext, useRouterProvider, useRouter } from './lib/router';
 import Layout from './components/Layout';
+import ChatWidget from './components/ChatWidget';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -39,7 +40,14 @@ const CreateOfferPage = lazy(() => import('./pages/CreateOfferPage'));
 const OfferDetailPage = lazy(() => import('./pages/OfferDetailPage'));
 const ForumPage = lazy(() => import('./pages/ForumPage'));
 const VedelemPage = lazy(() => import('./pages/VedelemPage'));
-const PiacAIChatPage = lazy(() => import('./pages/PiacAIChatPage'));
+
+function PiacAIRedirect() {
+  const { navigate } = useRouter();
+  useEffect(() => {
+    navigate('/create?mode=ai');
+  }, [navigate]);
+  return <PageLoader />;
+}
 
 function PageLoader() {
   return (
@@ -80,6 +88,7 @@ function App() {
     else if (path.startsWith('/chat/')) page = <MessagesPage />;
     else if (path === '/admin') page = <AdminPage />;
     else if (path === '/rules') page = <RulesPage />;
+    else if (path.startsWith('/jobs/')) page = <JobsPage />;
     else if (path === '/jobs') page = <JobsPage />;
     else if (path === '/shops') page = <ShopsPage />;
     else if (path.startsWith('/shops/')) page = <ShopDetailPage />;
@@ -102,7 +111,7 @@ function App() {
     else if (path === '/forum/hibak') page = <ForumPage />;
     else if (path.startsWith('/forum/')) page = <ForumPage />;
     else if (path === '/vedelem') page = <VedelemPage />;
-    else if (path === '/piac-ai') page = <PiacAIChatPage />;
+    else if (path === '/piac-ai') page = <PiacAIRedirect />;
     else {
       page = (
         <div className="text-center py-20">
@@ -120,6 +129,7 @@ function App() {
         <SiteCustomizationProvider>
           <NotificationProvider>
             <Layout>{renderPage()}</Layout>
+            <ChatWidget />
           </NotificationProvider>
         </SiteCustomizationProvider>
       </AuthProvider>

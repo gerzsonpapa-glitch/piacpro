@@ -1,11 +1,12 @@
 import type { ElementType } from 'react';
 import {
-  ShoppingBag, Gavel, Briefcase, Users, Store, Heart, Leaf, Award, HandHeart,
+  ShoppingBag, Gavel, Briefcase, Users, Store, Heart, Leaf, Award, HandHeart, Shield,
 } from 'lucide-react';
 import { WORLD_BACKGROUND_4K } from './siteCustomization';
-import type { CityMapHotspotOverride, CityCardStyle } from './cityMapPages';
+import type { CityMapHotspotOverride, CityCardStyle, CityPinSize, CityPinVariant } from './cityMapPages';
 import { resolveCityIcon } from './cityMapIcons';
 import { colorGlow } from './cityMapCardStyles';
+import { HUB_HOTSPOT_DEFAULTS } from './hubHotspotsDefaults';
 
 export interface CityBuilding {
   id: string;
@@ -24,6 +25,9 @@ export interface CityBuilding {
   countKey?: 'listing' | 'auction' | 'job' | 'donations' | 'producers' | 'shops';
   iconId?: string;
   cardStyle?: CityCardStyle;
+  pinSize?: CityPinSize;
+  pinVariant?: CityPinVariant;
+  showLabel?: boolean;
 }
 
 export interface CityQuickPin {
@@ -40,7 +44,7 @@ export interface CityQuickPin {
  * PiacPro digitális város — épületek a Főtér körül.
  * v2 koncepció: prémium, letisztult, nem cyberpunk.
  */
-export const CITY_BUILDINGS: CityBuilding[] = [
+export const CITY_BUILDINGS: CityBuilding[] = applyHubDefaults([
   {
     id: 'piac-ter',
     label: 'Piacnegyed',
@@ -191,7 +195,61 @@ export const CITY_BUILDINGS: CityBuilding[] = [
     tier: 'system',
     cardStyle: 'minimal',
   },
-];
+  {
+    id: 'vedelem',
+    label: 'Védelem',
+    sublabel: 'Biztosítás · OVB · Védelem',
+    path: '/vedelem',
+    icon: Shield,
+    iconId: 'shield',
+    color: '#6366F1',
+    glow: colorGlow('#6366F1', 0.5),
+    top: '30%',
+    left: '38%',
+    imageTop: '28%',
+    imageLeft: '38%',
+    tier: 'secondary',
+    cardStyle: 'minimal',
+    pinSize: 'xs',
+    pinVariant: 'icon-card',
+  },
+]);
+
+function applyHubDefaults(buildings: CityBuilding[]): CityBuilding[] {
+  return buildings.map((b) => {
+    const d = HUB_HOTSPOT_DEFAULTS[b.id];
+    if (!d) return b;
+    return {
+      ...b,
+      imageTop: d.imageTop,
+      imageLeft: d.imageLeft,
+      pinSize: d.pinSize ?? b.pinSize,
+      pinVariant: d.pinVariant ?? b.pinVariant ?? 'icon-card',
+    };
+  });
+}
+
+export function mergeCityBuildingPreview(
+  building: CityBuilding,
+  patch: CityMapHotspotOverride,
+): CityBuilding {
+  return {
+    ...building,
+    ...(patch.label !== undefined && { label: patch.label }),
+    ...(patch.sublabel !== undefined && { sublabel: patch.sublabel }),
+    ...(patch.path && { path: patch.path }),
+    ...(patch.top && { top: patch.top }),
+    ...(patch.left && { left: patch.left }),
+    ...(patch.imageTop && { imageTop: patch.imageTop }),
+    ...(patch.imageLeft && { imageLeft: patch.imageLeft }),
+    ...(patch.color && { color: patch.color, glow: colorGlow(patch.color, 0.55) }),
+    ...(patch.iconId && { iconId: patch.iconId, icon: resolveCityIcon(patch.iconId, building.icon) }),
+    ...(patch.cardStyle && { cardStyle: patch.cardStyle }),
+    ...(patch.pinSize && { pinSize: patch.pinSize }),
+    ...(patch.pinVariant && { pinVariant: patch.pinVariant }),
+    ...(patch.showLabel !== undefined && { showLabel: patch.showLabel }),
+  };
+}
 
 export function applyCityMapOverrides(
   base: CityBuilding[],
@@ -213,6 +271,11 @@ export function applyCityMapOverrides(
         ...(o.color && { color: o.color, glow: colorGlow(o.color, 0.55) }),
         ...(o.iconId && { iconId: o.iconId, icon: resolveCityIcon(o.iconId, b.icon) }),
         ...(o.cardStyle ? { cardStyle: o.cardStyle } : {}),
+        ...(o.imageTop && { imageTop: o.imageTop }),
+        ...(o.imageLeft && { imageLeft: o.imageLeft }),
+        ...(o.pinSize && { pinSize: o.pinSize }),
+        ...(o.pinVariant && { pinVariant: o.pinVariant }),
+        ...(o.showLabel !== undefined && { showLabel: o.showLabel }),
       };
     })
     .filter((b): b is CityBuilding => b !== null);
