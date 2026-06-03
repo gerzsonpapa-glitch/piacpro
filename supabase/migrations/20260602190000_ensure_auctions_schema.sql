@@ -1,11 +1,24 @@
 /*
   # Aukció séma biztosítása (hiányzó korai migrációk pótlása)
 
-  Ha a public.auctions tábla nem létezik, a finalize_auction_if_expired
-  és kapcsolódó függvények létrehozása hibára fut (42P01).
+  ELŐFELTÉTEL: a public.listings táblának már léteznie kell!
+  Ha „relation public.listings does not exist” hibát kapsz, NE ezt futtasd —
+  előbb a teljes migrációs lánc elejét (20260512061139_create_marketplace_schema.sql …).
 
-  Futtasd ezt ELŐBB, mint a 20260601113000_marketplace_essentials_fixes.sql fájlt.
+  Futtasd ezt UTÁN, hogy a korai aukció-migrációk lefutottak, VAGY ha csak
+  az auctions tábla hiányzik egy egyébként működő DB-ből.
 */
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'listings'
+  ) THEN
+    RAISE EXCEPTION
+      'HIBA: public.listings nem létezik. Először futtasd: supabase/migrations/20260512061139_create_marketplace_schema.sql majd az összes későbbi migrációt fájlnév sorrendben (Supabase CLI: supabase db push).';
+  END IF;
+END $$;
 
 -- ─── listings: aukcióhoz szükséges oszlopok ────────────────────────────────
 ALTER TABLE public.listings ADD COLUMN IF NOT EXISTS sold_at timestamptz;
