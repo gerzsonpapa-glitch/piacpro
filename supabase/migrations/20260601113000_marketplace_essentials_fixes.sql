@@ -8,6 +8,47 @@
   - Termelő: jóváhagyás kötelező INSERT-nél, saját törlés RPC
 */
 
+-- ─── Aukció táblák (ha korai migrációk kimaradtak) ───────────────────────────
+CREATE TABLE IF NOT EXISTS public.auctions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_id uuid NOT NULL REFERENCES public.listings(id) ON DELETE CASCADE,
+  seller_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  starting_price numeric NOT NULL DEFAULT 0,
+  current_price numeric NOT NULL DEFAULT 0,
+  min_bid_increment numeric NOT NULL DEFAULT 500,
+  duration_hours integer NOT NULL DEFAULT 24,
+  ends_at timestamptz NOT NULL DEFAULT (now() + interval '24 hours'),
+  status text NOT NULL DEFAULT 'active',
+  winner_id uuid REFERENCES public.profiles(id),
+  timer_started boolean NOT NULL DEFAULT false,
+  timer_started_at timestamptz,
+  extension_count integer NOT NULL DEFAULT 0,
+  bid_count integer NOT NULL DEFAULT 0,
+  ended_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.listings ADD COLUMN IF NOT EXISTS sold_at timestamptz;
+ALTER TABLE public.auctions ADD COLUMN IF NOT EXISTS winner_id uuid REFERENCES public.profiles(id);
+ALTER TABLE public.auctions ADD COLUMN IF NOT EXISTS timer_started boolean NOT NULL DEFAULT false;
+ALTER TABLE public.auctions ADD COLUMN IF NOT EXISTS timer_started_at timestamptz;
+ALTER TABLE public.auctions ADD COLUMN IF NOT EXISTS extension_count integer NOT NULL DEFAULT 0;
+ALTER TABLE public.auctions ADD COLUMN IF NOT EXISTS bid_count integer NOT NULL DEFAULT 0;
+ALTER TABLE public.auctions ADD COLUMN IF NOT EXISTS ended_at timestamptz;
+
+CREATE TABLE IF NOT EXISTS public.auction_bids (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  auction_id uuid NOT NULL REFERENCES public.auctions(id) ON DELETE CASCADE,
+  bidder_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  amount numeric NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS auction_bids_auction_id_idx ON public.auction_bids(auction_id);
+ALTER TABLE public.auctions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.auction_bids ENABLE ROW LEVEL SECURITY;
+
 -- ─── Licit: lejárás + nyertes ───────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.auto_end_expired_auctions()
 RETURNS integer
